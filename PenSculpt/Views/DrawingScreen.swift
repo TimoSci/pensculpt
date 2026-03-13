@@ -13,36 +13,77 @@ struct DrawingScreen: View {
             CanvasView(
                 drawing: $pkDrawing,
                 tool: pkToolBinding,
+                undoManager: undoManager,
                 onStrokeCompleted: { pkStroke in
                     let stroke = StrokeConverter.convert(pkStroke)
-                    canvas.addStroke(stroke)
+                    addStrokeWithUndo(stroke)
+                },
+                onStrokeErased: { oldDrawing in
+                    // PencilKit handled the visual erase; sync our model
+                    let currentIDs = Set(StrokeConverter.convertAll(pkDrawing).map(\.id))
+                    let removedStrokes = canvas.strokes.filter { !currentIDs.contains($0.id) }
+                    for removed in removedStrokes {
+                        removeStrokeWithUndo(removed)
+                    }
                 }
             )
             .ignoresSafeArea()
-            .gesture(
-                DragGesture(minimumDistance: 50)
-                    .onEnded { value in
-                        if value.startLocation.x < 20 {
-                            withAnimation(.easeInOut(duration: 0.2)) {
-                                showToolbar.toggle()
-                            }
-                        }
-                    }
-            )
+            .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in
+                selectedTool = selectedTool == .pen ? .eraser : .pen
+            }
 
             if showToolbar {
                 FloatingToolbar(
                     selectedTool: $selectedTool,
                     onUndo: { undoManager?.undo() },
                     onRedo: { undoManager?.redo() },
-                    onClear: {
-                        pkDrawing = PKDrawing()
-                        canvas.clearStrokes()
-                    }
+                    onClear: { clearWithUndo() }
                 )
                 .padding(.bottom, 40)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
+        }
+        .toolbar {
+            ToolbarItem(placement: .bottomBar) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        showToolbar.toggle()
+                    }
+                } label: {
+                    Image(systemName: showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
+                        .font(.title2)
+                }
+            }
+        }
+        .toolbarBackground(.hidden, for: .bottomBar)
+    }
+
+    // MARK: - Undo-aware actions
+
+    private func addStrokeWithUndo(_ stroke: Stroke) {
+        canvas.addStroke(stroke)
+        undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+            canvas.removeStroke(id: stroke.id)
+            // Remove from PencilKit too
+            pkDrawing = PKDrawing(strokes: pkDrawing.strokes.dropLast())
+        }
+    }
+
+    private func removeStrokeWithUndo(_ stroke: Stroke) {
+        canvas.removeStroke(id: stroke.id)
+        undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+            canvas.addStroke(stroke)
+        }
+    }
+
+    private func clearWithUndo() {
+        let previousStrokes = canvas.strokes
+        let previousDrawing = pkDrawing
+        canvas.clearStrokes()
+        pkDrawing = PKDrawing()
+        undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+            canvas.strokes = previousStrokes
+            pkDrawing = previousDrawing
         }
     }
 
@@ -59,4 +100,9 @@ struct DrawingScreen: View {
             set: { _ in }
         )
     }
+}
+
+/// A reference type target for UndoManager registration (UndoManager requires AnyObject).
+private final class UndoProxy {
+    static let shared = UndoProxy()
 }

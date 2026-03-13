@@ -1,4 +1,5 @@
 import PencilKit
+import UIKit
 
 enum StrokeConverter {
 
@@ -18,10 +19,17 @@ enum StrokeConverter {
             ))
         }
 
-        return Stroke(points: points, color: .black)
+        let color = colorFromPKInk(pkStroke.ink)
+        return Stroke(points: points, color: color)
     }
 
     static func convertAll(_ drawing: PKDrawing) -> [Stroke] {
         drawing.strokes.map { convert($0) }
+    }
+
+    private static func colorFromPKInk(_ ink: PKInk) -> CodableColor {
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        ink.color.getRed(&r, green: &g, blue: &b, alpha: &a)
+        return CodableColor(red: r, green: g, blue: b, alpha: a)
     }
 }
