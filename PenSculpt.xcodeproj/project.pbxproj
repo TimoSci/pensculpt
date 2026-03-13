@@ -1,0 +1,485 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 77;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		13FB513D2030412AF3F6E039 /* CanvasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */; };
+		1F06F508B357184A0D298B76 /* Stroke.swift in Sources */ = {isa = PBXBuildFile; fileRef = C103499A3841733723268595 /* Stroke.swift */; };
+		2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */; };
+		2DDF9546A258ECC39CF31061 /* StrokeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7261F4A02956799D70E38268 /* StrokeTests.swift */; };
+		3ACA72B0A900E98DAF41AFE4 /* DrawingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */; };
+		4E8542AAB4F6049A6F22B174 /* StrokePoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 892DC21C224D81E91EC19AF6 /* StrokePoint.swift */; };
+		5FA3E0CC9696AAE77E3E8C95 /* PenSculptDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82A215B7BBBB015740CC253 /* PenSculptDocument.swift */; };
+		620DF5FFBEBB74AE891E2932 /* StrokeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9B45B1894E87008809A866 /* StrokeConverter.swift */; };
+		6618C5D01545C224214A6036 /* CanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 20F53120679F63904EB7A842 /* CanvasView.swift */; };
+		7E8452DD256CEFA004BEE546 /* PenSculptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AE4C922D541BA8953F39249 /* PenSculptTests.swift */; };
+		81BCDDE5A91629858020D77B /* PenSculptDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */; };
+		A1B13952B16B6F047B7386A0 /* StrokeConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */; };
+		CF55A32967111120BF84535C /* Canvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82600F3015BC14804942380E /* Canvas.swift */; };
+		E02DD6005263EAD261542098 /* PenSculptApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9997687C31904A1949E3F1A2 /* PenSculptApp.swift */; };
+		F59BCF319DA5B1EF902EAA9A /* StrokePointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A309C2382E507DE74C02938 /* StrokePointTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXContainerItemProxy section */
+		E8EB97E6AADFA35FDFA409A2 /* PBXContainerItemProxy */ = {
+			isa = PBXContainerItemProxy;
+			containerPortal = 2666FF2B68C171FAF9CF1986 /* Project object */;
+			proxyType = 1;
+			remoteGlobalIDString = 8A52743755A99EC7E2B610A5;
+			remoteInfo = PenSculpt;
+		};
+/* End PBXContainerItemProxy section */
+
+/* Begin PBXFileReference section */
+		09CEEBEBD7ECCAD00A9693D0 /* PenSculptTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PenSculptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		20F53120679F63904EB7A842 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		4A9B45B1894E87008809A866 /* StrokeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeConverter.swift; sourceTree = "<group>"; };
+		5AE4C922D541BA8953F39249 /* PenSculptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptTests.swift; sourceTree = "<group>"; };
+		7261F4A02956799D70E38268 /* StrokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeTests.swift; sourceTree = "<group>"; };
+		813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeConverterTests.swift; sourceTree = "<group>"; };
+		82600F3015BC14804942380E /* Canvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Canvas.swift; sourceTree = "<group>"; };
+		864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingScreen.swift; sourceTree = "<group>"; };
+		892DC21C224D81E91EC19AF6 /* StrokePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokePoint.swift; sourceTree = "<group>"; };
+		8A309C2382E507DE74C02938 /* StrokePointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokePointTests.swift; sourceTree = "<group>"; };
+		98A46D7C5EF099EB2F6B8492 /* PenSculpt.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PenSculpt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9997687C31904A1949E3F1A2 /* PenSculptApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptApp.swift; sourceTree = "<group>"; };
+		C103499A3841733723268595 /* Stroke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stroke.swift; sourceTree = "<group>"; };
+		C82A215B7BBBB015740CC253 /* PenSculptDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptDocument.swift; sourceTree = "<group>"; };
+		DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptDocumentTests.swift; sourceTree = "<group>"; };
+		E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasTests.swift; sourceTree = "<group>"; };
+		F245D592E7D90A121589B369 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
+		FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingToolbar.swift; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXGroup section */
+		12CF377633015DE483C3B569 /* Views */ = {
+			isa = PBXGroup;
+			children = (
+				864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */,
+				FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */,
+			);
+			path = Views;
+			sourceTree = "<group>";
+		};
+		15C7B913DBA1BB68F999C99B /* Persistence */ = {
+			isa = PBXGroup;
+			children = (
+				C82A215B7BBBB015740CC253 /* PenSculptDocument.swift */,
+			);
+			path = Persistence;
+			sourceTree = "<group>";
+		};
+		3A94AEBC4C7AE66C002C3592 /* Drawing */ = {
+			isa = PBXGroup;
+			children = (
+				20F53120679F63904EB7A842 /* CanvasView.swift */,
+				4A9B45B1894E87008809A866 /* StrokeConverter.swift */,
+			);
+			path = Drawing;
+			sourceTree = "<group>";
+		};
+		4A27AC2D1196C76C71AB4B78 /* PenSculpt */ = {
+			isa = PBXGroup;
+			children = (
+				F94B6C5FF201CF5FFC59C91B /* App */,
+				3A94AEBC4C7AE66C002C3592 /* Drawing */,
+				C01709699D4C247D491F867C /* Models */,
+				15C7B913DBA1BB68F999C99B /* Persistence */,
+				AC7FF40E405DA30EECE88413 /* Resources */,
+				12CF377633015DE483C3B569 /* Views */,
+			);
+			path = PenSculpt;
+			sourceTree = "<group>";
+		};
+		86096B91AE4F5637F7BFAD69 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				98A46D7C5EF099EB2F6B8492 /* PenSculpt.app */,
+				09CEEBEBD7ECCAD00A9693D0 /* PenSculptTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		AC7FF40E405DA30EECE88413 /* Resources */ = {
+			isa = PBXGroup;
+			children = (
+				F245D592E7D90A121589B369 /* Info.plist */,
+			);
+			path = Resources;
+			sourceTree = "<group>";
+		};
+		BF364D358322F9E5C5E36B60 = {
+			isa = PBXGroup;
+			children = (
+				4A27AC2D1196C76C71AB4B78 /* PenSculpt */,
+				ED16466E36BE0F0468D9B0DE /* PenSculptTests */,
+				86096B91AE4F5637F7BFAD69 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+		C01709699D4C247D491F867C /* Models */ = {
+			isa = PBXGroup;
+			children = (
+				82600F3015BC14804942380E /* Canvas.swift */,
+				C103499A3841733723268595 /* Stroke.swift */,
+				892DC21C224D81E91EC19AF6 /* StrokePoint.swift */,
+			);
+			path = Models;
+			sourceTree = "<group>";
+		};
+		ED16466E36BE0F0468D9B0DE /* PenSculptTests */ = {
+			isa = PBXGroup;
+			children = (
+				E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */,
+				DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */,
+				5AE4C922D541BA8953F39249 /* PenSculptTests.swift */,
+				813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */,
+				8A309C2382E507DE74C02938 /* StrokePointTests.swift */,
+				7261F4A02956799D70E38268 /* StrokeTests.swift */,
+			);
+			path = PenSculptTests;
+			sourceTree = "<group>";
+		};
+		F94B6C5FF201CF5FFC59C91B /* App */ = {
+			isa = PBXGroup;
+			children = (
+				9997687C31904A1949E3F1A2 /* PenSculptApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		1CCD5B8F91999549D0D464A9 /* PenSculptTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = F12116994A3D90F69CE78A50 /* Build configuration list for PBXNativeTarget "PenSculptTests" */;
+			buildPhases = (
+				1BACB66303EBFBF3FA70E6C8 /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+				FAE19BED06727CDE9DD2CA1E /* PBXTargetDependency */,
+			);
+			name = PenSculptTests;
+			packageProductDependencies = (
+			);
+			productName = PenSculptTests;
+			productReference = 09CEEBEBD7ECCAD00A9693D0 /* PenSculptTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+		8A52743755A99EC7E2B610A5 /* PenSculpt */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 752D4C7B1EB147773E5035C1 /* Build configuration list for PBXNativeTarget "PenSculpt" */;
+			buildPhases = (
+				7E1E8F799F15BE9FD8E4DCCD /* Sources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = PenSculpt;
+			packageProductDependencies = (
+			);
+			productName = PenSculpt;
+			productReference = 98A46D7C5EF099EB2F6B8492 /* PenSculpt.app */;
+			productType = "com.apple.product-type.application";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		2666FF2B68C171FAF9CF1986 /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = YES;
+				LastUpgradeCheck = 1600;
+				TargetAttributes = {
+				};
+			};
+			buildConfigurationList = 5BF500C6125EDAA8073D93F9 /* Build configuration list for PBXProject "PenSculpt" */;
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				Base,
+				en,
+			);
+			mainGroup = BF364D358322F9E5C5E36B60;
+			minimizedProjectReferenceProxies = 1;
+			preferredProjectObjectVersion = 77;
+			productRefGroup = 86096B91AE4F5637F7BFAD69 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				8A52743755A99EC7E2B610A5 /* PenSculpt */,
+				1CCD5B8F91999549D0D464A9 /* PenSculptTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXSourcesBuildPhase section */
+		1BACB66303EBFBF3FA70E6C8 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				13FB513D2030412AF3F6E039 /* CanvasTests.swift in Sources */,
+				81BCDDE5A91629858020D77B /* PenSculptDocumentTests.swift in Sources */,
+				7E8452DD256CEFA004BEE546 /* PenSculptTests.swift in Sources */,
+				A1B13952B16B6F047B7386A0 /* StrokeConverterTests.swift in Sources */,
+				F59BCF319DA5B1EF902EAA9A /* StrokePointTests.swift in Sources */,
+				2DDF9546A258ECC39CF31061 /* StrokeTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		7E1E8F799F15BE9FD8E4DCCD /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				CF55A32967111120BF84535C /* Canvas.swift in Sources */,
+				6618C5D01545C224214A6036 /* CanvasView.swift in Sources */,
+				3ACA72B0A900E98DAF41AFE4 /* DrawingScreen.swift in Sources */,
+				2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */,
+				E02DD6005263EAD261542098 /* PenSculptApp.swift in Sources */,
+				5FA3E0CC9696AAE77E3E8C95 /* PenSculptDocument.swift in Sources */,
+				1F06F508B357184A0D298B76 /* Stroke.swift in Sources */,
+				620DF5FFBEBB74AE891E2932 /* StrokeConverter.swift in Sources */,
+				4E8542AAB4F6049A6F22B174 /* StrokePoint.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin PBXTargetDependency section */
+		FAE19BED06727CDE9DD2CA1E /* PBXTargetDependency */ = {
+			isa = PBXTargetDependency;
+			target = 8A52743755A99EC7E2B610A5 /* PenSculpt */;
+			targetProxy = E8EB97E6AADFA35FDFA409A2 /* PBXContainerItemProxy */;
+		};
+/* End PBXTargetDependency section */
+
+/* Begin XCBuildConfiguration section */
+		418A63868D94C17B3B0599E2 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = PenSculpt/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pensculpt.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		67A98E1D58201CCA4E880FC3 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pensculpt.PenSculptTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PenSculpt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PenSculpt";
+			};
+			name = Release;
+		};
+		7F29820A606FC2A73C1B6D58 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				BUNDLE_LOADER = "$(TEST_HOST)";
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+					"@loader_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pensculpt.PenSculptTests;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+				TEST_HOST = "$(BUILT_PRODUCTS_DIR)/PenSculpt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PenSculpt";
+			};
+			name = Debug;
+		};
+		8F30B291D97F534D40ED4A2A /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				CODE_SIGN_IDENTITY = "iPhone Developer";
+				INFOPLIST_FILE = PenSculpt/Resources/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				PRODUCT_BUNDLE_IDENTIFIER = com.pensculpt.app;
+				SDKROOT = iphoneos;
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		A078AF1A6DF1C22D163F81AD /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"$(inherited)",
+					"DEBUG=1",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = DEBUG;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Debug;
+		};
+		EDBE30AB49DDC730FBF19778 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++14";
+				CLANG_CXX_LIBRARY = "libc++";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu11;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SDKROOT = iphoneos;
+				SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD = NO;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_OPTIMIZATION_LEVEL = "-O";
+				SWIFT_VERSION = 5.9;
+				TARGETED_DEVICE_FAMILY = 2;
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		5BF500C6125EDAA8073D93F9 /* Build configuration list for PBXProject "PenSculpt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				A078AF1A6DF1C22D163F81AD /* Debug */,
+				EDBE30AB49DDC730FBF19778 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		752D4C7B1EB147773E5035C1 /* Build configuration list for PBXNativeTarget "PenSculpt" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				418A63868D94C17B3B0599E2 /* Debug */,
+				8F30B291D97F534D40ED4A2A /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+		F12116994A3D90F69CE78A50 /* Build configuration list for PBXNativeTarget "PenSculptTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				7F29820A606FC2A73C1B6D58 /* Debug */,
+				67A98E1D58201CCA4E880FC3 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Debug;
+		};
+/* End XCConfigurationList section */
+	};
+	rootObject = 2666FF2B68C171FAF9CF1986 /* Project object */;
+}

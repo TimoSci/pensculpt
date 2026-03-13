@@ -1,0 +1,32 @@
+name: PenSculpt
+options:
+  bundleIdPrefix: com.pensculpt
+  deploymentTarget:
+    iOS: "17.0"
+  xcodeVersion: "16.0"
+settings:
+  TARGETED_DEVICE_FAMILY: 2
+  SUPPORTS_XR_DESIGNED_FOR_IPHONE_IPAD: false
+  SWIFT_VERSION: "5.9"
+targets:
+  PenSculpt:
+    type: application
+    platform: iOS
+    sources:
+      - PenSculpt
+    settings:
+      INFOPLIST_FILE: PenSculpt/Resources/Info.plist
+      PRODUCT_BUNDLE_IDENTIFIER: com.pensculpt.app
+    scheme:
+      testTargets:
+        - PenSculptTests
+  PenSculptTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources:
+      - PenSculptTests
+    dependencies:
+      - target: PenSculpt
+    settings:
+      TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PenSculpt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PenSculpt"
+      BUNDLE_LOADER: "$(TEST_HOST)"
