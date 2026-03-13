@@ -17,12 +17,13 @@ Status legend:
 - [x] StrokeConverter (PKStroke to internal Stroke) — O[ ] S[ ]
 - [x] CanvasView (PKCanvasView UIViewRepresentable wrapper) — O[ ] S[ ]
 - [x] FloatingToolbar (undo, redo, eraser, clear) — O[ ] S[ ]
-- [x] DrawingScreen (full-screen canvas with edge-swipe toolbar) — O[ ] S[ ]
-- [x] PenSculptDocument (ReferenceFileDocument, .pensculpt format) — O[ ] S[ ]
+- [x] DrawingScreen (full-screen canvas with toolbar button) — O[ ] S[ ]
+- [x] PenSculptDocument (ReferenceFileDocument, .pensculpt package format) — O[ ] S[ ]
 - [x] App entry point (DocumentGroup wiring) — O[ ] S[ ]
+- [x] Undo/Redo (UndoManager registration for add/remove/clear) — O[ ] S[ ]
 - [x] Unit tests (StrokePoint, Stroke, Canvas, StrokeConverter, Document) — O[ ] S[ ]
 - [x] Drawing basics guide — O[ ] S[ ]
-- [ ] Apple Pencil double-tap toggle (pen/eraser) — O[ ] S[ ]
+- [x] Apple Pencil double-tap toggle (pen/eraser) — O[ ] S[ ]
 - [ ] Apple Pencil hover cursor preview — O[ ] S[ ]
 
 ## Stage 2: Sculpt Mode
