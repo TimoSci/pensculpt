@@ -14,7 +14,9 @@ struct Canvas: Codable, Equatable, Sendable {
     }
 
     mutating func removeStroke(id: UUID) {
-        strokes.removeAll { $0.id == id }
+        if let index = strokes.firstIndex(where: { $0.id == id }) {
+            strokes.remove(at: index)
+        }
     }
 
     mutating func clearStrokes() {
