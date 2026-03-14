@@ -1,0 +1,41 @@
+import SwiftUI
+import UIKit
+
+struct SelectionHighlight: UIViewRepresentable {
+    var strokes: [Stroke]
+    var selectedIDs: Set<UUID>
+
+    func makeUIView(context: Context) -> SelectionHighlightView {
+        let view = SelectionHighlightView()
+        view.backgroundColor = .clear
+        view.isUserInteractionEnabled = false
+        return view
+    }
+
+    func updateUIView(_ uiView: SelectionHighlightView, context: Context) {
+        uiView.selectedStrokes = strokes.filter { selectedIDs.contains($0.id) }
+        uiView.setNeedsDisplay()
+    }
+}
+
+class SelectionHighlightView: UIView {
+    var selectedStrokes: [Stroke] = []
+
+    override func draw(_ rect: CGRect) {
+        guard let ctx = UIGraphicsGetCurrentContext() else { return }
+        ctx.setStrokeColor(UIColor.systemBlue.withAlphaComponent(0.5).cgColor)
+        ctx.setLineWidth(6)
+        ctx.setLineCap(.round)
+        ctx.setLineJoin(.round)
+
+        for stroke in selectedStrokes {
+            guard stroke.points.count > 1 else { continue }
+            ctx.beginPath()
+            ctx.move(to: stroke.points[0].location)
+            for point in stroke.points.dropFirst() {
+                ctx.addLine(to: point.location)
+            }
+            ctx.strokePath()
+        }
+    }
+}

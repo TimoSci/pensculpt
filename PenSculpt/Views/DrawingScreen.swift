@@ -15,6 +15,7 @@ struct DrawingScreen: View {
     @State private var autosaveEnabled = true
     @State private var appMode: AppMode = .draw
     @State private var lassoPoints: [CGPoint] = []
+    @State private var selectedStrokeIDs: Set<UUID> = []
     @State private var drawingSyncTask: Task<Void, Never>?
     @Environment(\.undoManager) private var undoManager
 
@@ -27,6 +28,7 @@ struct DrawingScreen: View {
     var body: some View {
         ZStack(alignment: .bottom) {
             canvasLayer
+            selectionHighlightLayer
             selectModeOverlay
             if appMode == .draw { drawModeControls }
         }
@@ -52,12 +54,22 @@ struct DrawingScreen: View {
     // MARK: - Subviews
 
     @ViewBuilder
+    private var selectionHighlightLayer: some View {
+        if !selectedStrokeIDs.isEmpty {
+            SelectionHighlight(strokes: canvas.strokes, selectedIDs: selectedStrokeIDs)
+        }
+    }
+
+    @ViewBuilder
     private var selectModeOverlay: some View {
         if appMode == .select {
             LassoOverlay(
                 lassoPoints: $lassoPoints,
-                onLassoCompleted: { _ in
-                    // Increment 2: hit-test strokes inside lasso
+                onLassoCompleted: { polygon in
+                    selectedStrokeIDs = LassoSelection.selectedStrokeIDs(
+                        strokes: canvas.strokes,
+                        polygon: polygon
+                    )
                 }
             )
             .ignoresSafeArea()
@@ -87,6 +99,7 @@ struct DrawingScreen: View {
                         } else {
                             appMode = .draw
                             lassoPoints = []
+                            selectedStrokeIDs = []
                         }
                     }
                 } label: {
