@@ -11,6 +11,7 @@ struct DrawingScreen: View {
     @State private var lastEraserType: DrawingTool = .eraser
     @State private var showToolbar = false
     @State private var showSavedMessage = false
+    @State private var drawingSyncTask: Task<Void, Never>?
     @Environment(\.undoManager) private var undoManager
 
     var body: some View {
@@ -87,6 +88,8 @@ struct DrawingScreen: View {
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
+                    drawingSyncTask?.cancel()
+                    drawingData = pkDrawing.dataRepresentation()
                     canvas = canvas
                     withAnimation { showSavedMessage = true }
                     Task {
@@ -105,7 +108,12 @@ struct DrawingScreen: View {
             }
         }
         .onChange(of: pkDrawing) { _, newDrawing in
-            drawingData = newDrawing.dataRepresentation()
+            drawingSyncTask?.cancel()
+            drawingSyncTask = Task {
+                try? await Task.sleep(for: .milliseconds(500))
+                guard !Task.isCancelled else { return }
+                drawingData = newDrawing.dataRepresentation()
+            }
         }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
