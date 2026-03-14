@@ -3,6 +3,7 @@ import PencilKit
 
 struct DrawingScreen: View {
     @Binding var canvas: Canvas
+    @Binding var drawingData: Data
     @State private var pkDrawing = PKDrawing()
     @State private var selectedTool: DrawingTool = .pen
     @State private var strokeWidth: CGFloat = 3
@@ -71,6 +72,27 @@ struct DrawingScreen: View {
             }
             .padding(.bottom, 16)
         }
+        .toolbar {
+            ToolbarItem(placement: .topBarTrailing) {
+                Button {
+                    canvas = canvas
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.body)
+                }
+            }
+        }
+        .onAppear {
+            if !drawingData.isEmpty, let loaded = try? PKDrawing(data: drawingData) {
+                pkDrawing = loaded
+            }
+        }
+        .onChange(of: pkDrawing) { _, newDrawing in
+            drawingData = newDrawing.dataRepresentation()
+        }
+        .toolbarColorScheme(.light, for: .navigationBar)
+        .toolbarBackground(.visible, for: .navigationBar)
+        .tint(.black)
     }
 
     // MARK: - Undo-aware actions

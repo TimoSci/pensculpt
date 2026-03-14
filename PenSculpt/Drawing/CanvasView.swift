@@ -29,6 +29,10 @@ struct CanvasView: UIViewRepresentable {
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
         canvasView.tool = pkTool(for: selectedTool)
+        if canvasView.drawing != drawing {
+            canvasView.drawing = drawing
+            context.coordinator.resetTracking(to: drawing)
+        }
     }
 
     func makeCoordinator() -> Coordinator {
@@ -54,6 +58,11 @@ struct CanvasView: UIViewRepresentable {
 
         init(_ parent: CanvasView) {
             self.parent = parent
+        }
+
+        func resetTracking(to drawing: PKDrawing) {
+            previousDrawing = drawing
+            previousStrokeCount = drawing.strokes.count
         }
 
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {

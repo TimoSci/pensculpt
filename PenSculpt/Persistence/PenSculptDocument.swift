@@ -17,6 +17,7 @@ final class PenSculptDocument: ReferenceFileDocument, ObservableObject {
     static var writableContentTypes: [UTType] { [.pensculpt] }
 
     @Published var canvas: Canvas
+    @Published var drawingData: Data = Data()
 
     init() {
         self.canvas = Canvas()
@@ -44,11 +45,17 @@ final class PenSculptDocument: ReferenceFileDocument, ObservableObject {
 
         self.canvas = Canvas(size: size)
         self.canvas.strokes = strokes
+
+        if let drawingWrapper = wrapper["drawing.pkdrawing"],
+           let data = drawingWrapper.regularFileContents {
+            self.drawingData = data
+        }
     }
 
     struct Snapshot {
         let strokes: Data
         let metadata: Data
+        let drawing: Data
     }
 
     func snapshot(contentType: UTType) throws -> Snapshot {
@@ -59,7 +66,7 @@ final class PenSculptDocument: ReferenceFileDocument, ObservableObject {
             canvasHeight: canvas.size.height
         )
         let metaData = try JSONEncoder().encode(meta)
-        return Snapshot(strokes: strokesData, metadata: metaData)
+        return Snapshot(strokes: strokesData, metadata: metaData, drawing: drawingData)
     }
 
     func fileWrapper(snapshot: Snapshot, configuration: WriteConfiguration) throws -> FileWrapper {
@@ -73,6 +80,13 @@ final class PenSculptDocument: ReferenceFileDocument, ObservableObject {
             withContents: snapshot.metadata,
             preferredFilename: "metadata.json"
         )
+
+        if !snapshot.drawing.isEmpty {
+            directory.addRegularFile(
+                withContents: snapshot.drawing,
+                preferredFilename: "drawing.pkdrawing"
+            )
+        }
 
         // Placeholder for sculpt_objects/ — Stage 2 will populate this
         let sculptDir = FileWrapper(directoryWithFileWrappers: [:])
