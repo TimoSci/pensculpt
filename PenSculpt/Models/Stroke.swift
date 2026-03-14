@@ -14,14 +14,28 @@ struct Stroke: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     var points: [StrokePoint]
     var color: CodableColor
+    let boundingBox: CGRect
+
+    private enum CodingKeys: String, CodingKey {
+        case id, points, color
+    }
 
     init(id: UUID = UUID(), points: [StrokePoint], color: CodableColor = .black) {
         self.id = id
         self.points = points
         self.color = color
+        self.boundingBox = Self.computeBoundingBox(points)
     }
 
-    var boundingBox: CGRect {
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        points = try container.decode([StrokePoint].self, forKey: .points)
+        color = try container.decode(CodableColor.self, forKey: .color)
+        boundingBox = Self.computeBoundingBox(points)
+    }
+
+    private static func computeBoundingBox(_ points: [StrokePoint]) -> CGRect {
         guard let first = points.first else { return .zero }
         var minX = first.location.x
         var minY = first.location.y
