@@ -3,25 +3,19 @@ import PencilKit
 
 struct CanvasView: UIViewRepresentable {
     @Binding var drawing: PKDrawing
-    @Binding var tool: PKTool
-    var undoManager: UndoManager?
+    var selectedTool: DrawingTool
     var onStrokeCompleted: ((PKStroke) -> Void)?
     var onStrokeErased: ((_ oldDrawing: PKDrawing) -> Void)?
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PKCanvasView()
         canvasView.drawing = drawing
-        canvasView.tool = tool
+        canvasView.tool = pkTool(for: selectedTool)
         canvasView.drawingPolicy = .pencilOnly
         canvasView.backgroundColor = .white
         canvasView.isOpaque = true
         canvasView.delegate = context.coordinator
         canvasView.overrideUserInterfaceStyle = .light
-
-        // Wire PencilKit's built-in undo to our UndoManager
-        if let undoManager {
-            canvasView.undoManager?.removeAllActions()
-        }
 
         // Apple Pencil double-tap interaction
         let pencilInteraction = UIPencilInteraction()
@@ -32,13 +26,21 @@ struct CanvasView: UIViewRepresentable {
     }
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
-        if canvasView.tool.description != tool.description {
-            canvasView.tool = tool
-        }
+        let newTool = pkTool(for: selectedTool)
+        canvasView.tool = newTool
     }
 
     func makeCoordinator() -> Coordinator {
         Coordinator(self)
+    }
+
+    private func pkTool(for tool: DrawingTool) -> any PKTool {
+        switch tool {
+        case .pen:
+            return PKInkingTool(.pen, color: .black, width: 3)
+        case .eraser:
+            return PKEraserTool(.vector)
+        }
     }
 
     class Coordinator: NSObject, PKCanvasViewDelegate, UIPencilInteractionDelegate {
@@ -69,7 +71,6 @@ struct CanvasView: UIViewRepresentable {
         // MARK: - UIPencilInteractionDelegate
 
         func pencilInteractionDidTap(_ interaction: UIPencilInteraction) {
-            // Toggle between pen and eraser on Apple Pencil double-tap
             NotificationCenter.default.post(name: .pencilDoubleTap, object: nil)
         }
     }

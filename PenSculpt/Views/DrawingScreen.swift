@@ -12,8 +12,7 @@ struct DrawingScreen: View {
         ZStack(alignment: .bottom) {
             CanvasView(
                 drawing: $pkDrawing,
-                tool: pkToolBinding,
-                undoManager: undoManager,
+                selectedTool: selectedTool,
                 onStrokeCompleted: { pkStroke in
                     let stroke = StrokeConverter.convert(pkStroke)
                     addStrokeWithUndo(stroke)
@@ -87,19 +86,6 @@ struct DrawingScreen: View {
         }
     }
 
-    private var pkToolBinding: Binding<PKTool> {
-        Binding(
-            get: {
-                switch selectedTool {
-                case .pen:
-                    return PKInkingTool(.pen, color: .black, width: 3)
-                case .eraser:
-                    return PKEraserTool(.vector)
-                }
-            },
-            set: { _ in }
-        )
-    }
 }
 
 /// A reference type target for UndoManager registration (UndoManager requires AnyObject).
