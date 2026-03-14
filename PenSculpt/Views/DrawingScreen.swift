@@ -10,6 +10,7 @@ struct DrawingScreen: View {
     @State private var strokeOpacity: CGFloat = 1
     @State private var lastEraserType: DrawingTool = .eraser
     @State private var showToolbar = false
+    @State private var showSavedMessage = false
     @Environment(\.undoManager) private var undoManager
 
     var body: some View {
@@ -72,10 +73,26 @@ struct DrawingScreen: View {
             }
             .padding(.bottom, 16)
         }
+        .overlay(alignment: .top) {
+            if showSavedMessage {
+                Text("Saved!")
+                    .font(.subheadline.weight(.medium))
+                    .padding(.horizontal, 16)
+                    .padding(.vertical, 8)
+                    .background(.ultraThinMaterial, in: Capsule())
+                    .transition(.opacity.combined(with: .move(edge: .top)))
+                    .padding(.top, 60)
+            }
+        }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
                 Button {
                     canvas = canvas
+                    withAnimation { showSavedMessage = true }
+                    Task {
+                        try? await Task.sleep(for: .seconds(1.5))
+                        withAnimation { showSavedMessage = false }
+                    }
                 } label: {
                     Image(systemName: "square.and.arrow.down")
                         .font(.body)
