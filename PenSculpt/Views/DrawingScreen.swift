@@ -5,6 +5,8 @@ struct DrawingScreen: View {
     @Binding var canvas: Canvas
     @State private var pkDrawing = PKDrawing()
     @State private var selectedTool: DrawingTool = .pen
+    @State private var strokeWidth: CGFloat = 3
+    @State private var strokeOpacity: CGFloat = 1
     @State private var showToolbar = false
     @Environment(\.undoManager) private var undoManager
 
@@ -13,6 +15,8 @@ struct DrawingScreen: View {
             CanvasView(
                 drawing: $pkDrawing,
                 selectedTool: selectedTool,
+                strokeWidth: strokeWidth,
+                strokeOpacity: strokeOpacity,
                 onStrokeCompleted: { pkStroke in
                     let stroke = StrokeConverter.convert(pkStroke)
                     addStrokeWithUndo(stroke)
@@ -34,6 +38,8 @@ struct DrawingScreen: View {
             if showToolbar {
                 FloatingToolbar(
                     selectedTool: $selectedTool,
+                    strokeWidth: $strokeWidth,
+                    strokeOpacity: $strokeOpacity,
                     onUndo: { undoManager?.undo() },
                     onRedo: { undoManager?.redo() },
                     onClear: { clearWithUndo() }

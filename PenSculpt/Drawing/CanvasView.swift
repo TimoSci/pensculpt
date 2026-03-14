@@ -4,6 +4,8 @@ import PencilKit
 struct CanvasView: UIViewRepresentable {
     @Binding var drawing: PKDrawing
     var selectedTool: DrawingTool
+    var strokeWidth: CGFloat
+    var strokeOpacity: CGFloat
     var onStrokeCompleted: ((PKStroke) -> Void)?
     var onStrokeErased: ((_ oldDrawing: PKDrawing) -> Void)?
 
@@ -26,8 +28,7 @@ struct CanvasView: UIViewRepresentable {
     }
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
-        let newTool = pkTool(for: selectedTool)
-        canvasView.tool = newTool
+        canvasView.tool = pkTool(for: selectedTool)
     }
 
     func makeCoordinator() -> Coordinator {
@@ -37,7 +38,8 @@ struct CanvasView: UIViewRepresentable {
     private func pkTool(for tool: DrawingTool) -> any PKTool {
         switch tool {
         case .pen:
-            return PKInkingTool(.pen, color: .black, width: 3)
+            let color = UIColor.black.withAlphaComponent(strokeOpacity)
+            return PKInkingTool(.pen, color: color, width: strokeWidth)
         case .eraser:
             return PKEraserTool(.vector)
         }
