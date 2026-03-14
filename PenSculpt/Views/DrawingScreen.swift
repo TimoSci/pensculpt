@@ -134,11 +134,7 @@ struct DrawingScreen: View {
             }
         }
         .onChange(of: autosaveEnabled) { _, enabled in
-            if enabled {
-                documentCanvas = canvas
-                drawingSyncTask?.cancel()
-                drawingData = pkDrawing.dataRepresentation()
-            }
+            if enabled { flushToDocument() }
         }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -147,10 +143,14 @@ struct DrawingScreen: View {
 
     // MARK: - Save
 
-    private func saveToDocument() {
+    private func flushToDocument() {
         drawingSyncTask?.cancel()
-        drawingData = pkDrawing.dataRepresentation()
         documentCanvas = canvas
+        drawingData = pkDrawing.dataRepresentation()
+    }
+
+    private func saveToDocument() {
+        flushToDocument()
         withAnimation { showSavedMessage = true }
         Task {
             try? await Task.sleep(for: .seconds(1.5))
