@@ -2,8 +2,9 @@ import SwiftUI
 import PencilKit
 
 struct DrawingScreen: View {
-    @Binding var canvas: Canvas
+    @Binding var documentCanvas: Canvas
     @Binding var drawingData: Data
+    @State private var canvas: Canvas
     @State private var pkDrawing = PKDrawing()
     @State private var selectedTool: DrawingTool = .pen
     @State private var strokeWidth: CGFloat = 3
@@ -11,8 +12,15 @@ struct DrawingScreen: View {
     @State private var lastEraserType: DrawingTool = .eraser
     @State private var showToolbar = false
     @State private var showSavedMessage = false
+    @State private var autosaveEnabled = true
     @State private var drawingSyncTask: Task<Void, Never>?
     @Environment(\.undoManager) private var undoManager
+
+    init(canvas: Binding<Canvas>, drawingData: Binding<Data>) {
+        _documentCanvas = canvas
+        _drawingData = drawingData
+        _canvas = State(initialValue: canvas.wrappedValue)
+    }
 
     var body: some View {
         ZStack(alignment: .bottom) {
@@ -87,18 +95,23 @@ struct DrawingScreen: View {
         }
         .toolbar {
             ToolbarItem(placement: .topBarTrailing) {
-                Button {
-                    drawingSyncTask?.cancel()
-                    drawingData = pkDrawing.dataRepresentation()
-                    canvas = canvas
-                    withAnimation { showSavedMessage = true }
-                    Task {
-                        try? await Task.sleep(for: .seconds(1.5))
-                        withAnimation { showSavedMessage = false }
+                HStack(spacing: 12) {
+                    Button {
+                        withAnimation { autosaveEnabled.toggle() }
+                    } label: {
+                        Image(systemName: autosaveEnabled
+                              ? "arrow.triangle.2.circlepath.circle.fill"
+                              : "arrow.triangle.2.circlepath.circle")
+                            .font(.body)
+                            .foregroundStyle(autosaveEnabled ? .primary : .secondary)
                     }
-                } label: {
-                    Image(systemName: "square.and.arrow.down")
-                        .font(.body)
+
+                    Button {
+                        saveToDocument()
+                    } label: {
+                        Image(systemName: "square.and.arrow.down")
+                            .font(.body)
+                    }
                 }
             }
         }
@@ -107,7 +120,12 @@ struct DrawingScreen: View {
                 pkDrawing = loaded
             }
         }
+        .onChange(of: canvas) { _, _ in
+            guard autosaveEnabled else { return }
+            documentCanvas = canvas
+        }
         .onChange(of: pkDrawing) { _, newDrawing in
+            guard autosaveEnabled else { return }
             drawingSyncTask?.cancel()
             drawingSyncTask = Task {
                 try? await Task.sleep(for: .milliseconds(500))
@@ -115,9 +133,29 @@ struct DrawingScreen: View {
                 drawingData = newDrawing.dataRepresentation()
             }
         }
+        .onChange(of: autosaveEnabled) { _, enabled in
+            if enabled {
+                documentCanvas = canvas
+                drawingSyncTask?.cancel()
+                drawingData = pkDrawing.dataRepresentation()
+            }
+        }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .tint(.black)
+    }
+
+    // MARK: - Save
+
+    private func saveToDocument() {
+        drawingSyncTask?.cancel()
+        drawingData = pkDrawing.dataRepresentation()
+        documentCanvas = canvas
+        withAnimation { showSavedMessage = true }
+        Task {
+            try? await Task.sleep(for: .seconds(1.5))
+            withAnimation { showSavedMessage = false }
+        }
     }
 
     // MARK: - Undo-aware actions
