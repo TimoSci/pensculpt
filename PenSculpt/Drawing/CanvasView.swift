@@ -42,6 +42,8 @@ struct CanvasView: UIViewRepresentable {
             return PKInkingTool(.pen, color: color, width: strokeWidth)
         case .eraser:
             return PKEraserTool(.vector)
+        case .pixelEraser:
+            return PKEraserTool(.bitmap, width: strokeWidth)
         }
     }
 

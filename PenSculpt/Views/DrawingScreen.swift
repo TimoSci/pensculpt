@@ -7,6 +7,7 @@ struct DrawingScreen: View {
     @State private var selectedTool: DrawingTool = .pen
     @State private var strokeWidth: CGFloat = 3
     @State private var strokeOpacity: CGFloat = 1
+    @State private var lastEraserType: DrawingTool = .eraser
     @State private var showToolbar = false
     @Environment(\.undoManager) private var undoManager
 
@@ -32,7 +33,16 @@ struct DrawingScreen: View {
             )
             .ignoresSafeArea()
             .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in
-                selectedTool = selectedTool == .pen ? .eraser : .pen
+                if selectedTool == .pen {
+                    selectedTool = lastEraserType
+                } else {
+                    selectedTool = .pen
+                }
+            }
+            .onChange(of: selectedTool) { _, newTool in
+                if newTool.isEraser {
+                    lastEraserType = newTool
+                }
             }
 
             if showToolbar {
