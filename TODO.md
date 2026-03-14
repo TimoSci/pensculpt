@@ -24,7 +24,7 @@ Status legend:
 - [x] Unit tests (StrokePoint, Stroke, Canvas, StrokeConverter, Document) — O[ ] S[ ]
 - [x] Drawing basics guide — O[ ] S[ ]
 - [x] Apple Pencil double-tap toggle (pen/eraser) — O[ ] S[ ]
-- [ ] Apple Pencil hover cursor preview — O[ ] S[ ]
+- [x] Apple Pencil hover cursor preview (provided by PencilKit) — O[x] S[x]
 
 ## Stage 2: Sculpt Mode
 
