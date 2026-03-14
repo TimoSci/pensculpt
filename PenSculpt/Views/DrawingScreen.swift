@@ -13,6 +13,8 @@ struct DrawingScreen: View {
     @State private var showToolbar = false
     @State private var showSavedMessage = false
     @State private var autosaveEnabled = true
+    @State private var appMode: AppMode = .draw
+    @State private var lassoPoints: [CGPoint] = []
     @State private var drawingSyncTask: Task<Void, Never>?
     @Environment(\.undoManager) private var undoManager
 
@@ -24,112 +26,20 @@ struct DrawingScreen: View {
 
     var body: some View {
         ZStack(alignment: .bottom) {
-            CanvasView(
-                drawing: $pkDrawing,
-                selectedTool: selectedTool,
-                strokeWidth: strokeWidth,
-                strokeOpacity: strokeOpacity,
-                onStrokeCompleted: { pkStroke in
-                    let stroke = StrokeConverter.convert(pkStroke)
-                    addStrokeWithUndo(stroke)
-                },
-                onStrokeErased: { removedIndices in
-                    for index in removedIndices.reversed() {
-                        guard index < canvas.strokes.count else { continue }
-                        removeStrokeWithUndo(canvas.strokes[index])
-                    }
-                }
-            )
-            .ignoresSafeArea()
-            .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in
-                if selectedTool == .pen {
-                    selectedTool = lastEraserType
-                } else {
-                    selectedTool = .pen
-                }
-            }
-            .onChange(of: selectedTool) { _, newTool in
-                if newTool.isEraser {
-                    lastEraserType = newTool
-                }
-            }
-
-            if showToolbar {
-                FloatingToolbar(
-                    selectedTool: $selectedTool,
-                    strokeWidth: $strokeWidth,
-                    strokeOpacity: $strokeOpacity,
-                    onUndo: { undoManager?.undo() },
-                    onRedo: { undoManager?.redo() },
-                    onClear: { clearWithUndo() }
-                )
-                .padding(.bottom, 60)
-                .transition(.move(edge: .bottom).combined(with: .opacity))
-            }
-
-            // Toggle button — always visible
-            Button {
-                withAnimation(.easeInOut(duration: 0.2)) {
-                    showToolbar.toggle()
-                }
-            } label: {
-                Image(systemName: showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
-                    .font(.title2)
-                    .padding(12)
-                    .background(.ultraThinMaterial, in: Circle())
-            }
-            .padding(.bottom, 16)
+            canvasLayer
+            selectModeOverlay
+            if appMode == .draw { drawModeControls }
         }
-        .overlay(alignment: .top) {
-            if showSavedMessage {
-                Text("Saved!")
-                    .font(.subheadline.weight(.medium))
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 8)
-                    .background(.ultraThinMaterial, in: Capsule())
-                    .transition(.opacity.combined(with: .move(edge: .top)))
-                    .padding(.top, 60)
-            }
-        }
-        .toolbar {
-            ToolbarItem(placement: .topBarTrailing) {
-                HStack(spacing: 12) {
-                    Button {
-                        withAnimation { autosaveEnabled.toggle() }
-                    } label: {
-                        Image(systemName: autosaveEnabled
-                              ? "arrow.triangle.2.circlepath.circle.fill"
-                              : "arrow.triangle.2.circlepath.circle")
-                            .font(.body)
-                            .foregroundStyle(autosaveEnabled ? .primary : .secondary)
-                    }
-
-                    Button {
-                        saveToDocument()
-                    } label: {
-                        Image(systemName: "square.and.arrow.down")
-                            .font(.body)
-                    }
-                }
-            }
-        }
-        .onAppear {
-            if !drawingData.isEmpty, let loaded = try? PKDrawing(data: drawingData) {
-                pkDrawing = loaded
-            }
-        }
+        .overlay(alignment: .top) { savedMessageOverlay }
+        .toolbar { navBarItems }
+        .onAppear { loadDrawingData() }
         .onChange(of: canvas) { _, _ in
             guard autosaveEnabled else { return }
             documentCanvas = canvas
         }
         .onChange(of: pkDrawing) { _, newDrawing in
             guard autosaveEnabled else { return }
-            drawingSyncTask?.cancel()
-            drawingSyncTask = Task {
-                try? await Task.sleep(for: .milliseconds(500))
-                guard !Task.isCancelled else { return }
-                drawingData = newDrawing.dataRepresentation()
-            }
+            debounceSyncDrawing(newDrawing)
         }
         .onChange(of: autosaveEnabled) { _, enabled in
             if enabled { flushToDocument() }
@@ -137,6 +47,151 @@ struct DrawingScreen: View {
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .tint(.black)
+    }
+
+    // MARK: - Subviews
+
+    @ViewBuilder
+    private var selectModeOverlay: some View {
+        if appMode == .select {
+            LassoOverlay(
+                lassoPoints: $lassoPoints,
+                onLassoCompleted: { _ in
+                    // Increment 2: hit-test strokes inside lasso
+                }
+            )
+            .ignoresSafeArea()
+        }
+    }
+
+    @ViewBuilder
+    private var savedMessageOverlay: some View {
+        if showSavedMessage {
+            Text("Saved!")
+                .font(.subheadline.weight(.medium))
+                .padding(.horizontal, 16)
+                .padding(.vertical, 8)
+                .background(.ultraThinMaterial, in: Capsule())
+                .transition(.opacity.combined(with: .move(edge: .top)))
+                .padding(.top, 60)
+        }
+    }
+
+    private var navBarItems: some ToolbarContent {
+        ToolbarItem(placement: .topBarTrailing) {
+            HStack(spacing: 12) {
+                Button {
+                    withAnimation(.easeInOut(duration: 0.2)) {
+                        if appMode == .draw {
+                            appMode = .select
+                        } else {
+                            appMode = .draw
+                            lassoPoints = []
+                        }
+                    }
+                } label: {
+                    Image(systemName: appMode == .draw ? "lasso" : "pencil.tip")
+                        .font(.title3)
+                        .foregroundStyle(.blue)
+                }
+
+                Button {
+                    withAnimation { autosaveEnabled.toggle() }
+                } label: {
+                    Image(systemName: autosaveEnabled
+                          ? "arrow.triangle.2.circlepath.circle.fill"
+                          : "arrow.triangle.2.circlepath.circle")
+                        .font(.body)
+                        .foregroundStyle(autosaveEnabled ? .primary : .secondary)
+                }
+
+                Button {
+                    saveToDocument()
+                } label: {
+                    Image(systemName: "square.and.arrow.down")
+                        .font(.body)
+                }
+            }
+        }
+    }
+
+    private var canvasLayer: some View {
+        CanvasView(
+            drawing: $pkDrawing,
+            selectedTool: selectedTool,
+            strokeWidth: strokeWidth,
+            strokeOpacity: strokeOpacity,
+            onStrokeCompleted: { pkStroke in
+                let stroke = StrokeConverter.convert(pkStroke)
+                addStrokeWithUndo(stroke)
+            },
+            onStrokeErased: { removedIndices in
+                for index in removedIndices.reversed() {
+                    guard index < canvas.strokes.count else { continue }
+                    removeStrokeWithUndo(canvas.strokes[index])
+                }
+            },
+            isInteractive: appMode == .draw
+        )
+        .ignoresSafeArea()
+        .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in
+            guard appMode == .draw else { return }
+            if selectedTool == .pen {
+                selectedTool = lastEraserType
+            } else {
+                selectedTool = .pen
+            }
+        }
+        .onChange(of: selectedTool) { _, newTool in
+            if newTool.isEraser {
+                lastEraserType = newTool
+            }
+        }
+    }
+
+    @ViewBuilder
+    private var drawModeControls: some View {
+        if showToolbar {
+            FloatingToolbar(
+                selectedTool: $selectedTool,
+                strokeWidth: $strokeWidth,
+                strokeOpacity: $strokeOpacity,
+                onUndo: { undoManager?.undo() },
+                onRedo: { undoManager?.redo() },
+                onClear: { clearWithUndo() }
+            )
+            .padding(.bottom, 60)
+            .transition(.move(edge: .bottom).combined(with: .opacity))
+        }
+
+        Button {
+            withAnimation(.easeInOut(duration: 0.2)) {
+                showToolbar.toggle()
+            }
+        } label: {
+            Image(systemName: showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
+                .font(.title2)
+                .padding(12)
+                .background(.ultraThinMaterial, in: Circle())
+        }
+        .padding(.bottom, 16)
+    }
+
+    // MARK: - Lifecycle
+
+    private func loadDrawingData() {
+        if !drawingData.isEmpty, let loaded = try? PKDrawing(data: drawingData) {
+            pkDrawing = loaded
+        }
+    }
+
+    private func debounceSyncDrawing(_ newDrawing: PKDrawing) {
+        drawingSyncTask?.cancel()
+        drawingSyncTask = Task {
+            try? await Task.sleep(for: .milliseconds(500))
+            guard !Task.isCancelled else { return }
+            drawingData = newDrawing.dataRepresentation()
+        }
     }
 
     // MARK: - Save

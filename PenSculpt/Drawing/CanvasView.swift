@@ -8,6 +8,7 @@ struct CanvasView: UIViewRepresentable {
     var strokeOpacity: CGFloat
     var onStrokeCompleted: ((PKStroke) -> Void)?
     var onStrokeErased: ((_ removedIndices: [Int]) -> Void)?
+    var isInteractive: Bool = true
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PKCanvasView()
@@ -28,6 +29,7 @@ struct CanvasView: UIViewRepresentable {
     }
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
+        canvasView.isUserInteractionEnabled = isInteractive
         canvasView.tool = pkTool(for: selectedTool)
         if canvasView.drawing != drawing {
             canvasView.drawing = drawing
