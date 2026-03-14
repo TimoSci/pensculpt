@@ -79,7 +79,7 @@ struct CanvasView: UIViewRepresentable {
                 var removedIndices: [Int] = []
                 var ci = 0
                 for pi in 0..<previous.count {
-                    if ci < current.count && previous[pi] == current[ci] {
+                    if ci < current.count && previous[pi].renderBounds == current[ci].renderBounds {
                         ci += 1
                     } else {
                         removedIndices.append(pi)
