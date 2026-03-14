@@ -38,23 +38,23 @@ struct DrawingScreen: View {
                     onRedo: { undoManager?.redo() },
                     onClear: { clearWithUndo() }
                 )
-                .padding(.bottom, 40)
+                .padding(.bottom, 60)
                 .transition(.move(edge: .bottom).combined(with: .opacity))
             }
-        }
-        .toolbar {
-            ToolbarItem(placement: .bottomBar) {
-                Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        showToolbar.toggle()
-                    }
-                } label: {
-                    Image(systemName: showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
-                        .font(.title2)
+
+            // Toggle button — always visible
+            Button {
+                withAnimation(.easeInOut(duration: 0.2)) {
+                    showToolbar.toggle()
                 }
+            } label: {
+                Image(systemName: showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
+                    .font(.title2)
+                    .padding(12)
+                    .background(.ultraThinMaterial, in: Circle())
             }
+            .padding(.bottom, 16)
         }
-        .toolbarBackground(.hidden, for: .bottomBar)
     }
 
     // MARK: - Undo-aware actions
