@@ -47,4 +47,15 @@ final class StrokeTests: XCTestCase {
         XCTAssertEqual(decoded.points.count, 1)
         XCTAssertEqual(decoded.color, .black)
     }
+
+    func testBoundingBoxPreservedAfterCodable() throws {
+        let points = [
+            StrokePoint(location: CGPoint(x: 10, y: 20), pressure: 1, tilt: 0, azimuth: 0, timestamp: 0),
+            StrokePoint(location: CGPoint(x: 50, y: 80), pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ]
+        let stroke = Stroke(points: points)
+        let data = try JSONEncoder().encode(stroke)
+        let decoded = try JSONDecoder().decode(Stroke.self, from: data)
+        XCTAssertEqual(decoded.boundingBox, stroke.boundingBox)
+    }
 }

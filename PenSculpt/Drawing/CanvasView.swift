@@ -51,6 +51,19 @@ struct CanvasView: UIViewRepresentable {
         }
     }
 
+    static func removedStrokeIndices(previous: [PKStroke], current: [PKStroke]) -> [Int] {
+        var removedIndices: [Int] = []
+        var ci = 0
+        for pi in 0..<previous.count {
+            if ci < current.count && previous[pi].renderBounds == current[ci].renderBounds {
+                ci += 1
+            } else {
+                removedIndices.append(pi)
+            }
+        }
+        return removedIndices
+    }
+
     class Coordinator: NSObject, PKCanvasViewDelegate, UIPencilInteractionDelegate {
         let parent: CanvasView
         private var previousStrokeCount = 0
@@ -73,18 +86,10 @@ struct CanvasView: UIViewRepresentable {
                let lastStroke = currentDrawing.strokes.last {
                 parent.onStrokeCompleted?(lastStroke)
             } else if currentCount < previousStrokeCount {
-                // Linear scan to find which indices were removed
-                let previous = previousDrawing.strokes
-                let current = currentDrawing.strokes
-                var removedIndices: [Int] = []
-                var ci = 0
-                for pi in 0..<previous.count {
-                    if ci < current.count && previous[pi].renderBounds == current[ci].renderBounds {
-                        ci += 1
-                    } else {
-                        removedIndices.append(pi)
-                    }
-                }
+                let removedIndices = CanvasView.removedStrokeIndices(
+                    previous: previousDrawing.strokes,
+                    current: currentDrawing.strokes
+                )
                 parent.onStrokeErased?(removedIndices)
             }
 

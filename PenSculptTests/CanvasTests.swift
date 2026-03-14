@@ -37,6 +37,30 @@ final class CanvasTests: XCTestCase {
         XCTAssertTrue(canvas.strokes.isEmpty)
     }
 
+    func testRemoveStrokeNonexistent() {
+        var canvas = Canvas()
+        let stroke = Stroke(points: [
+            StrokePoint(location: .zero, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ])
+        canvas.addStroke(stroke)
+        canvas.removeStroke(id: UUID())
+        XCTAssertEqual(canvas.strokes.count, 1)
+    }
+
+    func testRemoveStrokePreservesOthers() {
+        var canvas = Canvas()
+        let s1 = Stroke(points: [])
+        let s2 = Stroke(points: [])
+        let s3 = Stroke(points: [])
+        canvas.addStroke(s1)
+        canvas.addStroke(s2)
+        canvas.addStroke(s3)
+        canvas.removeStroke(id: s2.id)
+        XCTAssertEqual(canvas.strokes.count, 2)
+        XCTAssertEqual(canvas.strokes[0].id, s1.id)
+        XCTAssertEqual(canvas.strokes[1].id, s3.id)
+    }
+
     func testCodable() throws {
         var canvas = Canvas()
         canvas.addStroke(Stroke(points: [
