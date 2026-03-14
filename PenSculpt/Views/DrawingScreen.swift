@@ -33,12 +33,10 @@ struct DrawingScreen: View {
                     let stroke = StrokeConverter.convert(pkStroke)
                     addStrokeWithUndo(stroke)
                 },
-                onStrokeErased: { oldDrawing in
-                    // PencilKit handled the visual erase; sync our model
-                    let currentIDs = Set(StrokeConverter.convertAll(pkDrawing).map(\.id))
-                    let removedStrokes = canvas.strokes.filter { !currentIDs.contains($0.id) }
-                    for removed in removedStrokes {
-                        removeStrokeWithUndo(removed)
+                onStrokeErased: { removedIndices in
+                    for index in removedIndices.reversed() {
+                        guard index < canvas.strokes.count else { continue }
+                        removeStrokeWithUndo(canvas.strokes[index])
                     }
                 }
             )

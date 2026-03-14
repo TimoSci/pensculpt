@@ -7,7 +7,7 @@ struct CanvasView: UIViewRepresentable {
     var strokeWidth: CGFloat
     var strokeOpacity: CGFloat
     var onStrokeCompleted: ((PKStroke) -> Void)?
-    var onStrokeErased: ((_ oldDrawing: PKDrawing) -> Void)?
+    var onStrokeErased: ((_ removedIndices: [Int]) -> Void)?
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PKCanvasView()
@@ -73,7 +73,19 @@ struct CanvasView: UIViewRepresentable {
                let lastStroke = currentDrawing.strokes.last {
                 parent.onStrokeCompleted?(lastStroke)
             } else if currentCount < previousStrokeCount {
-                parent.onStrokeErased?(previousDrawing)
+                // Linear scan to find which indices were removed
+                let previous = previousDrawing.strokes
+                let current = currentDrawing.strokes
+                var removedIndices: [Int] = []
+                var ci = 0
+                for pi in 0..<previous.count {
+                    if ci < current.count && previous[pi] == current[ci] {
+                        ci += 1
+                    } else {
+                        removedIndices.append(pi)
+                    }
+                }
+                parent.onStrokeErased?(removedIndices)
             }
 
             parent.drawing = currentDrawing
