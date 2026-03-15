@@ -4,7 +4,8 @@ import simd
 enum ShapeInflater {
 
     /// Inflates a 2D contour into a closed 3D mesh by using edge distance as depth.
-    static func inflate(strokes: [Stroke], config: SculptConfig = .default, gridSpacing: CGFloat = 3) -> Mesh {
+    static func inflate(strokes: [Stroke], config: SculptConfig = .default) -> Mesh {
+        let gridSpacing = config.gridSpacing
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
         let contour = ContourAnalyzer.extractContour(from: strokes)
         guard contour.count >= 3 else { return Mesh() }
