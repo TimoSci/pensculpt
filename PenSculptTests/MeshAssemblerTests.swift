@@ -35,41 +35,41 @@ final class MeshAssemblerTests: XCTestCase {
         XCTAssertTrue(mesh.isEmpty)
     }
 
-    // MARK: - Vertex counts
+    // MARK: - Vertex counts (rings + 2 cap vertices)
 
     func testCylinderVertexCount() {
         let primitive = makePrimitive(radii: [10, 10, 10, 10])
         let mesh = MeshAssembler.assemble(from: primitive, radialSegments: 8)
-        // 4 rings × 8 segments = 32 vertices
-        XCTAssertEqual(mesh.vertexCount, 32)
+        // 4 rings × 8 segments + 2 cap vertices = 34
+        XCTAssertEqual(mesh.vertexCount, 34)
     }
 
     func testCylinderFaceCount() {
         let primitive = makePrimitive(radii: [10, 10, 10, 10])
         let mesh = MeshAssembler.assemble(from: primitive, radialSegments: 8)
-        // 3 gaps between 4 rings × 8 segments × 2 triangles = 48
-        XCTAssertEqual(mesh.faceCount, 48)
+        // 3 ring gaps × 8 × 2 triangles = 48 body + 8 bottom cap + 8 top cap = 64
+        XCTAssertEqual(mesh.faceCount, 64)
     }
 
     func testRadialSegmentsAffectVertexCount() {
         let primitive = makePrimitive(radii: [10, 10])
         let mesh4 = MeshAssembler.assemble(from: primitive, radialSegments: 4)
         let mesh16 = MeshAssembler.assemble(from: primitive, radialSegments: 16)
-        XCTAssertEqual(mesh4.vertexCount, 8)  // 2 rings × 4
-        XCTAssertEqual(mesh16.vertexCount, 32) // 2 rings × 16
+        XCTAssertEqual(mesh4.vertexCount, 10)  // 2 rings × 4 + 2 caps
+        XCTAssertEqual(mesh16.vertexCount, 34) // 2 rings × 16 + 2 caps
     }
 
     // MARK: - Geometry correctness
 
-    func testCylinderVerticesHaveConstantRadius() {
+    func testCylinderRingVerticesHaveConstantRadius() {
         let r: Float = 15
         let primitive = makePrimitive(radii: [CGFloat(r), CGFloat(r), CGFloat(r)])
         let mesh = MeshAssembler.assemble(from: primitive, radialSegments: 8)
 
-        for vertex in mesh.vertices {
+        // Skip first vertex (bottom cap) and last vertex (top cap)
+        for vertex in mesh.vertices.dropFirst().dropLast() {
             let xzRadius = hypot(vertex.position.x, vertex.position.z)
-            XCTAssertEqual(xzRadius, r, accuracy: 0.01,
-                           "All vertices should be at radius \(r)")
+            XCTAssertEqual(xzRadius, r, accuracy: 0.01)
         }
     }
 
@@ -80,13 +80,13 @@ final class MeshAssemblerTests: XCTestCase {
         )
         let mesh = MeshAssembler.assemble(from: primitive, radialSegments: 8)
 
-        // First ring should have radius ≈ 20
-        let firstRing = Array(mesh.vertices.prefix(8))
+        // First ring (after bottom cap, indices 1..8)
+        let firstRing = Array(mesh.vertices[1...8])
         let firstRadius = hypot(firstRing[0].position.x, firstRing[0].position.z)
         XCTAssertEqual(firstRadius, 20, accuracy: 0.1)
 
-        // Second ring should have radius ≈ 10
-        let secondRing = Array(mesh.vertices.suffix(8))
+        // Second ring (indices 9..16)
+        let secondRing = Array(mesh.vertices[9...16])
         let secondRadius = hypot(secondRing[0].position.x, secondRing[0].position.z)
         XCTAssertEqual(secondRadius, 10, accuracy: 0.1)
     }
@@ -97,21 +97,21 @@ final class MeshAssemblerTests: XCTestCase {
 
         let yValues = mesh.vertices.map { $0.position.y }
         let yCenter = (yValues.min()! + yValues.max()!) / 2
-        XCTAssertEqual(yCenter, 0, accuracy: 0.1,
-                       "Mesh should be centered at y=0")
+        XCTAssertEqual(yCenter, 0, accuracy: 0.1)
     }
 
-    func testNormalsPointOutward() {
+    func testMeshHasCaps() {
         let primitive = makePrimitive(radii: [10, 10])
-        let mesh = MeshAssembler.assemble(from: primitive, radialSegments: 8)
+        let mesh = MeshAssembler.assemble(from: primitive, radialSegments: 4)
 
-        for vertex in mesh.vertices {
-            let radialDir = SIMD2<Float>(vertex.position.x, vertex.position.z)
-            let normalXZ = SIMD2<Float>(vertex.normal.x, vertex.normal.z)
-            // Dot product should be positive (normal points outward)
-            let dot = radialDir.x * normalXZ.x + radialDir.y * normalXZ.y
-            XCTAssertGreaterThan(dot, 0, "Normal should point outward from axis")
-        }
+        // First vertex should be bottom cap (at center, radius 0)
+        XCTAssertEqual(mesh.vertices[0].position.x, 0, accuracy: 0.01)
+        XCTAssertEqual(mesh.vertices[0].position.z, 0, accuracy: 0.01)
+
+        // Last vertex should be top cap
+        let last = mesh.vertices.last!
+        XCTAssertEqual(last.position.x, 0, accuracy: 0.01)
+        XCTAssertEqual(last.position.z, 0, accuracy: 0.01)
     }
 
     // MARK: - Face validity

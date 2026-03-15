@@ -4,7 +4,7 @@ import simd
 enum MeshAssembler {
 
     /// Generates a 3D mesh by revolving the skeleton segment's radius profile around its axis.
-    static func assemble(from primitive: FittedPrimitive, radialSegments: Int = 16) -> Mesh {
+    static func assemble(from primitive: FittedPrimitive, radialSegments: Int = 24) -> Mesh {
         let points = primitive.segment.points
         guard points.count >= 2 else { return Mesh() }
 
@@ -17,7 +17,6 @@ enum MeshAssembler {
             distances.append(distances[i - 1] + dist)
         }
 
-        // Center vertically
         let totalLength = distances.last!
         let yOffset = totalLength / 2
 
@@ -26,11 +25,16 @@ enum MeshAssembler {
 
         let n = radialSegments
 
-        for (ringIdx, skelPoint) in points.enumerated() {
-            let y = distances[ringIdx] - yOffset
-            let radius = Float(skelPoint.radius)
+        // Bottom cap vertex (center point at the bottom)
+        let bottomY = -(distances[0] - yOffset)
+        vertices.append(MeshVertex(position: SIMD3(0, bottomY, 0), normal: SIMD3(0, -1, 0)))
+        let bottomCapIdx = UInt32(0)
 
-            // Compute profile slope for normals
+        // Generate rings
+        for (ringIdx, skelPoint) in points.enumerated() {
+            // Negate Y so the shape matches screen orientation (top=top)
+            let y = -(distances[ringIdx] - yOffset)
+            let radius = Float(skelPoint.radius)
             let slope = profileSlope(at: ringIdx, points: points, distances: distances)
 
             for seg in 0..<n {
@@ -38,20 +42,39 @@ enum MeshAssembler {
                 let cosA = cos(angle)
                 let sinA = sin(angle)
                 let position = SIMD3<Float>(radius * cosA, y, radius * sinA)
-                let normal = normalize(SIMD3<Float>(cosA, -slope, sinA))
+                let normal = normalize(SIMD3<Float>(cosA, slope, sinA))
                 vertices.append(MeshVertex(position: position, normal: normal))
             }
 
-            // Connect to previous ring with triangle strip
+            // Connect to previous ring
             if ringIdx > 0 {
-                let prev = UInt32((ringIdx - 1) * n)
-                let curr = UInt32(ringIdx * n)
+                let prevRing = UInt32(1 + (ringIdx - 1) * n) // +1 for bottom cap vertex
+                let currRing = UInt32(1 + ringIdx * n)
                 for seg in 0..<UInt32(n) {
                     let next = (seg + 1) % UInt32(n)
-                    faces.append(MeshFace(indices: SIMD3(prev + seg, curr + seg, curr + next)))
-                    faces.append(MeshFace(indices: SIMD3(prev + seg, curr + next, prev + next)))
+                    faces.append(MeshFace(indices: SIMD3(prevRing + seg, currRing + next, currRing + seg)))
+                    faces.append(MeshFace(indices: SIMD3(prevRing + seg, prevRing + next, currRing + next)))
                 }
             }
+        }
+
+        // Top cap vertex (center point at the top)
+        let topY = -(distances[points.count - 1] - yOffset)
+        vertices.append(MeshVertex(position: SIMD3(0, topY, 0), normal: SIMD3(0, 1, 0)))
+        let topCapIdx = UInt32(vertices.count - 1)
+
+        // Bottom cap faces (fan from center to first ring)
+        let firstRing = UInt32(1)
+        for seg in 0..<UInt32(n) {
+            let next = (seg + 1) % UInt32(n)
+            faces.append(MeshFace(indices: SIMD3(bottomCapIdx, firstRing + seg, firstRing + next)))
+        }
+
+        // Top cap faces (fan from center to last ring)
+        let lastRing = UInt32(1 + (points.count - 1) * n)
+        for seg in 0..<UInt32(n) {
+            let next = (seg + 1) % UInt32(n)
+            faces.append(MeshFace(indices: SIMD3(topCapIdx, lastRing + next, lastRing + seg)))
         }
 
         return Mesh(vertices: vertices, faces: faces)

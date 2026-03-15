@@ -3,14 +3,14 @@ import Foundation
 enum SkeletonExtractor {
 
     /// Extracts the skeleton directly from stroke points (preserves drawn profile detail).
-    static func extract(from strokes: [Stroke], sampleCount: Int = 40) -> Skeleton {
+    static func extract(from strokes: [Stroke], sampleCount: Int = 60) -> Skeleton {
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
         return extract(fromPoints: allPoints, sampleCount: sampleCount)
     }
 
     /// Extracts the medial axis skeleton from a set of 2D points.
     /// Samples cross-sections along the principal axis to find midpoints and radii.
-    static func extract(fromPoints points: [CGPoint], sampleCount: Int = 40) -> Skeleton {
+    static func extract(fromPoints points: [CGPoint], sampleCount: Int = 60) -> Skeleton {
         guard points.count >= 3 else {
             return Skeleton(points: [], axis: .zero)
         }
@@ -27,7 +27,7 @@ enum SkeletonExtractor {
             return Skeleton(points: [], axis: axis)
         }
 
-        let bandWidth = (maxProj - minProj) / CGFloat(sampleCount) * 1.5
+        let bandWidth = (maxProj - minProj) / CGFloat(sampleCount) * 2.5
         var skeletonPoints: [SkeletonPoint] = []
 
         for i in 0..<sampleCount {
@@ -51,10 +51,12 @@ enum SkeletonExtractor {
                 x: c.x + proj * axis.dx + midPerp * perp.dx,
                 y: c.y + proj * axis.dy + midPerp * perp.dy
             )
-            skeletonPoints.append(SkeletonPoint(position: position, radius: max(radius, 0.1)))
+            // Minimum radius: 2% of the shape's perpendicular extent
+            let minRadius = (maxProj - minProj) * 0.02
+            skeletonPoints.append(SkeletonPoint(position: position, radius: max(radius, minRadius)))
         }
 
-        let smoothed = smooth(skeletonPoints, windowSize: 3)
+        let smoothed = smooth(skeletonPoints, windowSize: 7)
         return Skeleton(points: smoothed, axis: axis)
     }
 
