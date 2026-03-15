@@ -19,6 +19,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     var strokes: [Stroke] = []
     var sculptObject: SculptObject?
+    var config: SculptConfig = .default
 
     init?(device: MTLDevice) {
         self.device = device
@@ -62,6 +63,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
+    
     func draw(in view: MTKView) {
         guard let drawable = view.currentDrawable,
               let descriptor = view.currentRenderPassDescriptor,
@@ -123,6 +125,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         encoder.setCullMode(.back)
         encoder.setFrontFacing(.counterClockwise)
 
+        if config.displayMode == "wireframe" {
+            encoder.setTriangleFillMode(.lines)
+        }
+
         encoder.drawIndexedPrimitives(
             type: .triangle,
             indexCount: indexData.count,
@@ -151,7 +157,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             near: -radius * 10, far: radius * 10
         )
         // Slight tilt so the 3D depth is visible (not a flat front view)
-        let tilt = rotationX(-0.55) // ~30 degrees downward
+        let tilt = rotationX(-config.cameraTilt)
         let view = tilt * translationMatrix(-center.x, -center.y, -center.z)
         return proj * view
     }

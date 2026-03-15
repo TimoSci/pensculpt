@@ -297,6 +297,21 @@ final class PipelineVisualTests: XCTestCase {
         runDiagnostic(name: "hand_vase", strokes: handDrawnVaseStrokes)
     }
 
+    func testCircleDepthRatio() {
+        let strokes = handDrawnCircleStrokes
+        let obj = InferencePipeline.infer(from: strokes)
+        let positions = obj.mesh.vertices.map(\.position)
+        let xs = positions.map(\.x), ys = positions.map(\.y), zs = positions.map(\.z)
+        let xRange = xs.max()! - xs.min()!
+        let yRange = ys.max()! - ys.min()!
+        let zRange = zs.max()! - zs.min()!
+        print("🔵 Circle mesh: X=\(xRange) Y=\(yRange) Z=\(zRange)")
+        print("🔵 Z/X ratio: \(zRange/xRange) (should be ~1.0 for sphere)")
+        print("🔵 Z/Y ratio: \(zRange/yRange) (should be ~1.0 for sphere)")
+        // For a sphere, all three extents should be roughly equal
+        XCTAssertGreaterThan(zRange / xRange, 0.5, "Z depth should be at least 50% of X width for a sphere")
+    }
+
     // MARK: - Helpers
 
     /// Creates a single stroke with dense interpolated points along edges.
@@ -342,6 +357,16 @@ final class PipelineVisualTests: XCTestCase {
         print("📊 \(name): \(skeleton.points.count) skel pts, mesh \(sculptObject.mesh.vertexCount)v/\(sculptObject.mesh.faceCount)f, radii: [\(radiiStr)...]")
 
         XCTAssertFalse(sculptObject.mesh.isEmpty, "\(name) should produce a mesh")
+
+        // Print mesh extent for depth analysis
+        if !sculptObject.mesh.isEmpty {
+            let positions = sculptObject.mesh.vertices.map(\.position)
+            let xs = positions.map(\.x), ys = positions.map(\.y), zs = positions.map(\.z)
+            let xRange = (xs.max()! - xs.min()!)
+            let yRange = (ys.max()! - ys.min()!)
+            let zRange = (zs.max()! - zs.min()!)
+            print("📐 \(name) extent: X=\(String(format:"%.0f", xRange)) Y=\(String(format:"%.0f", yRange)) Z=\(String(format:"%.0f", zRange)) ratio Z/X=\(String(format:"%.2f", zRange/xRange))")
+        }
     }
 
     private func save(_ image: UIImage, name: String) {

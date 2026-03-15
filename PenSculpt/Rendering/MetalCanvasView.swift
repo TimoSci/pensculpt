@@ -4,6 +4,7 @@ import MetalKit
 struct MetalCanvasView: UIViewRepresentable {
     var strokes: [Stroke]
     var sculptObject: SculptObject?
+    var config: SculptConfig = .default
 
     func makeUIView(context: Context) -> MTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -26,6 +27,7 @@ struct MetalCanvasView: UIViewRepresentable {
     func updateUIView(_ uiView: MTKView, context: Context) {
         context.coordinator.renderer?.strokes = strokes
         context.coordinator.renderer?.sculptObject = sculptObject
+        context.coordinator.renderer?.config = config
     }
 
     func makeCoordinator() -> Coordinator {

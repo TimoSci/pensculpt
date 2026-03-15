@@ -19,5 +19,12 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Maximum contour points before simplification is applied.
     var contourMaxPoints: CGFloat = 500
 
+    /// Camera tilt angle in radians. Higher = more top-down view.
+    var cameraTilt: Float = 0.8
+
+    /// Display mode: "shaded" for lit surface, "wireframe" for debug mesh.
+    /// var displayMode: String = "shaded"
+    var displayMode: String = "wireframe"
+    ///
     static let `default` = SculptConfig()
 }
