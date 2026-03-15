@@ -6,12 +6,12 @@ final class SkeletonExtractorTests: XCTestCase {
     // MARK: - Edge cases
 
     func testEmptyContour() {
-        let skeleton = SkeletonExtractor.extract(from: [])
+        let skeleton = SkeletonExtractor.extract(fromPoints: [])
         XCTAssertTrue(skeleton.isEmpty)
     }
 
     func testTooFewPoints() {
-        let skeleton = SkeletonExtractor.extract(from: [CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 1)])
+        let skeleton = SkeletonExtractor.extract(fromPoints: [CGPoint(x: 0, y: 0), CGPoint(x: 1, y: 1)])
         XCTAssertTrue(skeleton.isEmpty)
     }
 
@@ -60,7 +60,7 @@ final class SkeletonExtractorTests: XCTestCase {
             CGPoint(x: 0, y: 0), CGPoint(x: 200, y: 0),
             CGPoint(x: 200, y: 50), CGPoint(x: 0, y: 50)
         ]
-        let skeleton = SkeletonExtractor.extract(from: contour, sampleCount: 5)
+        let skeleton = SkeletonExtractor.extract(fromPoints: contour, sampleCount: 5)
 
         XCTAssertFalse(skeleton.isEmpty)
         // Skeleton points should be near y=25 (center of 0..50)
@@ -82,7 +82,7 @@ final class SkeletonExtractorTests: XCTestCase {
             CGPoint(x: 50, y: 100), // bottom
             CGPoint(x: 0, y: 50)    // left
         ]
-        let skeleton = SkeletonExtractor.extract(from: contour, sampleCount: 10)
+        let skeleton = SkeletonExtractor.extract(fromPoints: contour, sampleCount: 10)
         XCTAssertFalse(skeleton.isEmpty)
 
         // The middle sample should have the largest radius

@@ -2,10 +2,11 @@ import SwiftUI
 
 struct SculptScreen: View {
     var strokes: [Stroke]
+    @State private var sculptObject: SculptObject?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
-        MetalCanvasView(strokes: strokes)
+        MetalCanvasView(strokes: strokes, sculptObject: sculptObject)
             .ignoresSafeArea()
             .overlay(alignment: .topLeading) {
                 Button {
@@ -17,6 +18,9 @@ struct SculptScreen: View {
                         .foregroundStyle(.secondary)
                         .padding()
                 }
+            }
+            .onAppear {
+                sculptObject = InferencePipeline.infer(from: strokes)
             }
     }
 }

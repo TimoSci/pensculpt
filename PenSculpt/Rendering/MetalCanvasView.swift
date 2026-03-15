@@ -3,16 +3,18 @@ import MetalKit
 
 struct MetalCanvasView: UIViewRepresentable {
     var strokes: [Stroke]
+    var sculptObject: SculptObject?
 
     func makeUIView(context: Context) -> MTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError("Metal is not supported on this device")
         }
         let view = MTKView(frame: .zero, device: device)
-        view.clearColor = MTLClearColor(red: 1, green: 1, blue: 1, alpha: 1)
+        view.clearColor = MTLClearColor(red: 0.95, green: 0.95, blue: 0.96, alpha: 1)
         view.isPaused = false
         view.enableSetNeedsDisplay = false
         view.preferredFramesPerSecond = 60
+        view.depthStencilPixelFormat = .depth32Float
 
         let renderer = SculptRenderer(device: device)
         context.coordinator.renderer = renderer
@@ -23,6 +25,7 @@ struct MetalCanvasView: UIViewRepresentable {
 
     func updateUIView(_ uiView: MTKView, context: Context) {
         context.coordinator.renderer?.strokes = strokes
+        context.coordinator.renderer?.sculptObject = sculptObject
     }
 
     func makeCoordinator() -> Coordinator {

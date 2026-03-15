@@ -2,53 +2,73 @@ import Foundation
 
 enum SkeletonExtractor {
 
-    /// Extracts the medial axis skeleton from a contour polygon.
+    /// Extracts the skeleton directly from stroke points (preserves drawn profile detail).
+    static func extract(from strokes: [Stroke], sampleCount: Int = 40) -> Skeleton {
+        let allPoints = strokes.flatMap { $0.points.map(\.location) }
+        return extract(fromPoints: allPoints, sampleCount: sampleCount)
+    }
+
+    /// Extracts the medial axis skeleton from a set of 2D points.
     /// Samples cross-sections along the principal axis to find midpoints and radii.
-    static func extract(from contour: [CGPoint], sampleCount: Int = 20) -> Skeleton {
-        guard contour.count >= 3 else {
+    static func extract(fromPoints points: [CGPoint], sampleCount: Int = 40) -> Skeleton {
+        guard points.count >= 3 else {
             return Skeleton(points: [], axis: .zero)
         }
 
-        let centroid = centroid(of: contour)
-        let axis = principalAxis(of: contour, centroid: centroid)
+        let c = centroid(of: points)
+        let axis = principalAxis(of: points, centroid: c)
         let perp = CGVector(dx: -axis.dy, dy: axis.dx)
 
-        // Project contour points onto the principal axis
-        let projections = contour.map { dot(vector(from: centroid, to: $0), axis) }
+        // Project all points onto the principal axis
+        let projections = points.map { dot(vector(from: c, to: $0), axis) }
         guard let minProj = projections.min(),
               let maxProj = projections.max(),
               maxProj - minProj > 0 else {
             return Skeleton(points: [], axis: axis)
         }
 
-        let bandWidth = (maxProj - minProj) / CGFloat(sampleCount)
+        let bandWidth = (maxProj - minProj) / CGFloat(sampleCount) * 1.5
         var skeletonPoints: [SkeletonPoint] = []
 
         for i in 0..<sampleCount {
             let t = CGFloat(i) / CGFloat(sampleCount - 1)
             let proj = minProj + t * (maxProj - minProj)
 
-            // Find contour points within this band along the axis
-            let nearby = contour.filter {
-                abs(dot(vector(from: centroid, to: $0), axis) - proj) < bandWidth
+            // Find points within this band along the axis
+            let nearby = points.filter {
+                abs(dot(vector(from: c, to: $0), axis) - proj) < bandWidth
             }
-            guard !nearby.isEmpty else { continue }
+            guard nearby.count >= 2 else { continue }
 
             // Project onto the perpendicular to find cross-section extent
-            let perpProjs = nearby.map { dot(vector(from: centroid, to: $0), perp) }
+            let perpProjs = nearby.map { dot(vector(from: c, to: $0), perp) }
             guard let minPerp = perpProjs.min(), let maxPerp = perpProjs.max() else { continue }
 
             let midPerp = (minPerp + maxPerp) / 2
             let radius = (maxPerp - minPerp) / 2
 
             let position = CGPoint(
-                x: centroid.x + proj * axis.dx + midPerp * perp.dx,
-                y: centroid.y + proj * axis.dy + midPerp * perp.dy
+                x: c.x + proj * axis.dx + midPerp * perp.dx,
+                y: c.y + proj * axis.dy + midPerp * perp.dy
             )
             skeletonPoints.append(SkeletonPoint(position: position, radius: max(radius, 0.1)))
         }
 
-        return Skeleton(points: skeletonPoints, axis: axis)
+        let smoothed = smooth(skeletonPoints, windowSize: 3)
+        return Skeleton(points: smoothed, axis: axis)
+    }
+
+    /// Moving average smoothing of skeleton radii to reduce jitter.
+    static func smooth(_ points: [SkeletonPoint], windowSize: Int) -> [SkeletonPoint] {
+        guard points.count >= windowSize else { return points }
+        let half = windowSize / 2
+        return points.indices.map { i in
+            let lo = max(0, i - half)
+            let hi = min(points.count - 1, i + half)
+            let window = points[lo...hi]
+            let avgRadius = window.map(\.radius).reduce(0, +) / CGFloat(window.count)
+            return SkeletonPoint(position: points[i].position, radius: avgRadius)
+        }
     }
 
     // MARK: - Geometry helpers
