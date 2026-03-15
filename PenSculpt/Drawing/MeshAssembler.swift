@@ -25,14 +25,7 @@ enum MeshAssembler {
 
         let n = radialSegments
 
-        // Bottom cap vertex (center point at the bottom)
-        let bottomY = -(distances[0] - yOffset)
-        vertices.append(MeshVertex(position: SIMD3(0, bottomY, 0), normal: SIMD3(0, -1, 0)))
-        let bottomCapIdx = UInt32(0)
-
-        // Generate rings
         for (ringIdx, skelPoint) in points.enumerated() {
-            // Negate Y so the shape matches screen orientation (top=top)
             let y = -(distances[ringIdx] - yOffset)
             let radius = Float(skelPoint.radius)
             let slope = profileSlope(at: ringIdx, points: points, distances: distances)
@@ -46,35 +39,15 @@ enum MeshAssembler {
                 vertices.append(MeshVertex(position: position, normal: normal))
             }
 
-            // Connect to previous ring
             if ringIdx > 0 {
-                let prevRing = UInt32(1 + (ringIdx - 1) * n) // +1 for bottom cap vertex
-                let currRing = UInt32(1 + ringIdx * n)
+                let prevRing = UInt32((ringIdx - 1) * n)
+                let currRing = UInt32(ringIdx * n)
                 for seg in 0..<UInt32(n) {
                     let next = (seg + 1) % UInt32(n)
                     faces.append(MeshFace(indices: SIMD3(prevRing + seg, currRing + next, currRing + seg)))
                     faces.append(MeshFace(indices: SIMD3(prevRing + seg, prevRing + next, currRing + next)))
                 }
             }
-        }
-
-        // Top cap vertex (center point at the top)
-        let topY = -(distances[points.count - 1] - yOffset)
-        vertices.append(MeshVertex(position: SIMD3(0, topY, 0), normal: SIMD3(0, 1, 0)))
-        let topCapIdx = UInt32(vertices.count - 1)
-
-        // Bottom cap faces (fan from center to first ring)
-        let firstRing = UInt32(1)
-        for seg in 0..<UInt32(n) {
-            let next = (seg + 1) % UInt32(n)
-            faces.append(MeshFace(indices: SIMD3(bottomCapIdx, firstRing + seg, firstRing + next)))
-        }
-
-        // Top cap faces (fan from center to last ring)
-        let lastRing = UInt32(1 + (points.count - 1) * n)
-        for seg in 0..<UInt32(n) {
-            let next = (seg + 1) % UInt32(n)
-            faces.append(MeshFace(indices: SIMD3(topCapIdx, lastRing + next, lastRing + seg)))
         }
 
         return Mesh(vertices: vertices, faces: faces)

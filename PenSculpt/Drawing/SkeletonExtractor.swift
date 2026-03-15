@@ -27,14 +27,16 @@ enum SkeletonExtractor {
             return Skeleton(points: [], axis: axis)
         }
 
-        let bandWidth = (maxProj - minProj) / CGFloat(sampleCount) * 2.5
+        let spacing = (maxProj - minProj) / CGFloat(sampleCount)
         var skeletonPoints: [SkeletonPoint] = []
 
         for i in 0..<sampleCount {
             let t = CGFloat(i) / CGFloat(sampleCount - 1)
             let proj = minProj + t * (maxProj - minProj)
 
-            // Find points within this band along the axis
+            // Adaptive band: narrower at edges for sharper taper, wider in the middle
+            let edgeFactor = 1.0 - 0.6 * abs(t - 0.5) * 2  // 1.0 at center, 0.4 at edges
+            let bandWidth = spacing * (1.0 + edgeFactor * 1.5)
             let nearby = points.filter {
                 abs(dot(vector(from: c, to: $0), axis) - proj) < bandWidth
             }
@@ -56,7 +58,7 @@ enum SkeletonExtractor {
             skeletonPoints.append(SkeletonPoint(position: position, radius: max(radius, minRadius)))
         }
 
-        let smoothed = smooth(skeletonPoints, windowSize: 7)
+        let smoothed = smooth(skeletonPoints, windowSize: 5)
         return Skeleton(points: smoothed, axis: axis)
     }
 
