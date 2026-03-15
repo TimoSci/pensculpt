@@ -52,11 +52,7 @@ class LassoView: UIView {
     // MARK: - Point handling (testable)
 
     func beginStroke(displayPoint: CGPoint, targetPoint: CGPoint) {
-        if isClosed {
-            displayPoints = []
-            hitTestPoints = []
-            isClosed = false
-        }
+        if isClosed { clearLasso() }
         displayPoints = [displayPoint]
         hitTestPoints = [targetPoint]
         coordinator?.parent.lassoPoints = displayPoints
@@ -87,18 +83,20 @@ class LassoView: UIView {
 
     // MARK: - UITouch handling
 
+    private func points(for touch: UITouch) -> (display: CGPoint, target: CGPoint) {
+        let display = touch.location(in: self)
+        let target = targetView.map { touch.location(in: $0) } ?? display
+        return (display, target)
+    }
+
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let selfPoint = touch.location(in: self)
-        let targetPoint = targetView.map { touch.location(in: $0) } ?? selfPoint
-        beginStroke(displayPoint: selfPoint, targetPoint: targetPoint)
+        guard let p = touches.first.map({ points(for: $0) }) else { return }
+        beginStroke(displayPoint: p.display, targetPoint: p.target)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let selfPoint = touch.location(in: self)
-        let targetPoint = targetView.map { touch.location(in: $0) } ?? selfPoint
-        continueStroke(displayPoint: selfPoint, targetPoint: targetPoint)
+        guard let p = touches.first.map({ points(for: $0) }) else { return }
+        continueStroke(displayPoint: p.display, targetPoint: p.target)
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
