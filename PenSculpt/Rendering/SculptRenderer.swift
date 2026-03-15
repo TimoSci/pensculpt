@@ -77,51 +77,18 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Projection
 
-    /// Centers and fits all strokes in the viewport with 20% padding.
     private func fittedProjection(viewSize: CGSize) -> simd_float4x4 {
-        guard !strokes.isEmpty else {
-            return orthographic(left: 0, right: 1, top: 0, bottom: 1)
-        }
+        Self.fittedProjection(strokes: strokes, viewSize: viewSize)
+    }
 
-        // Compute combined bounding box
-        var minX = Float.infinity, minY = Float.infinity
-        var maxX = -Float.infinity, maxY = -Float.infinity
-        for stroke in strokes {
-            let bb = stroke.boundingBox
-            minX = min(minX, Float(bb.minX))
-            minY = min(minY, Float(bb.minY))
-            maxX = max(maxX, Float(bb.maxX))
-            maxY = max(maxY, Float(bb.maxY))
-        }
-
-        let centerX = (minX + maxX) / 2
-        let centerY = (minY + maxY) / 2
-        let contentW = max(maxX - minX, 1)
-        let contentH = max(maxY - minY, 1)
-
-        // Scale to fit, preserving aspect ratio
-        let viewAspect = Float(viewSize.width) / Float(viewSize.height)
-        let contentAspect = contentW / contentH
-        let halfW: Float
-        let halfH: Float
-        if contentAspect > viewAspect {
-            halfW = contentW / 2 * 1.5
-            halfH = halfW / viewAspect
-        } else {
-            halfH = contentH / 2 * 1.5
-            halfW = halfH * viewAspect
-        }
-
-        return orthographic(
-            left: centerX - halfW,
-            right: centerX + halfW,
-            top: centerY - halfH,
-            bottom: centerY + halfH
-        )
+    /// 1:1 projection — strokes appear at their original canvas position.
+    static func fittedProjection(strokes: [Stroke], viewSize: CGSize) -> simd_float4x4 {
+        orthographic(left: 0, right: Float(viewSize.width),
+                     top: 0, bottom: Float(viewSize.height))
     }
 
     /// Standard orthographic projection (y-down screen coords → clip space).
-    private func orthographic(left: Float, right: Float, top: Float, bottom: Float) -> simd_float4x4 {
+    static func orthographic(left: Float, right: Float, top: Float, bottom: Float) -> simd_float4x4 {
         let sx = 2.0 / (right - left)
         let sy = -2.0 / (bottom - top)
         let tx = -(right + left) / (right - left)
