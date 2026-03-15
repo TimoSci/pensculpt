@@ -11,6 +11,12 @@
 		14A2B3C4D5E6F70812345679 /* CanvasViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 14A2B3C4D5E6F70812345678 /* CanvasViewTests.swift */; };
 		1A2B3C4D5E6F7089A2345601 /* AppMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7089A2345600 /* AppMode.swift */; };
 		1B4C5D6E7F8091A2B3456701 /* LassoSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */; };
+		4060718293A4B5C6D7E8F002 /* ContourAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4060718293A4B5C6D7E8F001 /* ContourAnalyzer.swift */; };
+		4060718293A4B5C6D7E8F004 /* ContourAnalyzerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4060718293A4B5C6D7E8F003 /* ContourAnalyzerTests.swift */; };
+		4160718293A4B5C6D7E8F002 /* SkeletonExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4160718293A4B5C6D7E8F001 /* SkeletonExtractor.swift */; };
+		4160718293A4B5C6D7E8F004 /* Segmenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4160718293A4B5C6D7E8F003 /* Segmenter.swift */; };
+		4160718293A4B5C6D7E8F006 /* Skeleton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4160718293A4B5C6D7E8F005 /* Skeleton.swift */; };
+		4160718293A4B5C6D7E8F008 /* SkeletonTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4160718293A4B5C6D7E8F007 /* SkeletonTests.swift */; };
 		1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */; };
 		1D5E6F7089A2B3C4D5E6F702 /* LassoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */; };
 		1D6E7F8091A2B345670102A3 /* SculptRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */; };
@@ -19,6 +25,9 @@
 		2C5D6E7F8091A2B345670102 /* SelectionHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5D6E7F8091A2B345670101 /* SelectionHighlight.swift */; };
 		2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */; };
 		2E6F7089A234560102B3C4D6 /* DrawingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */; };
+		3F60718293A4B5C6D7E8F002 /* Mesh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F60718293A4B5C6D7E8F001 /* Mesh.swift */; };
+		3F60718293A4B5C6D7E8F004 /* SculptObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F60718293A4B5C6D7E8F003 /* SculptObject.swift */; };
+		3F60718293A4B5C6D7E8F006 /* MeshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F60718293A4B5C6D7E8F005 /* MeshTests.swift */; };
 		2F7089A234560102B3C4D5E7 /* DrawingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */; };
 		3A1B2C3D4E5F60718293A4B6 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3A1B2C3D4E5F60718293A4B5 /* Shaders.metal */; };
 		3B2C3D4E5F60718293A4B5C7 /* SculptRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2C3D4E5F60718293A4B5C6 /* SculptRenderer.swift */; };
@@ -55,11 +64,20 @@
 		14A2B3C4D5E6F70812345678 /* CanvasViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasViewTests.swift; sourceTree = "<group>"; };
 		1A2B3C4D5E6F7089A2345600 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
 		1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelection.swift; sourceTree = "<group>"; };
+		4060718293A4B5C6D7E8F001 /* ContourAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContourAnalyzer.swift; sourceTree = "<group>"; };
+		4060718293A4B5C6D7E8F003 /* ContourAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContourAnalyzerTests.swift; sourceTree = "<group>"; };
+		4160718293A4B5C6D7E8F001 /* SkeletonExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonExtractor.swift; sourceTree = "<group>"; };
+		4160718293A4B5C6D7E8F003 /* Segmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Segmenter.swift; sourceTree = "<group>"; };
+		4160718293A4B5C6D7E8F005 /* Skeleton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Skeleton.swift; sourceTree = "<group>"; };
+		4160718293A4B5C6D7E8F007 /* SkeletonTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonTests.swift; sourceTree = "<group>"; };
 		1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelectionTests.swift; sourceTree = "<group>"; };
 		1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoViewTests.swift; sourceTree = "<group>"; };
 		1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRendererTests.swift; sourceTree = "<group>"; };
 		20F53120679F63904EB7A842 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModel.swift; sourceTree = "<group>"; };
+		3F60718293A4B5C6D7E8F001 /* Mesh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mesh.swift; sourceTree = "<group>"; };
+		3F60718293A4B5C6D7E8F003 /* SculptObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptObject.swift; sourceTree = "<group>"; };
+		3F60718293A4B5C6D7E8F005 /* MeshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshTests.swift; sourceTree = "<group>"; };
 		2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModelTests.swift; sourceTree = "<group>"; };
 		3A1B2C3D4E5F60718293A4B5 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		3B2C3D4E5F60718293A4B5C6 /* SculptRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRenderer.swift; sourceTree = "<group>"; };
@@ -113,7 +131,10 @@
 			isa = PBXGroup;
 			children = (
 				20F53120679F63904EB7A842 /* CanvasView.swift */,
+				4060718293A4B5C6D7E8F001 /* ContourAnalyzer.swift */,
 				1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */,
+				4160718293A4B5C6D7E8F003 /* Segmenter.swift */,
+				4160718293A4B5C6D7E8F001 /* SkeletonExtractor.swift */,
 				4A9B45B1894E87008809A866 /* StrokeConverter.swift */,
 				E13456789ABCDEF012345678 /* ViewBridge.swift */,
 			);
@@ -176,6 +197,9 @@
 				1A2B3C4D5E6F7089A2345600 /* AppMode.swift */,
 				82600F3015BC14804942380E /* Canvas.swift */,
 				D7A1F3B2C4E50689A2347890 /* DrawingTool.swift */,
+				3F60718293A4B5C6D7E8F001 /* Mesh.swift */,
+				3F60718293A4B5C6D7E8F003 /* SculptObject.swift */,
+				4160718293A4B5C6D7E8F005 /* Skeleton.swift */,
 				C103499A3841733723268595 /* Stroke.swift */,
 				892DC21C224D81E91EC19AF6 /* StrokePoint.swift */,
 			);
@@ -187,9 +211,12 @@
 			children = (
 				E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */,
 				14A2B3C4D5E6F70812345678 /* CanvasViewTests.swift */,
+				4060718293A4B5C6D7E8F003 /* ContourAnalyzerTests.swift */,
 				2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */,
 				1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */,
 				1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */,
+				3F60718293A4B5C6D7E8F005 /* MeshTests.swift */,
+				4160718293A4B5C6D7E8F007 /* SkeletonTests.swift */,
 				DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */,
 				1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */,
 				5AE4C922D541BA8953F39249 /* PenSculptTests.swift */,
@@ -282,9 +309,12 @@
 			files = (
 				13FB513D2030412AF3F6E039 /* CanvasTests.swift in Sources */,
 				14A2B3C4D5E6F70812345679 /* CanvasViewTests.swift in Sources */,
+				4060718293A4B5C6D7E8F004 /* ContourAnalyzerTests.swift in Sources */,
 				2F7089A234560102B3C4D5E7 /* DrawingViewModelTests.swift in Sources */,
 				1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */,
 				1D5E6F7089A2B3C4D5E6F702 /* LassoViewTests.swift in Sources */,
+				3F60718293A4B5C6D7E8F006 /* MeshTests.swift in Sources */,
+				4160718293A4B5C6D7E8F008 /* SkeletonTests.swift in Sources */,
 				81BCDDE5A91629858020D77B /* PenSculptDocumentTests.swift in Sources */,
 				1D6E7F8091A2B345670102A3 /* SculptRendererTests.swift in Sources */,
 				7E8452DD256CEFA004BEE546 /* PenSculptTests.swift in Sources */,
@@ -300,6 +330,10 @@
 			files = (
 				1A2B3C4D5E6F7089A2345601 /* AppMode.swift in Sources */,
 				CF55A32967111120BF84535C /* Canvas.swift in Sources */,
+				4060718293A4B5C6D7E8F002 /* ContourAnalyzer.swift in Sources */,
+				4160718293A4B5C6D7E8F004 /* Segmenter.swift in Sources */,
+				4160718293A4B5C6D7E8F002 /* SkeletonExtractor.swift in Sources */,
+				4160718293A4B5C6D7E8F006 /* Skeleton.swift in Sources */,
 				6618C5D01545C224214A6036 /* CanvasView.swift in Sources */,
 				3ACA72B0A900E98DAF41AFE4 /* DrawingScreen.swift in Sources */,
 				2E6F7089A234560102B3C4D6 /* DrawingViewModel.swift in Sources */,
@@ -314,6 +348,8 @@
 				2C5D6E7F8091A2B345670102 /* SelectionHighlight.swift in Sources */,
 				E02DD6005263EAD261542098 /* PenSculptApp.swift in Sources */,
 				5FA3E0CC9696AAE77E3E8C95 /* PenSculptDocument.swift in Sources */,
+				3F60718293A4B5C6D7E8F002 /* Mesh.swift in Sources */,
+				3F60718293A4B5C6D7E8F004 /* SculptObject.swift in Sources */,
 				1F06F508B357184A0D298B76 /* Stroke.swift in Sources */,
 				620DF5FFBEBB74AE891E2932 /* StrokeConverter.swift in Sources */,
 				4E8542AAB4F6049A6F22B174 /* StrokePoint.swift in Sources */,
