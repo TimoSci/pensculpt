@@ -20,6 +20,8 @@
 		4260718293A4B5C6D7E8F002 /* PrimitiveFitter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4260718293A4B5C6D7E8F001 /* PrimitiveFitter.swift */; };
 		4260718293A4B5C6D7E8F004 /* FittedPrimitive.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4260718293A4B5C6D7E8F003 /* FittedPrimitive.swift */; };
 		4260718293A4B5C6D7E8F006 /* PrimitiveFitterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4260718293A4B5C6D7E8F005 /* PrimitiveFitterTests.swift */; };
+		4360718293A4B5C6D7E8F002 /* MeshAssembler.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4360718293A4B5C6D7E8F001 /* MeshAssembler.swift */; };
+		4360718293A4B5C6D7E8F004 /* MeshAssemblerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4360718293A4B5C6D7E8F003 /* MeshAssemblerTests.swift */; };
 		1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */; };
 		1D5E6F7089A2B3C4D5E6F702 /* LassoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */; };
 		1D6E7F8091A2B345670102A3 /* SculptRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */; };
@@ -76,6 +78,8 @@
 		4260718293A4B5C6D7E8F001 /* PrimitiveFitter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimitiveFitter.swift; sourceTree = "<group>"; };
 		4260718293A4B5C6D7E8F003 /* FittedPrimitive.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FittedPrimitive.swift; sourceTree = "<group>"; };
 		4260718293A4B5C6D7E8F005 /* PrimitiveFitterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PrimitiveFitterTests.swift; sourceTree = "<group>"; };
+		4360718293A4B5C6D7E8F001 /* MeshAssembler.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshAssembler.swift; sourceTree = "<group>"; };
+		4360718293A4B5C6D7E8F003 /* MeshAssemblerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshAssemblerTests.swift; sourceTree = "<group>"; };
 		1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelectionTests.swift; sourceTree = "<group>"; };
 		1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoViewTests.swift; sourceTree = "<group>"; };
 		1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRendererTests.swift; sourceTree = "<group>"; };
@@ -139,6 +143,7 @@
 				20F53120679F63904EB7A842 /* CanvasView.swift */,
 				4060718293A4B5C6D7E8F001 /* ContourAnalyzer.swift */,
 				1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */,
+				4360718293A4B5C6D7E8F001 /* MeshAssembler.swift */,
 				4260718293A4B5C6D7E8F001 /* PrimitiveFitter.swift */,
 				4160718293A4B5C6D7E8F003 /* Segmenter.swift */,
 				4160718293A4B5C6D7E8F001 /* SkeletonExtractor.swift */,
@@ -223,6 +228,7 @@
 				2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */,
 				1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */,
 				1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */,
+				4360718293A4B5C6D7E8F003 /* MeshAssemblerTests.swift */,
 				3F60718293A4B5C6D7E8F005 /* MeshTests.swift */,
 				4260718293A4B5C6D7E8F005 /* PrimitiveFitterTests.swift */,
 				4160718293A4B5C6D7E8F007 /* SkeletonTests.swift */,
@@ -322,6 +328,7 @@
 				2F7089A234560102B3C4D5E7 /* DrawingViewModelTests.swift in Sources */,
 				1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */,
 				1D5E6F7089A2B3C4D5E6F702 /* LassoViewTests.swift in Sources */,
+				4360718293A4B5C6D7E8F004 /* MeshAssemblerTests.swift in Sources */,
 				3F60718293A4B5C6D7E8F006 /* MeshTests.swift in Sources */,
 				4260718293A4B5C6D7E8F006 /* PrimitiveFitterTests.swift in Sources */,
 				4160718293A4B5C6D7E8F008 /* SkeletonTests.swift in Sources */,
@@ -341,6 +348,7 @@
 				1A2B3C4D5E6F7089A2345601 /* AppMode.swift in Sources */,
 				CF55A32967111120BF84535C /* Canvas.swift in Sources */,
 				4060718293A4B5C6D7E8F002 /* ContourAnalyzer.swift in Sources */,
+				4360718293A4B5C6D7E8F002 /* MeshAssembler.swift in Sources */,
 				4260718293A4B5C6D7E8F002 /* PrimitiveFitter.swift in Sources */,
 				4260718293A4B5C6D7E8F004 /* FittedPrimitive.swift in Sources */,
 				4160718293A4B5C6D7E8F004 /* Segmenter.swift in Sources */,
