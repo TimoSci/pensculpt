@@ -35,6 +35,7 @@
 		CF55A32967111120BF84535C /* Canvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82600F3015BC14804942380E /* Canvas.swift */; };
 		D7A1F3B2C4E50689A2347891 /* DrawingTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = D7A1F3B2C4E50689A2347890 /* DrawingTool.swift */; };
 		E02DD6005263EAD261542098 /* PenSculptApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9997687C31904A1949E3F1A2 /* PenSculptApp.swift */; };
+		E13456789ABCDEF012345679 /* ViewBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = E13456789ABCDEF012345678 /* ViewBridge.swift */; };
 		F59BCF319DA5B1EF902EAA9A /* StrokePointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A309C2382E507DE74C02938 /* StrokePointTests.swift */; };
 /* End PBXBuildFile section */
 
@@ -80,6 +81,7 @@
 		F245D592E7D90A121589B369 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = Info.plist; sourceTree = "<group>"; };
 		2B3C4D5E6F7089A234560101 /* LassoOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoOverlay.swift; sourceTree = "<group>"; };
 		2C5D6E7F8091A2B345670101 /* SelectionHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionHighlight.swift; sourceTree = "<group>"; };
+		E13456789ABCDEF012345678 /* ViewBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewBridge.swift; sourceTree = "<group>"; };
 		FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingToolbar.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
@@ -111,6 +113,7 @@
 				20F53120679F63904EB7A842 /* CanvasView.swift */,
 				1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */,
 				4A9B45B1894E87008809A866 /* StrokeConverter.swift */,
+				E13456789ABCDEF012345678 /* ViewBridge.swift */,
 			);
 			path = Drawing;
 			sourceTree = "<group>";
@@ -310,6 +313,7 @@
 				1F06F508B357184A0D298B76 /* Stroke.swift in Sources */,
 				620DF5FFBEBB74AE891E2932 /* StrokeConverter.swift in Sources */,
 				4E8542AAB4F6049A6F22B174 /* StrokePoint.swift in Sources */,
+				E13456789ABCDEF012345679 /* ViewBridge.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -4,10 +4,8 @@ import Observation
 @Observable
 class DrawingViewModel {
     var canvas: Canvas
-    var selectedTool: DrawingTool = .pen
     var strokeWidth: CGFloat = 3
     var strokeOpacity: CGFloat = 1
-    var lastEraserType: DrawingTool = .eraser
     var showToolbar = false
     var showSavedMessage = false
     var autosaveEnabled = true
@@ -15,6 +13,18 @@ class DrawingViewModel {
     var lassoPoints: [CGPoint] = []
     var selectedStrokeIDs: Set<UUID> = []
     var showSculptScreen = false
+
+    /// Tracks the last eraser type for pencil double-tap toggle.
+    private(set) var lastEraserType: DrawingTool = .eraser
+
+    /// Setting the tool automatically tracks the last eraser type.
+    var selectedTool: DrawingTool = .pen {
+        didSet {
+            if selectedTool.isEraser {
+                lastEraserType = selectedTool
+            }
+        }
+    }
 
     init(canvas: Canvas) {
         self.canvas = canvas
@@ -48,12 +58,6 @@ class DrawingViewModel {
             selectedTool = lastEraserType
         } else {
             selectedTool = .pen
-        }
-    }
-
-    func handleToolChange(_ newTool: DrawingTool) {
-        if newTool.isEraser {
-            lastEraserType = newTool
         }
     }
 

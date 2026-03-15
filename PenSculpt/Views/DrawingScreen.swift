@@ -1,11 +1,6 @@
 import SwiftUI
 import PencilKit
 
-/// Holds a weak reference to the PKCanvasView for coordinate conversion.
-class ViewBridge {
-    weak var canvasView: PKCanvasView?
-}
-
 struct DrawingScreen: View {
     @Binding var documentCanvas: Canvas
     @Binding var drawingData: Data
@@ -46,9 +41,6 @@ struct DrawingScreen: View {
         .onChange(of: vm.autosaveEnabled) { _, enabled in
             if enabled { flushToDocument() }
         }
-        .onChange(of: vm.selectedTool) { _, newTool in
-            vm.handleToolChange(newTool)
-        }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
         .tint(.black)
@@ -68,9 +60,7 @@ struct DrawingScreen: View {
         if vm.appMode == .select {
             LassoOverlay(
                 lassoPoints: $vm.lassoPoints,
-                onLassoCompleted: { canvasPolygon in
-                    vm.handleLassoCompleted(polygon: canvasPolygon)
-                },
+                onLassoCompleted: { vm.handleLassoCompleted(polygon: $0) },
                 viewBridge: viewBridge
             )
             .ignoresSafeArea()
@@ -78,9 +68,7 @@ struct DrawingScreen: View {
     }
 
     private var sculptButton: some View {
-        Button {
-            vm.showSculptScreen = true
-        } label: {
+        Button { vm.showSculptScreen = true } label: {
             Label("Sculpt", systemImage: "cube")
                 .font(.headline)
                 .padding(.horizontal, 20)
@@ -109,9 +97,7 @@ struct DrawingScreen: View {
         ToolbarItem(placement: .topBarTrailing) {
             HStack(spacing: 12) {
                 Button {
-                    withAnimation(.easeInOut(duration: 0.2)) {
-                        vm.toggleMode()
-                    }
+                    withAnimation(.easeInOut(duration: 0.2)) { vm.toggleMode() }
                 } label: {
                     Image(systemName: vm.appMode == .draw ? "lasso" : "pencil.tip")
                         .font(.title3)
@@ -128,9 +114,7 @@ struct DrawingScreen: View {
                         .foregroundStyle(vm.autosaveEnabled ? .primary : .secondary)
                 }
 
-                Button {
-                    saveToDocument()
-                } label: {
+                Button { saveToDocument() } label: {
                     Image(systemName: "square.and.arrow.down")
                         .font(.body)
                 }
@@ -144,16 +128,8 @@ struct DrawingScreen: View {
             selectedTool: vm.selectedTool,
             strokeWidth: vm.strokeWidth,
             strokeOpacity: vm.strokeOpacity,
-            onStrokeCompleted: { pkStroke in
-                let stroke = StrokeConverter.convert(pkStroke)
-                addStrokeWithUndo(stroke)
-            },
-            onStrokeErased: { removedIndices in
-                for index in removedIndices.reversed() {
-                    guard index < vm.canvas.strokes.count else { continue }
-                    removeStrokeWithUndo(vm.canvas.strokes[index])
-                }
-            },
+            onStrokeCompleted: { addStrokeWithUndo(StrokeConverter.convert($0)) },
+            onStrokeErased: { handleErase($0) },
             isInteractive: vm.appMode == .draw,
             viewBridge: viewBridge
         )
@@ -179,9 +155,7 @@ struct DrawingScreen: View {
         }
 
         Button {
-            withAnimation(.easeInOut(duration: 0.2)) {
-                vm.showToolbar.toggle()
-            }
+            withAnimation(.easeInOut(duration: 0.2)) { vm.showToolbar.toggle() }
         } label: {
             Image(systemName: vm.showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
                 .font(.title2)
@@ -191,7 +165,7 @@ struct DrawingScreen: View {
         .padding(.bottom, 16)
     }
 
-    // MARK: - Lifecycle
+    // MARK: - Document sync
 
     private func loadDrawingData() {
         if !drawingData.isEmpty, let loaded = try? PKDrawing(data: drawingData) {
@@ -207,8 +181,6 @@ struct DrawingScreen: View {
             drawingData = newDrawing.dataRepresentation()
         }
     }
-
-    // MARK: - Save
 
     private func flushToDocument() {
         drawingSyncTask?.cancel()
@@ -235,10 +207,14 @@ struct DrawingScreen: View {
         }
     }
 
-    private func removeStrokeWithUndo(_ stroke: Stroke) {
-        vm.removeStroke(id: stroke.id)
-        undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
-            vm.addStroke(stroke)
+    private func handleErase(_ removedIndices: [Int]) {
+        for index in removedIndices.reversed() {
+            guard index < vm.canvas.strokes.count else { continue }
+            let stroke = vm.canvas.strokes[index]
+            vm.removeStroke(id: stroke.id)
+            undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+                vm.addStroke(stroke)
+            }
         }
     }
 
@@ -254,7 +230,6 @@ struct DrawingScreen: View {
     }
 }
 
-/// A reference type target for UndoManager registration (UndoManager requires AnyObject).
 private final class UndoProxy {
     static let shared = UndoProxy()
 }

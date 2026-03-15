@@ -31,8 +31,8 @@ Status legend:
 ### Selection System
 - [ ] SelectionStrategy protocol — O[ ] S[ ]
 - [ ] StrokeGroup model — O[ ] S[ ]
-- [ ] LassoSelection (point-in-polygon, 50% threshold) — O[ ] S[ ]
-- [ ] Selection UI (mode toggle, lasso overlay, highlights) — O[ ] S[ ]
+- [x] LassoSelection (point-in-polygon, 50% threshold) — O[ ] S[ ]
+- [x] Selection UI (mode toggle, lasso overlay, highlights) — O[ ] S[ ]
 
 ### Inference Pipeline
 - [ ] ContourAnalyzer (silhouette extraction from strokes) — O[ ] S[ ]
@@ -45,11 +45,11 @@ Status legend:
 - [ ] InferencePipeline coordinator (async, fallback on failure) — O[ ] S[ ]
 
 ### Metal Renderer
-- [ ] MetalCanvasView (MTKView, orthographic camera) — O[ ] S[ ]
+- [x] MetalCanvasView (MTKView, orthographic camera) — O[ ] S[ ]
 - [ ] Mesh rendering (diffuse lighting, sketch aesthetic) — O[ ] S[ ]
 - [ ] Stroke rendering (triangle strips, pressure-based width) — O[ ] S[ ]
 - [ ] Stroke style toggle (screen-space vs surface-space) — O[ ] S[ ]
-- [ ] Metal shaders (vertex + fragment) — O[ ] S[ ]
+- [x] Metal shaders (vertex + fragment) — O[ ] S[ ]
 
 ### Sculpt Interaction
 - [ ] Rotation (two-finger drag, arcball) — O[ ] S[ ]
@@ -59,8 +59,8 @@ Status legend:
 - [ ] Re-inference (async, correction preservation, cross-fade) — O[ ] S[ ]
 
 ### Integration
-- [ ] SculptScreen view — O[ ] S[ ]
-- [ ] Mode switching (Draw → Select → Sculpt) — O[ ] S[ ]
+- [x] SculptScreen view — O[ ] S[ ]
+- [x] Mode switching (Draw → Select → Sculpt) — O[ ] S[ ]
 - [ ] Multi-object interaction (active/dimmed) — O[ ] S[ ]
 - [ ] Document persistence for SculptObjects — O[ ] S[ ]
 - [ ] Sculpt mode guide — O[ ] S[ ]

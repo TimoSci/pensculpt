@@ -70,7 +70,6 @@ final class DrawingViewModelTests: XCTestCase {
     func testDoubleTapRemembersLastEraserType() {
         let vm = makeVM()
         vm.selectedTool = .pixelEraser
-        vm.handleToolChange(.pixelEraser)
 
         vm.handlePencilDoubleTap() // → pen
         XCTAssertEqual(vm.selectedTool, .pen)
@@ -89,17 +88,17 @@ final class DrawingViewModelTests: XCTestCase {
 
     // MARK: - Tool change tracking
 
-    func testToolChangeTracksLastEraser() {
+    func testSettingEraserTracksLastType() {
         let vm = makeVM()
-        vm.handleToolChange(.pixelEraser)
+        vm.selectedTool = .pixelEraser
         XCTAssertEqual(vm.lastEraserType, .pixelEraser)
     }
 
-    func testToolChangeIgnoresPen() {
+    func testSettingPenDoesNotResetLastEraser() {
         let vm = makeVM()
-        vm.lastEraserType = .pixelEraser
-        vm.handleToolChange(.pen)
-        XCTAssertEqual(vm.lastEraserType, .pixelEraser, "Switching to pen should not reset lastEraserType")
+        vm.selectedTool = .pixelEraser
+        vm.selectedTool = .pen
+        XCTAssertEqual(vm.lastEraserType, .pixelEraser)
     }
 
     // MARK: - Selection
