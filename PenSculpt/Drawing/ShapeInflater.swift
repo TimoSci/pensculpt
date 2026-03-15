@@ -37,15 +37,14 @@ enum ShapeInflater {
 
         guard maxDist > 0 else { return Mesh() }
 
-        // Convert distance to depth using a smooth profile
-        let curvatureR = Float(config.minCurvatureRadius)
+        // Convert distance to depth using a sphere-like profile:
+        // depth = sqrt(d * (2*maxDist - d)) gives a semicircular cross-section.
+        // A circle becomes a sphere, a square becomes a smooth pillow.
         for row in 0..<rows {
             for col in 0..<cols {
                 let d = depths[row][col]
                 if d > 0 {
-                    // Circular arc profile: smooth and satisfies curvature constraint
-                    let normalizedD = min(d / curvatureR, 1.0)
-                    depths[row][col] = curvatureR * sqrt(2 * normalizedD - normalizedD * normalizedD)
+                    depths[row][col] = sqrt(d * (2 * maxDist - d))
                 }
             }
         }
@@ -94,7 +93,7 @@ enum ShapeInflater {
                 let d = depths[row][col]
                 if d > 0 {
                     let x = x0 + Float(col) * spacing
-                    let y = y0 + Float(row) * spacing
+                    let y = -(y0 + Float(row) * spacing) // negate Y for correct orientation
                     let normal = computeNormal(depths: depths, row: row, col: col, spacing: spacing, front: true)
 
                     frontIdx[row][col] = vertices.count
@@ -114,25 +113,25 @@ enum ShapeInflater {
                 let bl = frontIdx[row + 1][col]
                 let br = frontIdx[row + 1][col + 1]
 
-                // Front face (two triangles per quad)
+                // Front face (winding reversed to compensate for Y negation)
                 if tl >= 0 && tr >= 0 && bl >= 0 {
-                    faces.append(MeshFace(indices: SIMD3(UInt32(tl), UInt32(bl), UInt32(tr))))
+                    faces.append(MeshFace(indices: SIMD3(UInt32(tl), UInt32(tr), UInt32(bl))))
                 }
                 if tr >= 0 && bl >= 0 && br >= 0 {
-                    faces.append(MeshFace(indices: SIMD3(UInt32(tr), UInt32(bl), UInt32(br))))
+                    faces.append(MeshFace(indices: SIMD3(UInt32(tr), UInt32(br), UInt32(bl))))
                 }
 
-                // Back face (reversed winding)
+                // Back face
                 let tlB = backIdx[row][col]
                 let trB = backIdx[row][col + 1]
                 let blB = backIdx[row + 1][col]
                 let brB = backIdx[row + 1][col + 1]
 
                 if tlB >= 0 && trB >= 0 && blB >= 0 {
-                    faces.append(MeshFace(indices: SIMD3(UInt32(tlB), UInt32(trB), UInt32(blB))))
+                    faces.append(MeshFace(indices: SIMD3(UInt32(tlB), UInt32(blB), UInt32(trB))))
                 }
                 if trB >= 0 && blB >= 0 && brB >= 0 {
-                    faces.append(MeshFace(indices: SIMD3(UInt32(trB), UInt32(brB), UInt32(blB))))
+                    faces.append(MeshFace(indices: SIMD3(UInt32(trB), UInt32(blB), UInt32(brB))))
                 }
             }
         }

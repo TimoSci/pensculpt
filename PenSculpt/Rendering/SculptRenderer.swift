@@ -150,8 +150,20 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             bottom: -radius, top: radius,
             near: -radius * 10, far: radius * 10
         )
-        let view = translationMatrix(-center.x, -center.y, -center.z)
+        // Slight tilt so the 3D depth is visible (not a flat front view)
+        let tilt = rotationX(-0.3) // ~17 degrees downward
+        let view = tilt * translationMatrix(-center.x, -center.y, -center.z)
         return proj * view
+    }
+
+    private func rotationX(_ angle: Float) -> simd_float4x4 {
+        let c = cos(angle), s = sin(angle)
+        return simd_float4x4(columns: (
+            SIMD4<Float>(1, 0, 0, 0),
+            SIMD4<Float>(0, c, s, 0),
+            SIMD4<Float>(0, -s, c, 0),
+            SIMD4<Float>(0, 0, 0, 1)
+        ))
     }
 
     private func makeDepthState() -> MTLDepthStencilState? {
