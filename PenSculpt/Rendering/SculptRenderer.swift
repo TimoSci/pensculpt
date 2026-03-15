@@ -121,7 +121,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             encoder.setDepthStencilState(depthState)
         }
         encoder.setCullMode(.back)
-        encoder.setFrontFacing(.clockwise)
+        encoder.setFrontFacing(.counterClockwise)
 
         encoder.drawIndexedPrimitives(
             type: .triangle,

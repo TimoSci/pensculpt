@@ -28,6 +28,7 @@
 		4660718293A4B5C6D7E8F002 /* PipelineVisualTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4660718293A4B5C6D7E8F001 /* PipelineVisualTests.swift */; };
 		4760718293A4B5C6D7E8F002 /* SculptConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4760718293A4B5C6D7E8F001 /* SculptConfig.swift */; };
 		4760718293A4B5C6D7E8F004 /* SurfaceCloser.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4760718293A4B5C6D7E8F003 /* SurfaceCloser.swift */; };
+		4860718293A4B5C6D7E8F002 /* ShapeInflater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4860718293A4B5C6D7E8F001 /* ShapeInflater.swift */; };
 		4760718293A4B5C6D7E8F006 /* SurfaceCloserTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4760718293A4B5C6D7E8F005 /* SurfaceCloserTests.swift */; };
 		1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */; };
 		1D5E6F7089A2B3C4D5E6F702 /* LassoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */; };
@@ -93,6 +94,7 @@
 		4660718293A4B5C6D7E8F001 /* PipelineVisualTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineVisualTests.swift; sourceTree = "<group>"; };
 		4760718293A4B5C6D7E8F001 /* SculptConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptConfig.swift; sourceTree = "<group>"; };
 		4760718293A4B5C6D7E8F003 /* SurfaceCloser.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceCloser.swift; sourceTree = "<group>"; };
+		4860718293A4B5C6D7E8F001 /* ShapeInflater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeInflater.swift; sourceTree = "<group>"; };
 		4760718293A4B5C6D7E8F005 /* SurfaceCloserTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceCloserTests.swift; sourceTree = "<group>"; };
 		1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelectionTests.swift; sourceTree = "<group>"; };
 		1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoViewTests.swift; sourceTree = "<group>"; };
@@ -159,6 +161,7 @@
 				4460718293A4B5C6D7E8F001 /* InferencePipeline.swift */,
 				1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */,
 				4360718293A4B5C6D7E8F001 /* MeshAssembler.swift */,
+				4860718293A4B5C6D7E8F001 /* ShapeInflater.swift */,
 				4260718293A4B5C6D7E8F001 /* PrimitiveFitter.swift */,
 				4160718293A4B5C6D7E8F003 /* Segmenter.swift */,
 				4760718293A4B5C6D7E8F003 /* SurfaceCloser.swift */,
@@ -379,6 +382,7 @@
 				4260718293A4B5C6D7E8F004 /* FittedPrimitive.swift in Sources */,
 				4160718293A4B5C6D7E8F004 /* Segmenter.swift in Sources */,
 				4760718293A4B5C6D7E8F002 /* SculptConfig.swift in Sources */,
+				4860718293A4B5C6D7E8F002 /* ShapeInflater.swift in Sources */,
 				4760718293A4B5C6D7E8F004 /* SurfaceCloser.swift in Sources */,
 				4160718293A4B5C6D7E8F002 /* SkeletonExtractor.swift in Sources */,
 				4160718293A4B5C6D7E8F006 /* Skeleton.swift in Sources */,
