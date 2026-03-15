@@ -187,7 +187,60 @@ enum ShapeInflater {
             }
         }
 
+        // Edge faces: stitch front and back along the boundary
+        stitchEdges(frontIdx: frontIdx, backIdx: backIdx, rows: rows, cols: cols, faces: &faces)
+
         return Mesh(vertices: vertices, faces: faces)
+    }
+
+    /// Connects front and back faces at boundary edges where interior meets exterior.
+    private static func stitchEdges(frontIdx: [[Int]], backIdx: [[Int]],
+                                     rows: Int, cols: Int, faces: inout [MeshFace]) {
+        for row in 0..<rows {
+            for col in 0..<cols {
+                guard frontIdx[row][col] >= 0 else { continue }
+
+                // Right boundary: interior here, exterior to the right
+                if col + 1 >= cols || frontIdx[row][col + 1] < 0 {
+                    if row + 1 < rows && frontIdx[row + 1][col] >= 0 {
+                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                        let f2 = UInt32(frontIdx[row + 1][col]), b2 = UInt32(backIdx[row + 1][col])
+                        faces.append(MeshFace(indices: SIMD3(f1, b1, f2)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b1, b2)))
+                    }
+                }
+
+                // Left boundary: interior here, exterior to the left
+                if col - 1 < 0 || frontIdx[row][col - 1] < 0 {
+                    if row + 1 < rows && frontIdx[row + 1][col] >= 0 {
+                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                        let f2 = UInt32(frontIdx[row + 1][col]), b2 = UInt32(backIdx[row + 1][col])
+                        faces.append(MeshFace(indices: SIMD3(f1, f2, b1)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b2, b1)))
+                    }
+                }
+
+                // Bottom boundary: interior here, exterior below
+                if row + 1 >= rows || frontIdx[row + 1][col] < 0 {
+                    if col + 1 < cols && frontIdx[row][col + 1] >= 0 {
+                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                        let f2 = UInt32(frontIdx[row][col + 1]), b2 = UInt32(backIdx[row][col + 1])
+                        faces.append(MeshFace(indices: SIMD3(f1, f2, b1)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b2, b1)))
+                    }
+                }
+
+                // Top boundary: interior here, exterior above
+                if row - 1 < 0 || frontIdx[row - 1][col] < 0 {
+                    if col + 1 < cols && frontIdx[row][col + 1] >= 0 {
+                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                        let f2 = UInt32(frontIdx[row][col + 1]), b2 = UInt32(backIdx[row][col + 1])
+                        faces.append(MeshFace(indices: SIMD3(f1, b1, f2)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b1, b2)))
+                    }
+                }
+            }
+        }
     }
 
     private static func computeNormal(depths: [[Float]], row: Int, col: Int,
