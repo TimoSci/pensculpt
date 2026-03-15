@@ -17,6 +17,8 @@
 		2B3C4D5E6F7089A234560102 /* LassoOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7089A234560101 /* LassoOverlay.swift */; };
 		2C5D6E7F8091A2B345670102 /* SelectionHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C5D6E7F8091A2B345670101 /* SelectionHighlight.swift */; };
 		2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */; };
+		2E6F7089A234560102B3C4D6 /* DrawingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */; };
+		2F7089A234560102B3C4D5E7 /* DrawingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */; };
 		3A1B2C3D4E5F60718293A4B6 /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = 3A1B2C3D4E5F60718293A4B5 /* Shaders.metal */; };
 		3B2C3D4E5F60718293A4B5C7 /* SculptRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B2C3D4E5F60718293A4B5C6 /* SculptRenderer.swift */; };
 		3C3D4E5F60718293A4B5C6D8 /* MetalCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3C3D4E5F60718293A4B5C6D7 /* MetalCanvasView.swift */; };
@@ -54,6 +56,8 @@
 		1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelectionTests.swift; sourceTree = "<group>"; };
 		1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRendererTests.swift; sourceTree = "<group>"; };
 		20F53120679F63904EB7A842 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
+		2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModel.swift; sourceTree = "<group>"; };
+		2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModelTests.swift; sourceTree = "<group>"; };
 		3A1B2C3D4E5F60718293A4B5 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
 		3B2C3D4E5F60718293A4B5C6 /* SculptRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRenderer.swift; sourceTree = "<group>"; };
 		3C3D4E5F60718293A4B5C6D7 /* MetalCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalCanvasView.swift; sourceTree = "<group>"; };
@@ -84,6 +88,7 @@
 			isa = PBXGroup;
 			children = (
 				864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */,
+				2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */,
 				FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */,
 				2B3C4D5E6F7089A234560101 /* LassoOverlay.swift */,
 				3D4E5F60718293A4B5C6D7E8 /* SculptScreen.swift */,
@@ -177,6 +182,7 @@
 			children = (
 				E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */,
 				14A2B3C4D5E6F70812345678 /* CanvasViewTests.swift */,
+				2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */,
 				1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */,
 				DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */,
 				1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */,
@@ -270,6 +276,7 @@
 			files = (
 				13FB513D2030412AF3F6E039 /* CanvasTests.swift in Sources */,
 				14A2B3C4D5E6F70812345679 /* CanvasViewTests.swift in Sources */,
+				2F7089A234560102B3C4D5E7 /* DrawingViewModelTests.swift in Sources */,
 				1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */,
 				81BCDDE5A91629858020D77B /* PenSculptDocumentTests.swift in Sources */,
 				1D6E7F8091A2B345670102A3 /* SculptRendererTests.swift in Sources */,
@@ -288,6 +295,7 @@
 				CF55A32967111120BF84535C /* Canvas.swift in Sources */,
 				6618C5D01545C224214A6036 /* CanvasView.swift in Sources */,
 				3ACA72B0A900E98DAF41AFE4 /* DrawingScreen.swift in Sources */,
+				2E6F7089A234560102B3C4D6 /* DrawingViewModel.swift in Sources */,
 				D7A1F3B2C4E50689A2347891 /* DrawingTool.swift in Sources */,
 				2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */,
 				1B4C5D6E7F8091A2B3456701 /* LassoSelection.swift in Sources */,

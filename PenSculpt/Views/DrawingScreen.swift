@@ -9,19 +9,8 @@ class ViewBridge {
 struct DrawingScreen: View {
     @Binding var documentCanvas: Canvas
     @Binding var drawingData: Data
-    @State private var canvas: Canvas
+    @State private var vm: DrawingViewModel
     @State private var pkDrawing = PKDrawing()
-    @State private var selectedTool: DrawingTool = .pen
-    @State private var strokeWidth: CGFloat = 3
-    @State private var strokeOpacity: CGFloat = 1
-    @State private var lastEraserType: DrawingTool = .eraser
-    @State private var showToolbar = false
-    @State private var showSavedMessage = false
-    @State private var autosaveEnabled = true
-    @State private var appMode: AppMode = .draw
-    @State private var lassoPoints: [CGPoint] = []
-    @State private var selectedStrokeIDs: Set<UUID> = []
-    @State private var showSculptScreen = false
     @State private var drawingSyncTask: Task<Void, Never>?
     @State private var viewBridge = ViewBridge()
     @Environment(\.undoManager) private var undoManager
@@ -29,7 +18,7 @@ struct DrawingScreen: View {
     init(canvas: Binding<Canvas>, drawingData: Binding<Data>) {
         _documentCanvas = canvas
         _drawingData = drawingData
-        _canvas = State(initialValue: canvas.wrappedValue)
+        _vm = State(initialValue: DrawingViewModel(canvas: canvas.wrappedValue))
     }
 
     var body: some View {
@@ -37,25 +26,28 @@ struct DrawingScreen: View {
             canvasLayer
             selectionHighlightLayer
             selectModeOverlay
-            if appMode == .draw { drawModeControls }
-            if appMode == .select && !selectedStrokeIDs.isEmpty { sculptButton }
+            if vm.appMode == .draw { drawModeControls }
+            if vm.appMode == .select && vm.hasSelection { sculptButton }
         }
         .overlay(alignment: .top) { savedMessageOverlay }
-        .fullScreenCover(isPresented: $showSculptScreen) {
-            SculptScreen(strokes: selectedStrokes)
+        .fullScreenCover(isPresented: $vm.showSculptScreen) {
+            SculptScreen(strokes: vm.selectedStrokes)
         }
         .toolbar { navBarItems }
         .onAppear { loadDrawingData() }
-        .onChange(of: canvas) { _, _ in
-            guard autosaveEnabled else { return }
-            documentCanvas = canvas
+        .onChange(of: vm.canvas) { _, _ in
+            guard vm.autosaveEnabled else { return }
+            documentCanvas = vm.canvas
         }
         .onChange(of: pkDrawing) { _, newDrawing in
-            guard autosaveEnabled else { return }
+            guard vm.autosaveEnabled else { return }
             debounceSyncDrawing(newDrawing)
         }
-        .onChange(of: autosaveEnabled) { _, enabled in
+        .onChange(of: vm.autosaveEnabled) { _, enabled in
             if enabled { flushToDocument() }
+        }
+        .onChange(of: vm.selectedTool) { _, newTool in
+            vm.handleToolChange(newTool)
         }
         .toolbarColorScheme(.light, for: .navigationBar)
         .toolbarBackground(.visible, for: .navigationBar)
@@ -66,21 +58,18 @@ struct DrawingScreen: View {
 
     @ViewBuilder
     private var selectionHighlightLayer: some View {
-        if !selectedStrokeIDs.isEmpty {
-            SelectionHighlight(strokes: canvas.strokes, selectedIDs: selectedStrokeIDs, viewBridge: viewBridge)
+        if vm.hasSelection {
+            SelectionHighlight(strokes: vm.canvas.strokes, selectedIDs: vm.selectedStrokeIDs, viewBridge: viewBridge)
         }
     }
 
     @ViewBuilder
     private var selectModeOverlay: some View {
-        if appMode == .select {
+        if vm.appMode == .select {
             LassoOverlay(
-                lassoPoints: $lassoPoints,
+                lassoPoints: $vm.lassoPoints,
                 onLassoCompleted: { canvasPolygon in
-                    selectedStrokeIDs = LassoSelection.selectedStrokeIDs(
-                        strokes: canvas.strokes,
-                        polygon: canvasPolygon
-                    )
+                    vm.handleLassoCompleted(polygon: canvasPolygon)
                 },
                 viewBridge: viewBridge
             )
@@ -90,7 +79,7 @@ struct DrawingScreen: View {
 
     private var sculptButton: some View {
         Button {
-            showSculptScreen = true
+            vm.showSculptScreen = true
         } label: {
             Label("Sculpt", systemImage: "cube")
                 .font(.headline)
@@ -103,13 +92,9 @@ struct DrawingScreen: View {
         .transition(.move(edge: .bottom).combined(with: .opacity))
     }
 
-    private var selectedStrokes: [Stroke] {
-        canvas.strokes.filter { selectedStrokeIDs.contains($0.id) }
-    }
-
     @ViewBuilder
     private var savedMessageOverlay: some View {
-        if showSavedMessage {
+        if vm.showSavedMessage {
             Text("Saved!")
                 .font(.subheadline.weight(.medium))
                 .padding(.horizontal, 16)
@@ -125,28 +110,22 @@ struct DrawingScreen: View {
             HStack(spacing: 12) {
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) {
-                        if appMode == .draw {
-                            appMode = .select
-                        } else {
-                            appMode = .draw
-                            lassoPoints = []
-                            selectedStrokeIDs = []
-                        }
+                        vm.toggleMode()
                     }
                 } label: {
-                    Image(systemName: appMode == .draw ? "lasso" : "pencil.tip")
+                    Image(systemName: vm.appMode == .draw ? "lasso" : "pencil.tip")
                         .font(.title3)
                         .foregroundStyle(.blue)
                 }
 
                 Button {
-                    withAnimation { autosaveEnabled.toggle() }
+                    withAnimation { vm.autosaveEnabled.toggle() }
                 } label: {
-                    Image(systemName: autosaveEnabled
+                    Image(systemName: vm.autosaveEnabled
                           ? "arrow.triangle.2.circlepath.circle.fill"
                           : "arrow.triangle.2.circlepath.circle")
                         .font(.body)
-                        .foregroundStyle(autosaveEnabled ? .primary : .secondary)
+                        .foregroundStyle(vm.autosaveEnabled ? .primary : .secondary)
                 }
 
                 Button {
@@ -162,45 +141,35 @@ struct DrawingScreen: View {
     private var canvasLayer: some View {
         CanvasView(
             drawing: $pkDrawing,
-            selectedTool: selectedTool,
-            strokeWidth: strokeWidth,
-            strokeOpacity: strokeOpacity,
+            selectedTool: vm.selectedTool,
+            strokeWidth: vm.strokeWidth,
+            strokeOpacity: vm.strokeOpacity,
             onStrokeCompleted: { pkStroke in
                 let stroke = StrokeConverter.convert(pkStroke)
                 addStrokeWithUndo(stroke)
             },
             onStrokeErased: { removedIndices in
                 for index in removedIndices.reversed() {
-                    guard index < canvas.strokes.count else { continue }
-                    removeStrokeWithUndo(canvas.strokes[index])
+                    guard index < vm.canvas.strokes.count else { continue }
+                    removeStrokeWithUndo(vm.canvas.strokes[index])
                 }
             },
-            isInteractive: appMode == .draw,
+            isInteractive: vm.appMode == .draw,
             viewBridge: viewBridge
         )
         .ignoresSafeArea()
         .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in
-            guard appMode == .draw else { return }
-            if selectedTool == .pen {
-                selectedTool = lastEraserType
-            } else {
-                selectedTool = .pen
-            }
-        }
-        .onChange(of: selectedTool) { _, newTool in
-            if newTool.isEraser {
-                lastEraserType = newTool
-            }
+            vm.handlePencilDoubleTap()
         }
     }
 
     @ViewBuilder
     private var drawModeControls: some View {
-        if showToolbar {
+        if vm.showToolbar {
             FloatingToolbar(
-                selectedTool: $selectedTool,
-                strokeWidth: $strokeWidth,
-                strokeOpacity: $strokeOpacity,
+                selectedTool: $vm.selectedTool,
+                strokeWidth: $vm.strokeWidth,
+                strokeOpacity: $vm.strokeOpacity,
                 onUndo: { undoManager?.undo() },
                 onRedo: { undoManager?.redo() },
                 onClear: { clearWithUndo() }
@@ -211,10 +180,10 @@ struct DrawingScreen: View {
 
         Button {
             withAnimation(.easeInOut(duration: 0.2)) {
-                showToolbar.toggle()
+                vm.showToolbar.toggle()
             }
         } label: {
-            Image(systemName: showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
+            Image(systemName: vm.showToolbar ? "chevron.down.circle.fill" : "ellipsis.circle")
                 .font(.title2)
                 .padding(12)
                 .background(.ultraThinMaterial, in: Circle())
@@ -243,48 +212,46 @@ struct DrawingScreen: View {
 
     private func flushToDocument() {
         drawingSyncTask?.cancel()
-        documentCanvas = canvas
+        documentCanvas = vm.canvas
         drawingData = pkDrawing.dataRepresentation()
     }
 
     private func saveToDocument() {
         flushToDocument()
-        withAnimation { showSavedMessage = true }
+        withAnimation { vm.showSavedMessage = true }
         Task {
             try? await Task.sleep(for: .seconds(1.5))
-            withAnimation { showSavedMessage = false }
+            withAnimation { vm.showSavedMessage = false }
         }
     }
 
     // MARK: - Undo-aware actions
 
     private func addStrokeWithUndo(_ stroke: Stroke) {
-        canvas.addStroke(stroke)
+        vm.addStroke(stroke)
         undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
-            canvas.removeStroke(id: stroke.id)
-            // Remove from PencilKit too
+            vm.removeStroke(id: stroke.id)
             pkDrawing = PKDrawing(strokes: pkDrawing.strokes.dropLast())
         }
     }
 
     private func removeStrokeWithUndo(_ stroke: Stroke) {
-        canvas.removeStroke(id: stroke.id)
+        vm.removeStroke(id: stroke.id)
         undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
-            canvas.addStroke(stroke)
+            vm.addStroke(stroke)
         }
     }
 
     private func clearWithUndo() {
-        let previousStrokes = canvas.strokes
+        let previousStrokes = vm.canvas.strokes
         let previousDrawing = pkDrawing
-        canvas.clearStrokes()
+        vm.clearStrokes()
         pkDrawing = PKDrawing()
         undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
-            canvas.strokes = previousStrokes
+            vm.canvas.strokes = previousStrokes
             pkDrawing = previousDrawing
         }
     }
-
 }
 
 /// A reference type target for UndoManager registration (UndoManager requires AnyObject).

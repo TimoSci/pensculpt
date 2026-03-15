@@ -1,0 +1,179 @@
+import XCTest
+@testable import PenSculpt
+
+final class DrawingViewModelTests: XCTestCase {
+
+    private func makeVM() -> DrawingViewModel {
+        DrawingViewModel(canvas: Canvas())
+    }
+
+    private func makeStroke(at point: CGPoint = CGPoint(x: 50, y: 50)) -> Stroke {
+        Stroke(points: [
+            StrokePoint(location: point, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0),
+            StrokePoint(location: CGPoint(x: point.x + 10, y: point.y + 10),
+                        pressure: 1, tilt: 0, azimuth: 0, timestamp: 0.1)
+        ])
+    }
+
+    // MARK: - Mode switching
+
+    func testInitialModeIsDraw() {
+        let vm = makeVM()
+        XCTAssertEqual(vm.appMode, .draw)
+    }
+
+    func testToggleModeToSelect() {
+        let vm = makeVM()
+        vm.toggleMode()
+        XCTAssertEqual(vm.appMode, .select)
+    }
+
+    func testToggleModeBackToDraw() {
+        let vm = makeVM()
+        vm.toggleMode() // → select
+        vm.toggleMode() // → draw
+        XCTAssertEqual(vm.appMode, .draw)
+    }
+
+    func testToggleToDrawClearsSelection() {
+        let vm = makeVM()
+        let stroke = makeStroke()
+        vm.addStroke(stroke)
+        vm.selectedStrokeIDs = [stroke.id]
+        vm.lassoPoints = [.zero, CGPoint(x: 100, y: 100)]
+
+        vm.toggleMode() // → select
+        vm.toggleMode() // → draw
+
+        XCTAssertTrue(vm.selectedStrokeIDs.isEmpty)
+        XCTAssertTrue(vm.lassoPoints.isEmpty)
+    }
+
+    // MARK: - Pencil double-tap
+
+    func testDoubleTapTogglesToEraser() {
+        let vm = makeVM()
+        XCTAssertEqual(vm.selectedTool, .pen)
+
+        vm.handlePencilDoubleTap()
+        XCTAssertEqual(vm.selectedTool, .eraser)
+    }
+
+    func testDoubleTapTogglesToPen() {
+        let vm = makeVM()
+        vm.selectedTool = .eraser
+
+        vm.handlePencilDoubleTap()
+        XCTAssertEqual(vm.selectedTool, .pen)
+    }
+
+    func testDoubleTapRemembersLastEraserType() {
+        let vm = makeVM()
+        vm.selectedTool = .pixelEraser
+        vm.handleToolChange(.pixelEraser)
+
+        vm.handlePencilDoubleTap() // → pen
+        XCTAssertEqual(vm.selectedTool, .pen)
+
+        vm.handlePencilDoubleTap() // → pixelEraser (last used)
+        XCTAssertEqual(vm.selectedTool, .pixelEraser)
+    }
+
+    func testDoubleTapIgnoredInSelectMode() {
+        let vm = makeVM()
+        vm.appMode = .select
+
+        vm.handlePencilDoubleTap()
+        XCTAssertEqual(vm.selectedTool, .pen, "Double-tap should be ignored in select mode")
+    }
+
+    // MARK: - Tool change tracking
+
+    func testToolChangeTracksLastEraser() {
+        let vm = makeVM()
+        vm.handleToolChange(.pixelEraser)
+        XCTAssertEqual(vm.lastEraserType, .pixelEraser)
+    }
+
+    func testToolChangeIgnoresPen() {
+        let vm = makeVM()
+        vm.lastEraserType = .pixelEraser
+        vm.handleToolChange(.pen)
+        XCTAssertEqual(vm.lastEraserType, .pixelEraser, "Switching to pen should not reset lastEraserType")
+    }
+
+    // MARK: - Selection
+
+    func testHandleLassoCompletedSelectsStrokes() {
+        let vm = makeVM()
+        let stroke = makeStroke(at: CGPoint(x: 50, y: 50))
+        vm.addStroke(stroke)
+
+        let polygon = [
+            CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0),
+            CGPoint(x: 100, y: 100), CGPoint(x: 0, y: 100), CGPoint(x: 0, y: 0)
+        ]
+        vm.handleLassoCompleted(polygon: polygon)
+
+        XCTAssertTrue(vm.selectedStrokeIDs.contains(stroke.id))
+    }
+
+    func testHandleLassoCompletedMissesOutsideStrokes() {
+        let vm = makeVM()
+        let stroke = makeStroke(at: CGPoint(x: 500, y: 500))
+        vm.addStroke(stroke)
+
+        let polygon = [
+            CGPoint(x: 0, y: 0), CGPoint(x: 100, y: 0),
+            CGPoint(x: 100, y: 100), CGPoint(x: 0, y: 100), CGPoint(x: 0, y: 0)
+        ]
+        vm.handleLassoCompleted(polygon: polygon)
+
+        XCTAssertTrue(vm.selectedStrokeIDs.isEmpty)
+    }
+
+    func testSelectedStrokes() {
+        let vm = makeVM()
+        let s1 = makeStroke(at: CGPoint(x: 10, y: 10))
+        let s2 = makeStroke(at: CGPoint(x: 500, y: 500))
+        vm.addStroke(s1)
+        vm.addStroke(s2)
+        vm.selectedStrokeIDs = [s1.id]
+
+        XCTAssertEqual(vm.selectedStrokes.count, 1)
+        XCTAssertEqual(vm.selectedStrokes.first?.id, s1.id)
+    }
+
+    func testHasSelection() {
+        let vm = makeVM()
+        XCTAssertFalse(vm.hasSelection)
+
+        vm.selectedStrokeIDs = [UUID()]
+        XCTAssertTrue(vm.hasSelection)
+    }
+
+    // MARK: - Stroke mutations
+
+    func testAddStroke() {
+        let vm = makeVM()
+        let stroke = makeStroke()
+        vm.addStroke(stroke)
+        XCTAssertEqual(vm.canvas.strokes.count, 1)
+    }
+
+    func testRemoveStroke() {
+        let vm = makeVM()
+        let stroke = makeStroke()
+        vm.addStroke(stroke)
+        vm.removeStroke(id: stroke.id)
+        XCTAssertTrue(vm.canvas.strokes.isEmpty)
+    }
+
+    func testClearStrokes() {
+        let vm = makeVM()
+        vm.addStroke(makeStroke())
+        vm.addStroke(makeStroke())
+        vm.clearStrokes()
+        XCTAssertTrue(vm.canvas.strokes.isEmpty)
+    }
+}
