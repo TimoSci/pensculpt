@@ -7,7 +7,7 @@ enum ShapeInflater {
     static func inflate(strokes: [Stroke], config: SculptConfig = .default) -> Mesh {
         let gridSpacing = config.gridSpacing
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
-        let contour = ContourAnalyzer.extractContour(from: strokes)
+        let contour = buildContour(from: strokes)
         guard contour.count >= 3 else { return Mesh() }
 
         // Bounding box with padding
@@ -53,6 +53,56 @@ enum ShapeInflater {
         // Build mesh: front face (z > 0) + back face (z < 0)
         return buildMesh(depths: depths, rows: rows, cols: cols,
                           x0: Float(x0), y0: Float(y0), spacing: Float(gridSpacing))
+    }
+
+    // MARK: - Contour from strokes
+
+    /// Builds a closed contour polygon from strokes, preserving concavities.
+    /// For a single stroke, uses the points directly (already a closed path).
+    /// For multiple strokes, connects them end-to-end into a closed polygon.
+    private static func buildContour(from strokes: [Stroke]) -> [CGPoint] {
+        guard !strokes.isEmpty else { return [] }
+
+        if strokes.count == 1 {
+            return strokes[0].points.map(\.location)
+        }
+
+        // Multiple strokes: connect them into a single closed polygon.
+        // Start with the first stroke, then append each subsequent stroke
+        // connecting to whichever end is nearest.
+        var remaining = strokes.map { $0.points.map(\.location) }
+        var contour = remaining.removeFirst()
+
+        while !remaining.isEmpty {
+            let lastPoint = contour.last!
+
+            // Find the nearest stroke endpoint
+            var bestIdx = 0
+            var bestDist = CGFloat.infinity
+            var shouldReverse = false
+
+            for (i, path) in remaining.enumerated() {
+                guard let first = path.first, let last = path.last else { continue }
+                let distToFirst = hypot(lastPoint.x - first.x, lastPoint.y - first.y)
+                let distToLast = hypot(lastPoint.x - last.x, lastPoint.y - last.y)
+                if distToFirst < bestDist {
+                    bestDist = distToFirst
+                    bestIdx = i
+                    shouldReverse = false
+                }
+                if distToLast < bestDist {
+                    bestDist = distToLast
+                    bestIdx = i
+                    shouldReverse = true
+                }
+            }
+
+            var next = remaining.remove(at: bestIdx)
+            if shouldReverse { next.reverse() }
+            contour.append(contentsOf: next)
+        }
+
+        return contour
     }
 
     // MARK: - Distance computation
