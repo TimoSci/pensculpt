@@ -2,9 +2,22 @@ import Foundation
 
 struct SculptConfig: Codable, Equatable, Sendable {
     /// Minimum curvature radius in points. Controls how smooth surface transitions are.
-    /// Higher values produce smoother shapes. Lower values allow sharper features.
     var minCurvatureRadius: CGFloat = 25
+
+    /// Grid spacing in points for the inflation mesh. Lower = smoother but more vertices.
     var gridSpacing: CGFloat = 2
+
+    /// Stroke width used when rasterizing strokes for Vision contour detection.
+    var contourStrokeWidth: CGFloat = 8
+
+    /// Contrast adjustment for Vision contour detection (0..3). Higher = more detail.
+    var contourContrast: CGFloat = 1.5
+
+    /// Scale factor for rasterization. Higher = more precise contour detection.
+    var contourRasterScale: CGFloat = 1
+
+    /// Maximum contour points before simplification is applied.
+    var contourMaxPoints: CGFloat = 500
 
     static let `default` = SculptConfig()
 }

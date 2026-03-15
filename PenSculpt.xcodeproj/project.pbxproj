@@ -12,6 +12,7 @@
 		1A2B3C4D5E6F7089A2345601 /* AppMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7089A2345600 /* AppMode.swift */; };
 		1B4C5D6E7F8091A2B3456701 /* LassoSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */; };
 		4060718293A4B5C6D7E8F002 /* ContourAnalyzer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4060718293A4B5C6D7E8F001 /* ContourAnalyzer.swift */; };
+		4960718293A4B5C6D7E8F002 /* ContourExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4960718293A4B5C6D7E8F001 /* ContourExtractor.swift */; };
 		4060718293A4B5C6D7E8F004 /* ContourAnalyzerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4060718293A4B5C6D7E8F003 /* ContourAnalyzerTests.swift */; };
 		4160718293A4B5C6D7E8F002 /* SkeletonExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4160718293A4B5C6D7E8F001 /* SkeletonExtractor.swift */; };
 		4160718293A4B5C6D7E8F004 /* Segmenter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4160718293A4B5C6D7E8F003 /* Segmenter.swift */; };
@@ -78,6 +79,7 @@
 		1A2B3C4D5E6F7089A2345600 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
 		1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelection.swift; sourceTree = "<group>"; };
 		4060718293A4B5C6D7E8F001 /* ContourAnalyzer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContourAnalyzer.swift; sourceTree = "<group>"; };
+		4960718293A4B5C6D7E8F001 /* ContourExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContourExtractor.swift; sourceTree = "<group>"; };
 		4060718293A4B5C6D7E8F003 /* ContourAnalyzerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContourAnalyzerTests.swift; sourceTree = "<group>"; };
 		4160718293A4B5C6D7E8F001 /* SkeletonExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SkeletonExtractor.swift; sourceTree = "<group>"; };
 		4160718293A4B5C6D7E8F003 /* Segmenter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Segmenter.swift; sourceTree = "<group>"; };
@@ -158,6 +160,7 @@
 			children = (
 				20F53120679F63904EB7A842 /* CanvasView.swift */,
 				4060718293A4B5C6D7E8F001 /* ContourAnalyzer.swift */,
+				4960718293A4B5C6D7E8F001 /* ContourExtractor.swift */,
 				4460718293A4B5C6D7E8F001 /* InferencePipeline.swift */,
 				1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */,
 				4360718293A4B5C6D7E8F001 /* MeshAssembler.swift */,
@@ -376,6 +379,7 @@
 				1A2B3C4D5E6F7089A2345601 /* AppMode.swift in Sources */,
 				CF55A32967111120BF84535C /* Canvas.swift in Sources */,
 				4060718293A4B5C6D7E8F002 /* ContourAnalyzer.swift in Sources */,
+				4960718293A4B5C6D7E8F002 /* ContourExtractor.swift in Sources */,
 				4460718293A4B5C6D7E8F002 /* InferencePipeline.swift in Sources */,
 				4360718293A4B5C6D7E8F002 /* MeshAssembler.swift in Sources */,
 				4260718293A4B5C6D7E8F002 /* PrimitiveFitter.swift in Sources */,

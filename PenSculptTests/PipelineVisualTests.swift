@@ -327,9 +327,10 @@ final class PipelineVisualTests: XCTestCase {
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
         let skeleton = SkeletonExtractor.extract(from: strokes)
         let sculptObject = InferencePipeline.infer(from: strokes)
+        let visionContour = ContourExtractor.extract(from: strokes)
 
         // Render pipeline overlay
-        let pipelineImage = renderPipelineOverlay(allPoints: allPoints, skeleton: skeleton, name: name, sculptObject: sculptObject)
+        let pipelineImage = renderPipelineOverlay(allPoints: allPoints, skeleton: skeleton, name: name, sculptObject: sculptObject, contour: visionContour)
         save(pipelineImage, name: "\(name)_pipeline")
 
         // Render mesh profile
@@ -351,7 +352,7 @@ final class PipelineVisualTests: XCTestCase {
         }
     }
 
-    private func renderPipelineOverlay(allPoints: [CGPoint], skeleton: Skeleton, name: String, sculptObject: SculptObject) -> UIImage {
+    private func renderPipelineOverlay(allPoints: [CGPoint], skeleton: Skeleton, name: String, sculptObject: SculptObject, contour: [CGPoint] = []) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: imageSize)
         return renderer.image { ctx in
             let gc = ctx.cgContext
@@ -383,8 +384,19 @@ final class PipelineVisualTests: XCTestCase {
                 gc.fillEllipse(in: CGRect(x: sp.position.x - 2, y: sp.position.y - 2, width: 4, height: 4))
             }
 
+            // Vision contour (green polygon)
+            if contour.count > 2 {
+                gc.setStrokeColor(UIColor.green.cgColor)
+                gc.setLineWidth(2)
+                gc.beginPath()
+                gc.move(to: contour[0])
+                for p in contour.dropFirst() { gc.addLine(to: p) }
+                gc.closePath()
+                gc.strokePath()
+            }
+
             // Title
-            let title = "\(name): \(skeleton.points.count) skel, \(sculptObject.mesh.vertexCount)v"
+            let title = "\(name): \(skeleton.points.count) skel, \(sculptObject.mesh.vertexCount)v, contour \(contour.count)pts"
             (title as NSString).draw(at: CGPoint(x: 10, y: 10),
                 withAttributes: [.font: UIFont.boldSystemFont(ofSize: 14), .foregroundColor: UIColor.darkGray])
         }

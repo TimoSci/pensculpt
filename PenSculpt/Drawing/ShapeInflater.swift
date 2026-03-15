@@ -7,7 +7,7 @@ enum ShapeInflater {
     static func inflate(strokes: [Stroke], config: SculptConfig = .default) -> Mesh {
         let gridSpacing = config.gridSpacing
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
-        let contour = buildContour(from: strokes)
+        let contour = ContourExtractor.extract(from: strokes, config: config)
         guard contour.count >= 3 else { return Mesh() }
 
         // Bounding box with padding
