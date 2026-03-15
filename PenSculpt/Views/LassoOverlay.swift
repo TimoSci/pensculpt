@@ -37,10 +37,10 @@ class LassoView: UIView {
     /// Points in this view's coordinates — used for rendering the lasso path.
     var displayPoints: [CGPoint] = []
     /// Points in the target view's coordinates — used for hit-testing.
-    private var hitTestPoints: [CGPoint] = []
+    private(set) var hitTestPoints: [CGPoint] = []
     /// The PKCanvasView to convert touch coordinates into.
     weak var targetView: UIView?
-    private var isClosed = false
+    private(set) var isClosed = false
 
     func clearLasso() {
         displayPoints = []
@@ -49,38 +49,33 @@ class LassoView: UIView {
         setNeedsDisplay()
     }
 
-    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
+    // MARK: - Point handling (testable)
+
+    func beginStroke(displayPoint: CGPoint, targetPoint: CGPoint) {
         if isClosed {
             displayPoints = []
             hitTestPoints = []
             isClosed = false
         }
-        let selfPoint = touch.location(in: self)
-        let targetPoint = targetView.map { touch.location(in: $0) } ?? selfPoint
-        displayPoints = [selfPoint]
+        displayPoints = [displayPoint]
         hitTestPoints = [targetPoint]
         coordinator?.parent.lassoPoints = displayPoints
         setNeedsDisplay()
     }
 
-    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
-        guard let touch = touches.first else { return }
-        let selfPoint = touch.location(in: self)
-        let targetPoint = targetView.map { touch.location(in: $0) } ?? selfPoint
-        displayPoints.append(selfPoint)
+    func continueStroke(displayPoint: CGPoint, targetPoint: CGPoint) {
+        displayPoints.append(displayPoint)
         hitTestPoints.append(targetPoint)
         coordinator?.parent.lassoPoints = displayPoints
         setNeedsDisplay()
     }
 
-    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+    func endStroke() {
         if displayPoints.count > 2 {
             displayPoints.append(displayPoints[0])
             hitTestPoints.append(hitTestPoints[0])
             isClosed = true
             coordinator?.parent.lassoPoints = displayPoints
-            // Pass canvas-coordinate points for hit-testing
             coordinator?.parent.onLassoCompleted(hitTestPoints)
         } else {
             displayPoints = []
@@ -88,6 +83,26 @@ class LassoView: UIView {
             coordinator?.parent.lassoPoints = displayPoints
         }
         setNeedsDisplay()
+    }
+
+    // MARK: - UITouch handling
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let selfPoint = touch.location(in: self)
+        let targetPoint = targetView.map { touch.location(in: $0) } ?? selfPoint
+        beginStroke(displayPoint: selfPoint, targetPoint: targetPoint)
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        guard let touch = touches.first else { return }
+        let selfPoint = touch.location(in: self)
+        let targetPoint = targetView.map { touch.location(in: $0) } ?? selfPoint
+        continueStroke(displayPoint: selfPoint, targetPoint: targetPoint)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        endStroke()
     }
 
     override func draw(_ rect: CGRect) {

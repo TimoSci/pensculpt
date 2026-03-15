@@ -12,6 +12,7 @@
 		1A2B3C4D5E6F7089A2345601 /* AppMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1A2B3C4D5E6F7089A2345600 /* AppMode.swift */; };
 		1B4C5D6E7F8091A2B3456701 /* LassoSelection.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */; };
 		1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */; };
+		1D5E6F7089A2B3C4D5E6F702 /* LassoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */; };
 		1D6E7F8091A2B345670102A3 /* SculptRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */; };
 		1F06F508B357184A0D298B76 /* Stroke.swift in Sources */ = {isa = PBXBuildFile; fileRef = C103499A3841733723268595 /* Stroke.swift */; };
 		2B3C4D5E6F7089A234560102 /* LassoOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2B3C4D5E6F7089A234560101 /* LassoOverlay.swift */; };
@@ -55,6 +56,7 @@
 		1A2B3C4D5E6F7089A2345600 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
 		1B4C5D6E7F8091A2B3456700 /* LassoSelection.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelection.swift; sourceTree = "<group>"; };
 		1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoSelectionTests.swift; sourceTree = "<group>"; };
+		1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoViewTests.swift; sourceTree = "<group>"; };
 		1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRendererTests.swift; sourceTree = "<group>"; };
 		20F53120679F63904EB7A842 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModel.swift; sourceTree = "<group>"; };
@@ -187,6 +189,7 @@
 				14A2B3C4D5E6F70812345678 /* CanvasViewTests.swift */,
 				2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */,
 				1C5D6E7F8091A2B345670101 /* LassoSelectionTests.swift */,
+				1D5E6F7089A2B3C4D5E6F701 /* LassoViewTests.swift */,
 				DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */,
 				1D6E7F8091A2B345670102A2 /* SculptRendererTests.swift */,
 				5AE4C922D541BA8953F39249 /* PenSculptTests.swift */,
@@ -281,6 +284,7 @@
 				14A2B3C4D5E6F70812345679 /* CanvasViewTests.swift in Sources */,
 				2F7089A234560102B3C4D5E7 /* DrawingViewModelTests.swift in Sources */,
 				1C5D6E7F8091A2B345670102 /* LassoSelectionTests.swift in Sources */,
+				1D5E6F7089A2B3C4D5E6F702 /* LassoViewTests.swift in Sources */,
 				81BCDDE5A91629858020D77B /* PenSculptDocumentTests.swift in Sources */,
 				1D6E7F8091A2B345670102A3 /* SculptRendererTests.swift in Sources */,
 				7E8452DD256CEFA004BEE546 /* PenSculptTests.swift in Sources */,
