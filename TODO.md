@@ -32,7 +32,7 @@ Status legend:
 - [ ] SelectionStrategy protocol — O[ ] S[ ]
 - [ ] StrokeGroup model — O[ ] S[ ]
 - [x] LassoSelection (point-in-polygon, 50% threshold) — O[ ] S[ ]
-- [x] Selection UI (mode toggle, lasso overlay, highlights) — O[ ] S[ ]
+- [x] Selection UI (mode toggle, lasso overlay, highlights) — O[ ] S[x]
 
 ### Inference Pipeline
 - [ ] ContourAnalyzer (silhouette extraction from strokes) — O[ ] S[ ]
@@ -60,7 +60,7 @@ Status legend:
 
 ### Integration
 - [x] SculptScreen view — O[ ] S[ ]
-- [x] Mode switching (Draw → Select → Sculpt) — O[ ] S[ ]
+- [x] Mode switching (Draw → Select → Sculpt) — O[ ] S[x]
 - [ ] Multi-object interaction (active/dimmed) — O[ ] S[ ]
 - [ ] Document persistence for SculptObjects — O[ ] S[ ]
 - [ ] Sculpt mode guide — O[ ] S[ ]
