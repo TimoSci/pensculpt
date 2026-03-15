@@ -1,6 +1,11 @@
 import SwiftUI
 import PencilKit
 
+/// Holds a weak reference to the PKCanvasView for coordinate conversion.
+class ViewBridge {
+    weak var canvasView: PKCanvasView?
+}
+
 struct DrawingScreen: View {
     @Binding var documentCanvas: Canvas
     @Binding var drawingData: Data
@@ -16,7 +21,9 @@ struct DrawingScreen: View {
     @State private var appMode: AppMode = .draw
     @State private var lassoPoints: [CGPoint] = []
     @State private var selectedStrokeIDs: Set<UUID> = []
+    @State private var showSculptScreen = false
     @State private var drawingSyncTask: Task<Void, Never>?
+    @State private var viewBridge = ViewBridge()
     @Environment(\.undoManager) private var undoManager
 
     init(canvas: Binding<Canvas>, drawingData: Binding<Data>) {
@@ -31,8 +38,12 @@ struct DrawingScreen: View {
             selectionHighlightLayer
             selectModeOverlay
             if appMode == .draw { drawModeControls }
+            if appMode == .select && !selectedStrokeIDs.isEmpty { sculptButton }
         }
         .overlay(alignment: .top) { savedMessageOverlay }
+        .fullScreenCover(isPresented: $showSculptScreen) {
+            SculptScreen(strokes: selectedStrokes)
+        }
         .toolbar { navBarItems }
         .onAppear { loadDrawingData() }
         .onChange(of: canvas) { _, _ in
@@ -56,7 +67,7 @@ struct DrawingScreen: View {
     @ViewBuilder
     private var selectionHighlightLayer: some View {
         if !selectedStrokeIDs.isEmpty {
-            SelectionHighlight(strokes: canvas.strokes, selectedIDs: selectedStrokeIDs)
+            SelectionHighlight(strokes: canvas.strokes, selectedIDs: selectedStrokeIDs, viewBridge: viewBridge)
         }
     }
 
@@ -65,15 +76,35 @@ struct DrawingScreen: View {
         if appMode == .select {
             LassoOverlay(
                 lassoPoints: $lassoPoints,
-                onLassoCompleted: { polygon in
+                onLassoCompleted: { canvasPolygon in
                     selectedStrokeIDs = LassoSelection.selectedStrokeIDs(
                         strokes: canvas.strokes,
-                        polygon: polygon
+                        polygon: canvasPolygon
                     )
-                }
+                },
+                viewBridge: viewBridge
             )
             .ignoresSafeArea()
         }
+    }
+
+    private var sculptButton: some View {
+        Button {
+            showSculptScreen = true
+        } label: {
+            Label("Sculpt", systemImage: "cube")
+                .font(.headline)
+                .padding(.horizontal, 20)
+                .padding(.vertical, 12)
+                .background(.blue, in: Capsule())
+                .foregroundStyle(.white)
+        }
+        .padding(.bottom, 30)
+        .transition(.move(edge: .bottom).combined(with: .opacity))
+    }
+
+    private var selectedStrokes: [Stroke] {
+        canvas.strokes.filter { selectedStrokeIDs.contains($0.id) }
     }
 
     @ViewBuilder
@@ -144,7 +175,8 @@ struct DrawingScreen: View {
                     removeStrokeWithUndo(canvas.strokes[index])
                 }
             },
-            isInteractive: appMode == .draw
+            isInteractive: appMode == .draw,
+            viewBridge: viewBridge
         )
         .ignoresSafeArea()
         .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in

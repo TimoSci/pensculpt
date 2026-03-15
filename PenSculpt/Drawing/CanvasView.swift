@@ -9,6 +9,7 @@ struct CanvasView: UIViewRepresentable {
     var onStrokeCompleted: ((PKStroke) -> Void)?
     var onStrokeErased: ((_ removedIndices: [Int]) -> Void)?
     var isInteractive: Bool = true
+    var viewBridge: ViewBridge?
 
     func makeUIView(context: Context) -> PKCanvasView {
         let canvasView = PKCanvasView()
@@ -19,6 +20,8 @@ struct CanvasView: UIViewRepresentable {
         canvasView.isOpaque = true
         canvasView.delegate = context.coordinator
         canvasView.overrideUserInterfaceStyle = .light
+        canvasView.contentInsetAdjustmentBehavior = .never
+        viewBridge?.canvasView = canvasView
 
         // Apple Pencil double-tap interaction
         let pencilInteraction = UIPencilInteraction()
