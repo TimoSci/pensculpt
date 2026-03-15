@@ -56,42 +56,8 @@ enum SkeletonExtractor {
             skeletonPoints.append(SkeletonPoint(position: position, radius: max(radius, 0.5)))
         }
 
-        let smoothed = smooth(skeletonPoints, windowSize: 5)
-        let closed = extrapolateConvergingEnds(smoothed)
-        return Skeleton(points: closed, axis: axis)
-    }
-
-    /// Extrapolates converging ends to zero radius. Only applies to ends whose
-    /// radius is less than 50% of the maximum (truly converging, not just slightly narrower).
-    static func extrapolateConvergingEnds(_ points: [SkeletonPoint]) -> [SkeletonPoint] {
-        guard points.count >= 2 else { return points }
-        var result = points
-        let maxR = points.map(\.radius).max() ?? 0
-        guard maxR > 0 else { return result }
-
-        // Start: extrapolate if significantly narrower than max
-        let first = result[0], second = result[1]
-        if first.radius < second.radius && first.radius < maxR * 0.5 {
-            let dr = second.radius - first.radius
-            let t = first.radius / dr
-            let dx = first.position.x - second.position.x
-            let dy = first.position.y - second.position.y
-            let pos = CGPoint(x: first.position.x + dx * t, y: first.position.y + dy * t)
-            result.insert(SkeletonPoint(position: pos, radius: 0.1), at: 0)
-        }
-
-        // End: extrapolate if significantly narrower than max
-        let last = result[result.count - 1], prev = result[result.count - 2]
-        if last.radius < prev.radius && last.radius < maxR * 0.5 {
-            let dr = prev.radius - last.radius
-            let t = last.radius / dr
-            let dx = last.position.x - prev.position.x
-            let dy = last.position.y - prev.position.y
-            let pos = CGPoint(x: last.position.x + dx * t, y: last.position.y + dy * t)
-            result.append(SkeletonPoint(position: pos, radius: 0.1))
-        }
-
-        return result
+        let smoothed = smooth(skeletonPoints, windowSize: 3)
+        return Skeleton(points: smoothed, axis: axis)
     }
 
     /// Moving average smoothing of skeleton radii. Preserves endpoint values

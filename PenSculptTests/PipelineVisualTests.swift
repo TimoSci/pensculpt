@@ -237,6 +237,66 @@ final class PipelineVisualTests: XCTestCase {
         runDiagnostic(name: "oval", strokes: ovalStrokes)
     }
 
+    // MARK: - Hand-drawn (noisy) circle
+
+    private var handDrawnCircleStrokes: [Stroke] {
+        // Simulates a real hand-drawn circle: 200 points, with jitter
+        var points: [StrokePoint] = []
+        let steps = 200
+        let cx: CGFloat = 300, cy: CGFloat = 400, r: CGFloat = 120
+        for i in 0...steps {
+            let angle = CGFloat(i) / CGFloat(steps) * 2 * .pi
+            let jitterR = CGFloat.random(in: -5...5)
+            let jitterA = CGFloat.random(in: -0.02...0.02)
+            points.append(StrokePoint(
+                location: CGPoint(x: cx + (r + jitterR) * cos(angle + jitterA),
+                                   y: cy + (r + jitterR) * sin(angle + jitterA)),
+                pressure: CGFloat.random(in: 0.8...1.0),
+                tilt: 0, azimuth: 0, timestamp: CGFloat(i) * 0.005))
+        }
+        return [Stroke(points: points)]
+    }
+
+    func testVisualizeHandDrawnCircle() {
+        runDiagnostic(name: "hand_circle", strokes: handDrawnCircleStrokes)
+    }
+
+    // MARK: - Hand-drawn vase (two noisy strokes)
+
+    private var handDrawnVaseStrokes: [Stroke] {
+        var leftPoints: [StrokePoint] = []
+        var rightPoints: [StrokePoint] = []
+        let steps = 100
+        for i in 0...steps {
+            let t = CGFloat(i) / CGFloat(steps)
+            let y = 100 + t * 600
+            let profile: CGFloat
+            if t < 0.05 {
+                profile = 60 * sin(t / 0.05 * .pi / 2)
+            } else if t < 0.4 {
+                profile = 60 + (t - 0.05) / 0.35 * 40
+            } else if t < 0.6 {
+                let nt = (t - 0.4) / 0.2
+                profile = 100 - nt * 60
+            } else {
+                let ot = (t - 0.6) / 0.4
+                profile = 40 + ot * 50
+            }
+            let jitter = CGFloat.random(in: -3...3)
+            leftPoints.append(StrokePoint(
+                location: CGPoint(x: 300 - profile + jitter, y: y + CGFloat.random(in: -2...2)),
+                pressure: 1, tilt: 0, azimuth: 0, timestamp: t))
+            rightPoints.append(StrokePoint(
+                location: CGPoint(x: 300 + profile + jitter, y: y + CGFloat.random(in: -2...2)),
+                pressure: 1, tilt: 0, azimuth: 0, timestamp: t))
+        }
+        return [Stroke(points: leftPoints), Stroke(points: rightPoints)]
+    }
+
+    func testVisualizeHandDrawnVase() {
+        runDiagnostic(name: "hand_vase", strokes: handDrawnVaseStrokes)
+    }
+
     // MARK: - Helpers
 
     /// Creates a single stroke with dense interpolated points along edges.
