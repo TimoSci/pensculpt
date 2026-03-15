@@ -53,22 +53,58 @@ enum SkeletonExtractor {
                 x: c.x + proj * axis.dx + midPerp * perp.dx,
                 y: c.y + proj * axis.dy + midPerp * perp.dy
             )
-            // Minimum radius: 2% of the shape's perpendicular extent
-            let minRadius = (maxProj - minProj) * 0.02
-            skeletonPoints.append(SkeletonPoint(position: position, radius: max(radius, minRadius)))
+            skeletonPoints.append(SkeletonPoint(position: position, radius: max(radius, 0.5)))
         }
 
         let smoothed = smooth(skeletonPoints, windowSize: 5)
-        return Skeleton(points: smoothed, axis: axis)
+        let closed = extrapolateConvergingEnds(smoothed)
+        return Skeleton(points: closed, axis: axis)
     }
 
-    /// Moving average smoothing of skeleton radii to reduce jitter.
+    /// Extrapolates converging ends to zero radius. Only applies to ends whose
+    /// radius is less than 50% of the maximum (truly converging, not just slightly narrower).
+    static func extrapolateConvergingEnds(_ points: [SkeletonPoint]) -> [SkeletonPoint] {
+        guard points.count >= 2 else { return points }
+        var result = points
+        let maxR = points.map(\.radius).max() ?? 0
+        guard maxR > 0 else { return result }
+
+        // Start: extrapolate if significantly narrower than max
+        let first = result[0], second = result[1]
+        if first.radius < second.radius && first.radius < maxR * 0.5 {
+            let dr = second.radius - first.radius
+            let t = first.radius / dr
+            let dx = first.position.x - second.position.x
+            let dy = first.position.y - second.position.y
+            let pos = CGPoint(x: first.position.x + dx * t, y: first.position.y + dy * t)
+            result.insert(SkeletonPoint(position: pos, radius: 0.1), at: 0)
+        }
+
+        // End: extrapolate if significantly narrower than max
+        let last = result[result.count - 1], prev = result[result.count - 2]
+        if last.radius < prev.radius && last.radius < maxR * 0.5 {
+            let dr = prev.radius - last.radius
+            let t = last.radius / dr
+            let dx = last.position.x - prev.position.x
+            let dy = last.position.y - prev.position.y
+            let pos = CGPoint(x: last.position.x + dx * t, y: last.position.y + dy * t)
+            result.append(SkeletonPoint(position: pos, radius: 0.1))
+        }
+
+        return result
+    }
+
+    /// Moving average smoothing of skeleton radii. Preserves endpoint values
+    /// so natural taper at converging ends isn't averaged away.
     static func smooth(_ points: [SkeletonPoint], windowSize: Int) -> [SkeletonPoint] {
         guard points.count >= windowSize else { return points }
         let half = windowSize / 2
         return points.indices.map { i in
-            let lo = max(0, i - half)
-            let hi = min(points.count - 1, i + half)
+            if i < half || i >= points.count - half {
+                return points[i]
+            }
+            let lo = i - half
+            let hi = i + half
             let window = points[lo...hi]
             let avgRadius = window.map(\.radius).reduce(0, +) / CGFloat(window.count)
             return SkeletonPoint(position: points[i].position, radius: avgRadius)

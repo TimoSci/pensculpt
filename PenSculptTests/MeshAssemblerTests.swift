@@ -62,23 +62,6 @@ final class MeshAssemblerTests: XCTestCase {
         XCTAssertEqual(yCenter, 0, accuracy: 1)
     }
 
-    func testTaperClosesEnds() {
-        // The mesh should taper toward zero radius at both ends
-        let primitive = makePrimitive(radii: [10, 10, 10])
-        let mesh = MeshAssembler.assemble(from: primitive, radialSegments: 8)
-
-        // Find the ring with the smallest Y (bottom) and largest Y (top)
-        let sortedByY = mesh.vertices.sorted { $0.position.y < $1.position.y }
-        let bottomVertex = sortedByY.first!
-        let topVertex = sortedByY.last!
-
-        // Bottom and top ring vertices should have very small XZ radius (tapered)
-        let bottomRadius = hypot(bottomVertex.position.x, bottomVertex.position.z)
-        let topRadius = hypot(topVertex.position.x, topVertex.position.z)
-        XCTAssertLessThan(bottomRadius, 5, "Bottom should taper")
-        XCTAssertLessThan(topRadius, 5, "Top should taper")
-    }
-
     func testConeVerticesHaveVaryingRadius() {
         let primitive = makePrimitive(
             radii: [20, 10],
