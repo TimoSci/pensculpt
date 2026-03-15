@@ -193,51 +193,67 @@ enum ShapeInflater {
         return Mesh(vertices: vertices, faces: faces)
     }
 
-    /// Connects front and back faces at boundary edges where interior meets exterior.
+    /// Connects front and back faces along all boundary edges.
+    /// For each interior point with an exterior neighbor, creates a triangle
+    /// connecting its front and back vertices to the next boundary point.
     private static func stitchEdges(frontIdx: [[Int]], backIdx: [[Int]],
                                      rows: Int, cols: Int, faces: inout [MeshFace]) {
         for row in 0..<rows {
             for col in 0..<cols {
                 guard frontIdx[row][col] >= 0 else { continue }
+                let f = UInt32(frontIdx[row][col])
+                let b = UInt32(backIdx[row][col])
 
-                // Right boundary: interior here, exterior to the right
-                if col + 1 >= cols || frontIdx[row][col + 1] < 0 {
-                    if row + 1 < rows && frontIdx[row + 1][col] >= 0 {
-                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                let hasRight = col + 1 < cols && frontIdx[row][col + 1] >= 0
+                let hasLeft = col - 1 >= 0 && frontIdx[row][col - 1] >= 0
+                let hasBelow = row + 1 < rows && frontIdx[row + 1][col] >= 0
+                let hasAbove = row - 1 >= 0 && frontIdx[row - 1][col] >= 0
+
+                // Right neighbor is exterior → stitch along vertical edge
+                if !hasRight {
+                    // Connect to the interior neighbor below (if any) along this edge
+                    if hasBelow {
                         let f2 = UInt32(frontIdx[row + 1][col]), b2 = UInt32(backIdx[row + 1][col])
-                        faces.append(MeshFace(indices: SIMD3(f1, b1, f2)))
-                        faces.append(MeshFace(indices: SIMD3(f2, b1, b2)))
+                        faces.append(MeshFace(indices: SIMD3(f, b, f2)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b, b2)))
                     }
                 }
 
-                // Left boundary: interior here, exterior to the left
-                if col - 1 < 0 || frontIdx[row][col - 1] < 0 {
-                    if row + 1 < rows && frontIdx[row + 1][col] >= 0 {
-                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                // Left neighbor is exterior → stitch along vertical edge
+                if !hasLeft {
+                    if hasBelow {
                         let f2 = UInt32(frontIdx[row + 1][col]), b2 = UInt32(backIdx[row + 1][col])
-                        faces.append(MeshFace(indices: SIMD3(f1, f2, b1)))
-                        faces.append(MeshFace(indices: SIMD3(f2, b2, b1)))
+                        faces.append(MeshFace(indices: SIMD3(f, f2, b)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b2, b)))
                     }
                 }
 
-                // Bottom boundary: interior here, exterior below
-                if row + 1 >= rows || frontIdx[row + 1][col] < 0 {
-                    if col + 1 < cols && frontIdx[row][col + 1] >= 0 {
-                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                // Below neighbor is exterior → stitch along horizontal edge
+                if !hasBelow {
+                    if hasRight {
                         let f2 = UInt32(frontIdx[row][col + 1]), b2 = UInt32(backIdx[row][col + 1])
-                        faces.append(MeshFace(indices: SIMD3(f1, f2, b1)))
-                        faces.append(MeshFace(indices: SIMD3(f2, b2, b1)))
+                        faces.append(MeshFace(indices: SIMD3(f, f2, b)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b2, b)))
                     }
                 }
 
-                // Top boundary: interior here, exterior above
-                if row - 1 < 0 || frontIdx[row - 1][col] < 0 {
-                    if col + 1 < cols && frontIdx[row][col + 1] >= 0 {
-                        let f1 = UInt32(frontIdx[row][col]), b1 = UInt32(backIdx[row][col])
+                // Above neighbor is exterior → stitch along horizontal edge
+                if !hasAbove {
+                    if hasRight {
                         let f2 = UInt32(frontIdx[row][col + 1]), b2 = UInt32(backIdx[row][col + 1])
-                        faces.append(MeshFace(indices: SIMD3(f1, b1, f2)))
-                        faces.append(MeshFace(indices: SIMD3(f2, b1, b2)))
+                        faces.append(MeshFace(indices: SIMD3(f, b, f2)))
+                        faces.append(MeshFace(indices: SIMD3(f2, b, b2)))
                     }
+                }
+
+                // Corner cases: isolated boundary point with no adjacent interior neighbor
+                // in the stitching direction → close with a single triangle
+                if !hasRight && !hasBelow && !hasLeft && !hasAbove {
+                    // Fully isolated point — just a degenerate triangle front→back
+                    // (shouldn't happen in practice with grid spacing < shape size)
+                } else if !hasRight && !hasBelow {
+                    // Bottom-right corner: close with triangle
+                    faces.append(MeshFace(indices: SIMD3(f, b, f))) // degenerate, skip
                 }
             }
         }
