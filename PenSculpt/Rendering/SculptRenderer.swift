@@ -151,7 +151,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             near: -radius * 10, far: radius * 10
         )
         // Slight tilt so the 3D depth is visible (not a flat front view)
-        let tilt = rotationX(-0.3) // ~17 degrees downward
+        let tilt = rotationX(-0.55) // ~30 degrees downward
         let view = tilt * translationMatrix(-center.x, -center.y, -center.z)
         return proj * view
     }

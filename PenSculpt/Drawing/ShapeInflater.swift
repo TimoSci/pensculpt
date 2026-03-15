@@ -137,50 +137,7 @@ enum ShapeInflater {
             }
         }
 
-        // Edge faces: connect front and back at the boundary (where depth transitions to 0)
-        for row in 0..<rows {
-            for col in 0..<cols {
-                if frontIdx[row][col] < 0 { continue }
-
-                // Check each neighbor — if neighbor has no depth, this is an edge
-                let neighbors = [(row - 1, col), (row + 1, col), (row, col - 1), (row, col + 1)]
-                for (nr, nc) in neighbors {
-                    if nr < 0 || nr >= rows || nc < 0 || nc >= cols || frontIdx[nr][nc] < 0 {
-                        // This vertex is on the edge — connect front to back
-                        let fi = UInt32(frontIdx[row][col])
-                        let bi = UInt32(backIdx[row][col])
-
-                        // Find an adjacent edge vertex to form a quad
-                        if let adj = findAdjacentEdge(row: row, col: col, dr: nr - row, dc: nc - col,
-                                                       frontIdx: frontIdx, rows: rows, cols: cols) {
-                            let fAdj = UInt32(frontIdx[adj.0][adj.1])
-                            let bAdj = UInt32(backIdx[adj.0][adj.1])
-                            faces.append(MeshFace(indices: SIMD3(fi, fAdj, bi)))
-                            faces.append(MeshFace(indices: SIMD3(fAdj, bAdj, bi)))
-                        }
-                    }
-                }
-            }
-        }
-
         return Mesh(vertices: vertices, faces: faces)
-    }
-
-    private static func findAdjacentEdge(row: Int, col: Int, dr: Int, dc: Int,
-                                          frontIdx: [[Int]], rows: Int, cols: Int) -> (Int, Int)? {
-        // Look for the next edge vertex along the boundary
-        let candidates: [(Int, Int)]
-        if dr != 0 { // vertical edge — look left and right
-            candidates = [(row, col - 1), (row, col + 1)]
-        } else { // horizontal edge — look up and down
-            candidates = [(row - 1, col), (row + 1, col)]
-        }
-        for (cr, cc) in candidates {
-            if cr >= 0 && cr < rows && cc >= 0 && cc < cols && frontIdx[cr][cc] >= 0 {
-                return (cr, cc)
-            }
-        }
-        return nil
     }
 
     private static func computeNormal(depths: [[Float]], row: Int, col: Int,
