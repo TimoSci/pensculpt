@@ -57,7 +57,7 @@ fragment float4 mesh_fragment(MeshVertexOut in [[stage_in]],
     float3 n = normalize(in.normal);
     float3 l = normalize(uniforms.lightDirection);
     float diffuse = max(dot(n, l), 0.0);
-    float ambient = 0.25;
-    float3 color = uniforms.baseColor * (ambient + diffuse * 0.75);
+    float ambient = 0.4;
+    float3 color = uniforms.baseColor * (ambient + diffuse * 0.6);
     return float4(color, 1.0);
 }

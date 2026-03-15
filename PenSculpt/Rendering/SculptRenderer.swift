@@ -109,8 +109,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let mvp = meshProjection(mesh: mesh, viewSize: view.bounds.size)
         var uniforms = MeshRenderUniforms(
             mvpMatrix: mvp,
-            lightDirection: normalize(SIMD3<Float>(0.5, 1.0, 0.8)),
-            baseColor: SIMD3<Float>(0.7, 0.7, 0.75)
+            lightDirection: normalize(SIMD3<Float>(0.3, 0.6, 1.0)),
+            baseColor: SIMD3<Float>(0.85, 0.85, 0.9)
         )
 
         encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
