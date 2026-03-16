@@ -3,16 +3,14 @@ import simd
 
 enum ShapeInflater {
 
+    /// Runs the full inference pipeline: strokes → inflated 3D mesh → SculptObject.
+    static func sculpt(from strokes: [Stroke], config: SculptConfig = .default) -> SculptObject {
+        let mesh = inflate(strokes: strokes, config: config)
+        return SculptObject(mesh: mesh, sourceStrokeIDs: Set(strokes.map(\.id)))
+    }
+
     /// Inflates a 2D contour into a closed 3D mesh by using edge distance as depth.
     static func inflate(strokes: [Stroke], config: SculptConfig = .default) -> Mesh {
-        // Adaptive grid spacing: cap grid to ~150 cells per axis to prevent freezing
-        let tempPoints = strokes.flatMap { $0.points.map(\.location) }
-        let tempXs = tempPoints.map(\.x)
-        let tempYs = tempPoints.map(\.y)
-        let shapeW = (tempXs.max() ?? 0) - (tempXs.min() ?? 0)
-        let shapeH = (tempYs.max() ?? 0) - (tempYs.min() ?? 0)
-        let shapeSize = max(shapeW, shapeH)
-        let gridSpacing = max(config.gridSpacing, shapeSize / 150)
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
         let contour = ContourExtractor.extract(from: strokes, config: config)
         guard contour.count >= 3 else { return Mesh() }
@@ -21,6 +19,10 @@ enum ShapeInflater {
         let xs = allPoints.map(\.x), ys = allPoints.map(\.y)
         guard let minX = xs.min(), let maxX = xs.max(),
               let minY = ys.min(), let maxY = ys.max() else { return Mesh() }
+
+        // Adaptive grid spacing: cap grid to ~150 cells per axis to prevent freezing
+        let shapeSize = max(maxX - minX, maxY - minY)
+        let gridSpacing = max(config.gridSpacing, shapeSize / 150)
         let pad = gridSpacing * 2
         let x0 = minX - pad, y0 = minY - pad
         let x1 = maxX + pad, y1 = maxY + pad
@@ -60,56 +62,6 @@ enum ShapeInflater {
         // Build mesh: front face (z > 0) + back face (z < 0)
         return buildMesh(depths: depths, rows: rows, cols: cols,
                           x0: Float(x0), y0: Float(y0), spacing: Float(gridSpacing))
-    }
-
-    // MARK: - Contour from strokes
-
-    /// Builds a closed contour polygon from strokes, preserving concavities.
-    /// For a single stroke, uses the points directly (already a closed path).
-    /// For multiple strokes, connects them end-to-end into a closed polygon.
-    private static func buildContour(from strokes: [Stroke]) -> [CGPoint] {
-        guard !strokes.isEmpty else { return [] }
-
-        if strokes.count == 1 {
-            return strokes[0].points.map(\.location)
-        }
-
-        // Multiple strokes: connect them into a single closed polygon.
-        // Start with the first stroke, then append each subsequent stroke
-        // connecting to whichever end is nearest.
-        var remaining = strokes.map { $0.points.map(\.location) }
-        var contour = remaining.removeFirst()
-
-        while !remaining.isEmpty {
-            let lastPoint = contour.last!
-
-            // Find the nearest stroke endpoint
-            var bestIdx = 0
-            var bestDist = CGFloat.infinity
-            var shouldReverse = false
-
-            for (i, path) in remaining.enumerated() {
-                guard let first = path.first, let last = path.last else { continue }
-                let distToFirst = hypot(lastPoint.x - first.x, lastPoint.y - first.y)
-                let distToLast = hypot(lastPoint.x - last.x, lastPoint.y - last.y)
-                if distToFirst < bestDist {
-                    bestDist = distToFirst
-                    bestIdx = i
-                    shouldReverse = false
-                }
-                if distToLast < bestDist {
-                    bestDist = distToLast
-                    bestIdx = i
-                    shouldReverse = true
-                }
-            }
-
-            var next = remaining.remove(at: bestIdx)
-            if shouldReverse { next.reverse() }
-            contour.append(contentsOf: next)
-        }
-
-        return contour
     }
 
     // MARK: - Distance computation

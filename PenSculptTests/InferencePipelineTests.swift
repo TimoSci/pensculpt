@@ -17,7 +17,7 @@ final class InferencePipelineTests: XCTestCase {
         let stroke = makeStroke(points: [
             (100, 0), (200, 0), (200, 100), (100, 100)
         ])
-        let result = InferencePipeline.infer(from: [stroke])
+        let result = ShapeInflater.sculpt(from: [stroke])
 
         XCTAssertFalse(result.mesh.isEmpty, "Pipeline should produce a mesh")
         XCTAssertGreaterThan(result.mesh.vertexCount, 0)
@@ -27,14 +27,14 @@ final class InferencePipelineTests: XCTestCase {
     func testInferPreservesSourceStrokeIDs() {
         let s1 = makeStroke(points: [(0, 0), (100, 0), (100, 100), (0, 100)])
         let s2 = makeStroke(points: [(50, 50), (150, 50), (150, 150)])
-        let result = InferencePipeline.infer(from: [s1, s2])
+        let result = ShapeInflater.sculpt(from: [s1, s2])
 
         XCTAssertTrue(result.sourceStrokeIDs.contains(s1.id))
         XCTAssertTrue(result.sourceStrokeIDs.contains(s2.id))
     }
 
     func testInferFromEmptyStrokesProducesEmptyMesh() {
-        let result = InferencePipeline.infer(from: [])
+        let result = ShapeInflater.sculpt(from: [])
         XCTAssertTrue(result.mesh.isEmpty)
     }
 
@@ -42,7 +42,7 @@ final class InferencePipelineTests: XCTestCase {
         let stroke = makeStroke(points: [
             (0, 0), (100, 0), (100, 200), (0, 200)
         ])
-        let result = InferencePipeline.infer(from: [stroke])
+        let result = ShapeInflater.sculpt(from: [stroke])
 
         for vertex in result.mesh.vertices {
             let len = simd_length(vertex.normal)
@@ -55,7 +55,7 @@ final class InferencePipelineTests: XCTestCase {
         let stroke = makeStroke(points: [
             (50, 0), (100, 50), (50, 100), (0, 50)
         ])
-        let result = InferencePipeline.infer(from: [stroke])
+        let result = ShapeInflater.sculpt(from: [stroke])
         let maxIdx = UInt32(result.mesh.vertexCount)
 
         for face in result.mesh.faces {

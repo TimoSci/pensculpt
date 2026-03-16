@@ -55,85 +55,7 @@ final class PipelineVisualTests: XCTestCase {
     // MARK: - Visual diagnostic
 
     func testVisualizeVasePipeline() {
-        let strokes = vaseStrokes
-        let allPoints = strokes.flatMap { $0.points.map(\.location) }
-
-        // Step 1: Extract skeleton
-        let skeleton = SkeletonExtractor.extract(from: strokes)
-
-        // Step 2: Run full pipeline
-        let sculptObject = InferencePipeline.infer(from: strokes)
-
-        // Render diagnostic image
-        let renderer = UIGraphicsImageRenderer(size: imageSize)
-        let image = renderer.image { ctx in
-            let gc = ctx.cgContext
-
-            // White background
-            gc.setFillColor(UIColor.white.cgColor)
-            gc.fill(CGRect(origin: .zero, size: imageSize))
-
-            // Draw stroke points (black dots)
-            gc.setFillColor(UIColor.black.cgColor)
-            for p in allPoints {
-                gc.fillEllipse(in: CGRect(x: p.x - 1.5, y: p.y - 1.5, width: 3, height: 3))
-            }
-
-            // Draw skeleton axis (red line)
-            let c = SkeletonExtractor.centroid(of: allPoints)
-            let axis = skeleton.axis
-            gc.setStrokeColor(UIColor.red.cgColor)
-            gc.setLineWidth(1)
-            gc.beginPath()
-            gc.move(to: CGPoint(x: c.x - axis.dx * 400, y: c.y - axis.dy * 400))
-            gc.addLine(to: CGPoint(x: c.x + axis.dx * 400, y: c.y + axis.dy * 400))
-            gc.strokePath()
-
-            // Draw skeleton points with radius circles (blue)
-            gc.setStrokeColor(UIColor.blue.cgColor)
-            gc.setLineWidth(1)
-            for sp in skeleton.points {
-                let r = sp.radius
-                gc.strokeEllipse(in: CGRect(
-                    x: sp.position.x - r, y: sp.position.y - r,
-                    width: r * 2, height: r * 2))
-                // Center dot
-                gc.setFillColor(UIColor.blue.cgColor)
-                gc.fillEllipse(in: CGRect(
-                    x: sp.position.x - 2, y: sp.position.y - 2, width: 4, height: 4))
-            }
-
-            // Draw info text
-            let info = """
-            Strokes: \(strokes.count), Points: \(allPoints.count)
-            Skeleton: \(skeleton.points.count) pts, Axis: (\(String(format: "%.2f", skeleton.axis.dx)), \(String(format: "%.2f", skeleton.axis.dy)))
-            Radii: \(skeleton.points.map { String(format: "%.0f", $0.radius) }.joined(separator: ", "))
-            Mesh: \(sculptObject.mesh.vertexCount) verts, \(sculptObject.mesh.faceCount) faces
-            """
-            let attrs: [NSAttributedString.Key: Any] = [
-                .font: UIFont.systemFont(ofSize: 10),
-                .foregroundColor: UIColor.darkGray
-            ]
-            (info as NSString).draw(at: CGPoint(x: 10, y: 10), withAttributes: attrs)
-        }
-
-        // Save image
-        let path = outputDir + "vase_pipeline.png"
-        if let data = image.pngData() {
-            try? data.write(to: URL(fileURLWithPath: path))
-            print("📸 Saved diagnostic image: \(path)")
-        }
-
-        // Also save the mesh profile as a separate image
-        let profileImage = renderMeshProfile(sculptObject.mesh)
-        let profilePath = outputDir + "vase_mesh_profile.png"
-        if let data = profileImage.pngData() {
-            try? data.write(to: URL(fileURLWithPath: profilePath))
-            print("📸 Saved mesh profile: \(profilePath)")
-        }
-
-        XCTAssertFalse(skeleton.isEmpty)
-        XCTAssertFalse(sculptObject.mesh.isEmpty)
+        runDiagnostic(name: "vase", strokes: vaseStrokes)
     }
 
     // MARK: - Circle (should produce a sphere-like shape)
@@ -299,7 +221,7 @@ final class PipelineVisualTests: XCTestCase {
 
     func testCircleDepthRatio() {
         let strokes = handDrawnCircleStrokes
-        let obj = InferencePipeline.infer(from: strokes)
+        let obj = ShapeInflater.sculpt(from: strokes)
         let positions = obj.mesh.vertices.map(\.position)
         let xs = positions.map(\.x), ys = positions.map(\.y), zs = positions.map(\.z)
         let xRange = xs.max()! - xs.min()!
@@ -340,25 +262,21 @@ final class PipelineVisualTests: XCTestCase {
 
     private func runDiagnostic(name: String, strokes: [Stroke]) {
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
-        let skeleton = SkeletonExtractor.extract(from: strokes)
-        let sculptObject = InferencePipeline.infer(from: strokes)
-        let visionContour = ContourExtractor.extract(from: strokes)
+        let sculptObject = ShapeInflater.sculpt(from: strokes)
+        let contour = ContourExtractor.extract(from: strokes)
 
         // Render pipeline overlay
-        let pipelineImage = renderPipelineOverlay(allPoints: allPoints, skeleton: skeleton, name: name, sculptObject: sculptObject, contour: visionContour)
+        let pipelineImage = renderPipelineOverlay(allPoints: allPoints, name: name, sculptObject: sculptObject, contour: contour)
         save(pipelineImage, name: "\(name)_pipeline")
 
         // Render mesh profile
         let profileImage = renderMeshProfile(sculptObject.mesh)
         save(profileImage, name: "\(name)_mesh_profile")
 
-        // Print summary
-        let radiiStr = skeleton.points.prefix(20).map { String(format: "%.0f", $0.radius) }.joined(separator: ", ")
-        print("📊 \(name): \(skeleton.points.count) skel pts, mesh \(sculptObject.mesh.vertexCount)v/\(sculptObject.mesh.faceCount)f, radii: [\(radiiStr)...]")
+        print("📊 \(name): mesh \(sculptObject.mesh.vertexCount)v/\(sculptObject.mesh.faceCount)f, contour \(contour.count)pts")
 
         XCTAssertFalse(sculptObject.mesh.isEmpty, "\(name) should produce a mesh")
 
-        // Print mesh extent for depth analysis
         if !sculptObject.mesh.isEmpty {
             let positions = sculptObject.mesh.vertices.map(\.position)
             let xs = positions.map(\.x), ys = positions.map(\.y), zs = positions.map(\.z)
@@ -377,7 +295,7 @@ final class PipelineVisualTests: XCTestCase {
         }
     }
 
-    private func renderPipelineOverlay(allPoints: [CGPoint], skeleton: Skeleton, name: String, sculptObject: SculptObject, contour: [CGPoint] = []) -> UIImage {
+    private func renderPipelineOverlay(allPoints: [CGPoint], name: String, sculptObject: SculptObject, contour: [CGPoint] = []) -> UIImage {
         let renderer = UIGraphicsImageRenderer(size: imageSize)
         return renderer.image { ctx in
             let gc = ctx.cgContext
@@ -388,25 +306,6 @@ final class PipelineVisualTests: XCTestCase {
             gc.setFillColor(UIColor.black.cgColor)
             for p in allPoints {
                 gc.fillEllipse(in: CGRect(x: p.x - 1.5, y: p.y - 1.5, width: 3, height: 3))
-            }
-
-            // Skeleton axis
-            let c = SkeletonExtractor.centroid(of: allPoints)
-            gc.setStrokeColor(UIColor.red.cgColor)
-            gc.setLineWidth(1)
-            gc.beginPath()
-            gc.move(to: CGPoint(x: c.x - skeleton.axis.dx * 400, y: c.y - skeleton.axis.dy * 400))
-            gc.addLine(to: CGPoint(x: c.x + skeleton.axis.dx * 400, y: c.y + skeleton.axis.dy * 400))
-            gc.strokePath()
-
-            // Skeleton points with radii
-            gc.setStrokeColor(UIColor.blue.cgColor)
-            gc.setLineWidth(1)
-            for sp in skeleton.points {
-                let r = sp.radius
-                gc.strokeEllipse(in: CGRect(x: sp.position.x - r, y: sp.position.y - r, width: r * 2, height: r * 2))
-                gc.setFillColor(UIColor.blue.cgColor)
-                gc.fillEllipse(in: CGRect(x: sp.position.x - 2, y: sp.position.y - 2, width: 4, height: 4))
             }
 
             // Vision contour (green polygon)
@@ -421,7 +320,7 @@ final class PipelineVisualTests: XCTestCase {
             }
 
             // Title
-            let title = "\(name): \(skeleton.points.count) skel, \(sculptObject.mesh.vertexCount)v, contour \(contour.count)pts"
+            let title = "\(name): \(sculptObject.mesh.vertexCount)v/\(sculptObject.mesh.faceCount)f, contour \(contour.count)pts"
             (title as NSString).draw(at: CGPoint(x: 10, y: 10),
                 withAttributes: [.font: UIFont.boldSystemFont(ofSize: 14), .foregroundColor: UIColor.darkGray])
         }

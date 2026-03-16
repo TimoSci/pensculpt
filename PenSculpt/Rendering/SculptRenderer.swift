@@ -18,8 +18,13 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     let meshPipeline: MTLRenderPipelineState
 
     var strokes: [Stroke] = []
-    var sculptObject: SculptObject?
+    var sculptObject: SculptObject? { didSet { meshBuffersNeedUpdate = true } }
     var config: SculptConfig = .default
+
+    private var meshVertexBuffer: MTLBuffer?
+    private var meshIndexBuffer: MTLBuffer?
+    private var meshIndexCount: Int = 0
+    private var meshBuffersNeedUpdate = true
 
     init?(device: MTLDevice) {
         self.device = device
@@ -83,10 +88,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Mesh rendering
 
-    private func drawMesh(_ mesh: Mesh, in view: MTKView, encoder: MTLRenderCommandEncoder) {
-        encoder.setRenderPipelineState(meshPipeline)
-
-        // Pack vertices: [position, normal, position, normal, ...]
+    private func rebuildMeshBuffers(_ mesh: Mesh) {
         var vertexData: [Float] = []
         vertexData.reserveCapacity(mesh.vertices.count * 6)
         for v in mesh.vertices {
@@ -94,19 +96,31 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             vertexData.append(contentsOf: [v.normal.x, v.normal.y, v.normal.z])
         }
 
-        // Pack indices
         var indexData: [UInt32] = []
         indexData.reserveCapacity(mesh.faces.count * 3)
         for f in mesh.faces {
             indexData.append(contentsOf: [f.indices.x, f.indices.y, f.indices.z])
         }
 
-        guard let vertexBuffer = device.makeBuffer(bytes: vertexData,
-                                                    length: vertexData.count * MemoryLayout<Float>.stride,
-                                                    options: .storageModeShared),
-              let indexBuffer = device.makeBuffer(bytes: indexData,
-                                                   length: indexData.count * MemoryLayout<UInt32>.stride,
-                                                   options: .storageModeShared) else { return }
+        meshVertexBuffer = device.makeBuffer(bytes: vertexData,
+                                              length: vertexData.count * MemoryLayout<Float>.stride,
+                                              options: .storageModeShared)
+        meshIndexBuffer = device.makeBuffer(bytes: indexData,
+                                             length: indexData.count * MemoryLayout<UInt32>.stride,
+                                             options: .storageModeShared)
+        meshIndexCount = indexData.count
+        meshBuffersNeedUpdate = false
+    }
+
+    private func drawMesh(_ mesh: Mesh, in view: MTKView, encoder: MTLRenderCommandEncoder) {
+        encoder.setRenderPipelineState(meshPipeline)
+
+        if meshBuffersNeedUpdate {
+            rebuildMeshBuffers(mesh)
+        }
+
+        guard let vertexBuffer = meshVertexBuffer,
+              let indexBuffer = meshIndexBuffer, meshIndexCount > 0 else { return }
 
         let mvp = meshProjection(mesh: mesh, viewSize: view.bounds.size)
         var uniforms = MeshRenderUniforms(
@@ -131,7 +145,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         encoder.drawIndexedPrimitives(
             type: .triangle,
-            indexCount: indexData.count,
+            indexCount: meshIndexCount,
             indexType: .uint32,
             indexBuffer: indexBuffer,
             indexBufferOffset: 0

@@ -35,18 +35,14 @@ Status legend:
 - [x] Selection UI (mode toggle, lasso overlay, highlights) — O[ ] S[x]
 
 ### Inference Pipeline
-- [ ] ContourAnalyzer (silhouette extraction from strokes) — O[ ] S[ ]
-- [ ] SkeletonExtractor (distance transform, Zhang-Suen thinning) — O[ ] S[ ]
-- [ ] Segmenter (branch points, curvature threshold) — O[ ] S[ ]
-- [ ] PrimitiveFitter (circularity, aspect ratio, taper classification) — O[ ] S[ ]
-- [ ] MeshAssembler (implicit surface blending, Marching Cubes) — O[ ] S[ ]
-- [ ] StrokeMapper (orthographic projection, UV mapping, seam splitting) — O[ ] S[ ]
-- [ ] SculptObject model — O[ ] S[ ]
-- [ ] InferencePipeline coordinator (async, fallback on failure) — O[ ] S[ ]
+- [x] ContourExtractor (Vision ML contour detection with fallback) — O[ ] S[ ]
+- [x] ShapeInflater (grid distance field → sphere-like depth → front/back mesh) — O[ ] S[x]
+- [x] SculptObject model — O[ ] S[ ]
+- [x] SculptConfig (gridSpacing, cameraTilt, contour params, displayMode) — O[ ] S[ ]
 
 ### Metal Renderer
 - [x] MetalCanvasView (MTKView, orthographic camera) — O[ ] S[ ]
-- [ ] Mesh rendering (diffuse lighting, sketch aesthetic) — O[ ] S[ ]
+- [x] Mesh rendering (diffuse lighting, wireframe debug mode) — O[x] S[ ]
 - [ ] Stroke rendering (triangle strips, pressure-based width) — O[ ] S[ ]
 - [ ] Stroke style toggle (screen-space vs surface-space) — O[ ] S[ ]
 - [x] Metal shaders (vertex + fragment) — O[ ] S[ ]
@@ -70,3 +66,4 @@ Status legend:
 - [ ] Grow selection (tap + hold duration) — O[ ] S[ ]
 - [ ] Export (image, OBJ/USDZ, share sheet) — O[ ] S[ ]
 - [ ] Perspective camera toggle — O[ ] S[ ]
+- [ ] Advanced inference pipeline (SkeletonExtractor, Segmenter, PrimitiveFitter, MeshAssembler, StrokeMapper) — O[ ] S[ ]

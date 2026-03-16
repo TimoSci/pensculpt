@@ -21,7 +21,7 @@ struct SculptScreen: View {
                 }
             }
             .onAppear {
-                sculptObject = InferencePipeline.infer(from: strokes, config: config)
+                sculptObject = ShapeInflater.sculpt(from: strokes, config: config)
             }
     }
 }
