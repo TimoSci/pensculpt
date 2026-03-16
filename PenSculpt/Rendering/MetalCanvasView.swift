@@ -84,11 +84,28 @@ struct MetalCanvasView: UIViewRepresentable {
 
                 switch gesture.state {
                 case .began, .changed:
-                    if let hitPoint = renderer.hitTest(screenPoint: location, viewSize: viewSize) {
-                        renderer.currentStrokePoints.append(hitPoint)
+                    if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize) {
+                        // Reject points that jump to a different surface (t discontinuity)
+                        let isFirst = renderer.currentStrokePoints.isEmpty
+                        let tContinuous = isFirst || abs(result.t - renderer.lastHitT) < renderer.config.surfaceStrokeMaxTJump
+                        if tContinuous {
+                            renderer.currentStrokePoints.append(result.point)
+                            renderer.currentStrokeDiag.append((screen: location, t: result.t, hit: result.point))
+                            renderer.lastHitT = result.t
+                        }
                     }
                 case .ended, .cancelled:
                     if renderer.currentStrokePoints.count > 1 {
+                        // Diagnostic: dump first 10 points
+                        let diag = renderer.currentStrokeDiag
+                        print("[Draw] --- Stroke \(diag.count) pts ---")
+                        for i in 0..<min(10, diag.count) {
+                            let d = diag[i]
+                            let jump = i > 0 ? simd_length(diag[i].hit - diag[i-1].hit) : Float(0)
+                            print("  [\(i)] screen(\(String(format: "%.0f", d.screen.x)),\(String(format: "%.0f", d.screen.y))) t=\(String(format: "%.1f", d.t)) hit(\(String(format: "%.1f", d.hit.x)),\(String(format: "%.1f", d.hit.y)),\(String(format: "%.1f", d.hit.z)) jump=\(String(format: "%.1f", jump))")
+                        }
+                        if diag.count > 10 { print("  ... (\(diag.count - 10) more)") }
+
                         let stroke = SurfaceStroke(points: renderer.currentStrokePoints)
                         // Update renderer directly for immediate rendering
                         if let activeID = renderer.activeObjectID,
@@ -99,6 +116,8 @@ struct MetalCanvasView: UIViewRepresentable {
                         onSurfaceStrokeCompleted?(stroke)
                     }
                     renderer.currentStrokePoints.removeAll()
+                    renderer.currentStrokeDiag.removeAll()
+                    renderer.lastHitT = 0
                 default:
                     break
                 }

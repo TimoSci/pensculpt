@@ -34,6 +34,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var config: SculptConfig = .default
     var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
     var currentStrokePoints: [SIMD3<Float>] = []
+    var currentStrokeDiag: [(screen: CGPoint, t: Float, hit: SIMD3<Float>)] = []
+    var lastHitT: Float = 0
 
     private struct MeshBuffers {
         let vertex: MTLBuffer
@@ -269,7 +271,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Ray casting
 
-    func hitTest(screenPoint: CGPoint, viewSize: CGSize) -> SIMD3<Float>? {
+    func hitTest(screenPoint: CGPoint, viewSize: CGSize) -> (point: SIMD3<Float>, t: Float)? {
         guard let activeID = activeObjectID,
               let obj = sculptObjects.first(where: { $0.id == activeID }),
               !obj.mesh.isEmpty else { return nil }
@@ -298,14 +300,12 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             if let t = rayTriangleIntersect(origin: nearW, direction: direction, v0: v0, v1: v1, v2: v2),
                t < closestT {
                 closestT = t
-                let faceNormal = normalize(cross(v1 - v0, v2 - v0))
-                // Ensure normal points toward camera (opposite to ray direction)
-                let outward = dot(faceNormal, direction) < 0 ? faceNormal : -faceNormal
-                hitPoint = nearW + t * direction + outward * config.surfaceStrokeOffset
+                hitPoint = nearW + t * direction - direction * config.surfaceStrokeOffset
             }
         }
 
-        return hitPoint
+        guard let hp = hitPoint else { return nil }
+        return (hp, closestT)
     }
 
     private func rayTriangleIntersect(origin: SIMD3<Float>, direction: SIMD3<Float>,
@@ -314,8 +314,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let edge2 = v2 - v0
         let h = cross(direction, edge2)
         let a = dot(edge1, h)
-        // a > 0 means the triangle faces toward the camera; reject back-facing hits
-        guard a > 1e-6 else { return nil }
+        guard abs(a) > 1e-6 else { return nil }
         let f = 1.0 / a
         let s = origin - v0
         let u = f * dot(s, h)
