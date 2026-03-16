@@ -18,14 +18,25 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     let meshPipeline: MTLRenderPipelineState
 
     var strokes: [Stroke] = []
-    var sculptObject: SculptObject? { didSet { meshBuffersNeedUpdate = true } }
+    var sculptObjects: [SculptObject] = [] {
+        didSet {
+            let currentIDs = Set(sculptObjects.map(\.id))
+            bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
+            recomputeCombinedBounds()
+        }
+    }
+    var activeObjectID: UUID?
     var config: SculptConfig = .default
     var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
 
-    private var meshVertexBuffer: MTLBuffer?
-    private var meshIndexBuffer: MTLBuffer?
-    private var meshIndexCount: Int = 0
-    private var meshBuffersNeedUpdate = true
+    private struct MeshBuffers {
+        let vertex: MTLBuffer
+        let index: MTLBuffer
+        let indexCount: Int
+    }
+    private var bufferCache: [UUID: MeshBuffers] = [:]
+    private var combinedCenter = SIMD3<Float>(0, 0, 0)
+    private var combinedRadius: Float = 1
 
     init?(device: MTLDevice) {
         self.device = device
@@ -76,8 +87,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
               let commandBuffer = commandQueue.makeCommandBuffer(),
               let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
 
-        if let obj = sculptObject, !obj.mesh.isEmpty {
-            drawMesh(obj.mesh, in: view, encoder: encoder)
+        if !sculptObjects.isEmpty {
+            drawAllMeshes(in: view, encoder: encoder)
         } else {
             drawStrokes(in: view, encoder: encoder)
         }
@@ -89,7 +100,49 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Mesh rendering
 
-    private func rebuildMeshBuffers(_ mesh: Mesh) {
+    private func drawAllMeshes(in view: MTKView, encoder: MTLRenderCommandEncoder) {
+        encoder.setRenderPipelineState(meshPipeline)
+
+        if let depthState = makeDepthState() {
+            encoder.setDepthStencilState(depthState)
+        }
+        encoder.setCullMode(.back)
+        encoder.setFrontFacing(.counterClockwise)
+
+        if config.displayMode == "wireframe" {
+            encoder.setTriangleFillMode(.lines)
+        }
+
+        let mvp = combinedProjection(viewSize: view.bounds.size)
+
+        for obj in sculptObjects where !obj.mesh.isEmpty {
+            guard let b = getOrCreateBuffers(for: obj), b.indexCount > 0 else { continue }
+
+            let isActive = obj.id == activeObjectID
+            var uniforms = MeshRenderUniforms(
+                mvpMatrix: mvp,
+                lightDirection: normalize(SIMD3<Float>(0.3, 0.6, 1.0)),
+                baseColor: isActive ? SIMD3(0.85, 0.85, 0.9) : SIMD3(0.5, 0.5, 0.55)
+            )
+
+            encoder.setVertexBuffer(b.vertex, offset: 0, index: 0)
+            encoder.setVertexBytes(&uniforms, length: MemoryLayout<MeshRenderUniforms>.size, index: 2)
+            encoder.setFragmentBytes(&uniforms, length: MemoryLayout<MeshRenderUniforms>.size, index: 2)
+
+            encoder.drawIndexedPrimitives(
+                type: .triangle,
+                indexCount: b.indexCount,
+                indexType: .uint32,
+                indexBuffer: b.index,
+                indexBufferOffset: 0
+            )
+        }
+    }
+
+    private func getOrCreateBuffers(for obj: SculptObject) -> MeshBuffers? {
+        if let cached = bufferCache[obj.id] { return cached }
+
+        let mesh = obj.mesh
         var vertexData: [Float] = []
         vertexData.reserveCapacity(mesh.vertices.count * 6)
         for v in mesh.vertices {
@@ -103,54 +156,17 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             indexData.append(contentsOf: [f.indices.x, f.indices.y, f.indices.z])
         }
 
-        meshVertexBuffer = device.makeBuffer(bytes: vertexData,
-                                              length: vertexData.count * MemoryLayout<Float>.stride,
-                                              options: .storageModeShared)
-        meshIndexBuffer = device.makeBuffer(bytes: indexData,
-                                             length: indexData.count * MemoryLayout<UInt32>.stride,
-                                             options: .storageModeShared)
-        meshIndexCount = indexData.count
-        meshBuffersNeedUpdate = false
-    }
+        guard let vb = device.makeBuffer(bytes: vertexData,
+                                           length: vertexData.count * MemoryLayout<Float>.stride,
+                                           options: .storageModeShared),
+              let ib = device.makeBuffer(bytes: indexData,
+                                          length: indexData.count * MemoryLayout<UInt32>.stride,
+                                          options: .storageModeShared)
+        else { return nil }
 
-    private func drawMesh(_ mesh: Mesh, in view: MTKView, encoder: MTLRenderCommandEncoder) {
-        encoder.setRenderPipelineState(meshPipeline)
-
-        if meshBuffersNeedUpdate {
-            rebuildMeshBuffers(mesh)
-        }
-
-        guard let vertexBuffer = meshVertexBuffer,
-              let indexBuffer = meshIndexBuffer, meshIndexCount > 0 else { return }
-
-        let mvp = meshProjection(mesh: mesh, viewSize: view.bounds.size)
-        var uniforms = MeshRenderUniforms(
-            mvpMatrix: mvp,
-            lightDirection: normalize(SIMD3<Float>(0.3, 0.6, 1.0)),
-            baseColor: SIMD3<Float>(0.85, 0.85, 0.9)
-        )
-
-        encoder.setVertexBuffer(vertexBuffer, offset: 0, index: 0)
-        encoder.setVertexBytes(&uniforms, length: MemoryLayout<MeshRenderUniforms>.size, index: 2)
-        encoder.setFragmentBytes(&uniforms, length: MemoryLayout<MeshRenderUniforms>.size, index: 2)
-
-        if let depthState = makeDepthState() {
-            encoder.setDepthStencilState(depthState)
-        }
-        encoder.setCullMode(.back)
-        encoder.setFrontFacing(.counterClockwise)
-
-        if config.displayMode == "wireframe" {
-            encoder.setTriangleFillMode(.lines)
-        }
-
-        encoder.drawIndexedPrimitives(
-            type: .triangle,
-            indexCount: meshIndexCount,
-            indexType: .uint32,
-            indexBuffer: indexBuffer,
-            indexBufferOffset: 0
-        )
+        let buffers = MeshBuffers(vertex: vb, index: ib, indexCount: indexData.count)
+        bufferCache[obj.id] = buffers
+        return buffers
     }
 
     func rotate(dx: Float, dy: Float) {
@@ -160,25 +176,32 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         rotation = (qx * qy * rotation).normalized
     }
 
-    private func meshProjection(mesh: Mesh, viewSize: CGSize) -> simd_float4x4 {
-        var minP = SIMD3<Float>(Float.infinity, Float.infinity, Float.infinity)
-        var maxP = SIMD3<Float>(-Float.infinity, -Float.infinity, -Float.infinity)
-        for v in mesh.vertices {
-            minP = min(minP, v.position)
-            maxP = max(maxP, v.position)
-        }
-        let center = (minP + maxP) / 2
-        let extent = maxP - minP
-        let radius = max(extent.x, max(extent.y, extent.z)) / 2 * 1.3
-
+    private func combinedProjection(viewSize: CGSize) -> simd_float4x4 {
+        let r = combinedRadius
         let aspect = Float(viewSize.width) / Float(viewSize.height)
         let proj = Self.orthographicProjection(
-            left: -radius * aspect, right: radius * aspect,
-            bottom: -radius, top: radius,
-            near: -radius * 10, far: radius * 10
+            left: -r * aspect, right: r * aspect,
+            bottom: -r, top: r,
+            near: -r * 10, far: r * 10
         )
-        let view = simd_float4x4(rotation) * translationMatrix(-center.x, -center.y, -center.z)
+        let view = simd_float4x4(rotation) * translationMatrix(-combinedCenter.x, -combinedCenter.y, -combinedCenter.z)
         return proj * view
+    }
+
+    private func recomputeCombinedBounds() {
+        var minP = SIMD3<Float>(Float.infinity, Float.infinity, Float.infinity)
+        var maxP = SIMD3<Float>(-Float.infinity, -Float.infinity, -Float.infinity)
+        for obj in sculptObjects {
+            for v in obj.mesh.vertices {
+                minP = min(minP, v.position)
+                maxP = max(maxP, v.position)
+            }
+        }
+        if minP.x < Float.infinity {
+            combinedCenter = (minP + maxP) / 2
+            let extent = maxP - minP
+            combinedRadius = max(extent.x, max(extent.y, extent.z)) / 2 * 1.3
+        }
     }
 
     private func makeDepthState() -> MTLDepthStencilState? {

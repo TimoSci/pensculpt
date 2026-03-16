@@ -3,8 +3,10 @@ import MetalKit
 
 struct MetalCanvasView: UIViewRepresentable {
     var strokes: [Stroke]
-    var sculptObject: SculptObject?
+    var sculptObjects: [SculptObject]
+    var activeObjectID: UUID?
     var config: SculptConfig = .default
+    var onObjectTapped: (() -> Void)?
 
     func makeUIView(context: Context) -> MTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -27,13 +29,19 @@ struct MetalCanvasView: UIViewRepresentable {
         panGesture.maximumNumberOfTouches = 2
         view.addGestureRecognizer(panGesture)
 
+        let tapGesture = UITapGestureRecognizer(target: context.coordinator,
+                                                 action: #selector(Coordinator.handleTap(_:)))
+        view.addGestureRecognizer(tapGesture)
+
         return view
     }
 
     func updateUIView(_ uiView: MTKView, context: Context) {
         context.coordinator.renderer?.strokes = strokes
-        context.coordinator.renderer?.sculptObject = sculptObject
+        context.coordinator.renderer?.sculptObjects = sculptObjects
+        context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
+        context.coordinator.onObjectTapped = onObjectTapped
     }
 
     func makeCoordinator() -> Coordinator {
@@ -42,12 +50,17 @@ struct MetalCanvasView: UIViewRepresentable {
 
     class Coordinator: NSObject {
         var renderer: SculptRenderer?
+        var onObjectTapped: (() -> Void)?
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             guard let renderer = renderer else { return }
             let translation = gesture.translation(in: gesture.view)
             renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
             gesture.setTranslation(.zero, in: gesture.view)
+        }
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            onObjectTapped?()
         }
     }
 }

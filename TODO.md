@@ -57,7 +57,7 @@ Status legend:
 ### Integration
 - [x] SculptScreen view — O[ ] S[ ]
 - [x] Mode switching (Draw → Select → Sculpt) — O[ ] S[x]
-- [ ] Multi-object interaction (active/dimmed) — O[ ] S[ ]
+- [x] Multi-object interaction (active/dimmed) — O[ ] S[ ]
 - [x] Document persistence for SculptObjects — O[ ] S[ ]
 - [ ] Sculpt mode guide — O[ ] S[ ]
 
