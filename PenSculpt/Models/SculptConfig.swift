@@ -25,6 +25,9 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Surface stroke offset along face normal to prevent z-fighting.
     var surfaceStrokeOffset: Float = 0.5
 
+    /// Number of adaptive edge-splitting passes for seam triangles.
+    var seamSubdivisionPasses: Int = 5
+
     /// Maximum allowed t-value jump between consecutive ray cast hits.
     /// Rejects points that cross to a different surface. Normal variation is ~5-20.
     var surfaceStrokeMaxTJump: Float = 50

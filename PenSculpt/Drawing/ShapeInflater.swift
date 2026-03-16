@@ -62,8 +62,13 @@ enum ShapeInflater {
         }
 
         // Build mesh: front face (z > 0) + back face (z < 0)
-        return buildMesh(depths: depths, rows: rows, cols: cols,
-                          x0: Float(x0), y0: Float(y0), spacing: Float(gridSpacing))
+        var boundaryVertices = Set<UInt32>()
+        let mesh = buildMesh(depths: depths, rows: rows, cols: cols,
+                              x0: Float(x0), y0: Float(y0), spacing: Float(gridSpacing),
+                              boundaryVertices: &boundaryVertices)
+        return subdivideElongatedEdges(mesh, maxEdgeLength: Float(gridSpacing) * 4,
+                                        boundaryVertices: boundaryVertices,
+                                        passes: config.seamSubdivisionPasses)
     }
 
     // MARK: - Combined containment + distance (single pass over contour edges)
@@ -102,7 +107,8 @@ enum ShapeInflater {
     // MARK: - Mesh generation
 
     private static func buildMesh(depths: [[Float]], rows: Int, cols: Int,
-                                   x0: Float, y0: Float, spacing: Float) -> Mesh {
+                                   x0: Float, y0: Float, spacing: Float,
+                                   boundaryVertices: inout Set<UInt32>) -> Mesh {
         var vertices: [MeshVertex] = []
         var faces: [MeshFace] = []
 
@@ -121,11 +127,11 @@ enum ShapeInflater {
                     let boundary = isBoundary(row: row, col: col, depths: depths, rows: rows, cols: cols)
 
                     if boundary {
-                        // Shared vertex at z=0 — closes the mesh naturally
                         let idx = vertices.count
                         vertices.append(MeshVertex(position: SIMD3(x, y, 0), normal: SIMD3(0, 0, 1)))
                         frontIdx[row][col] = idx
                         backIdx[row][col] = idx
+                        boundaryVertices.insert(UInt32(idx))
                     } else {
                         let normal = computeNormal(depths: depths, row: row, col: col, spacing: spacing, front: true)
                         frontIdx[row][col] = vertices.count
@@ -169,6 +175,90 @@ enum ShapeInflater {
         }
 
         return Mesh(vertices: vertices, faces: faces)
+    }
+
+    // MARK: - Adaptive edge splitting
+
+    private static func subdivideElongatedEdges(_ mesh: Mesh, maxEdgeLength: Float,
+                                                 boundaryVertices: Set<UInt32>,
+                                                 passes: Int) -> Mesh {
+        var vertices = mesh.vertices
+        let maxLenSq = maxEdgeLength * maxEdgeLength
+
+        // Separate boundary faces from interior — only boundary faces need splitting
+        var seamFaces: [MeshFace] = []
+        var interiorFaces: [MeshFace] = []
+        for face in mesh.faces {
+            let i = face.indices
+            if boundaryVertices.contains(i.x) || boundaryVertices.contains(i.y) || boundaryVertices.contains(i.z) {
+                seamFaces.append(face)
+            } else {
+                interiorFaces.append(face)
+            }
+        }
+
+        for _ in 0..<passes {
+            var newFaces: [MeshFace] = []
+            newFaces.reserveCapacity(seamFaces.count * 2)
+            var edgeMidpoints: [UInt64: UInt32] = [:]
+            var changed = false
+
+            for face in seamFaces {
+                let i0 = face.indices.x, i1 = face.indices.y, i2 = face.indices.z
+                let p0 = vertices[Int(i0)].position
+                let p1 = vertices[Int(i1)].position
+                let p2 = vertices[Int(i2)].position
+
+                let lenSq01 = simd_length_squared(p1 - p0)
+                let lenSq12 = simd_length_squared(p2 - p1)
+                let lenSq20 = simd_length_squared(p0 - p2)
+
+                if max(lenSq01, max(lenSq12, lenSq20)) <= maxLenSq {
+                    newFaces.append(face)
+                    continue
+                }
+
+                changed = true
+
+                let (eA, eB): (UInt32, UInt32)
+                if lenSq01 >= lenSq12 && lenSq01 >= lenSq20 {
+                    (eA, eB) = (i0, i1)
+                } else if lenSq12 >= lenSq01 && lenSq12 >= lenSq20 {
+                    (eA, eB) = (i1, i2)
+                } else {
+                    (eA, eB) = (i2, i0)
+                }
+
+                let edgeKey = UInt64(min(eA, eB)) | (UInt64(max(eA, eB)) << 32)
+                let mid: UInt32
+                if let cached = edgeMidpoints[edgeKey] {
+                    mid = cached
+                } else {
+                    let vA = vertices[Int(eA)], vB = vertices[Int(eB)]
+                    let pos = (vA.position + vB.position) / 2
+                    let norm = normalize((vA.normal + vB.normal) / 2)
+                    mid = UInt32(vertices.count)
+                    vertices.append(MeshVertex(position: pos, normal: norm))
+                    edgeMidpoints[edgeKey] = mid
+                }
+
+                if lenSq01 >= lenSq12 && lenSq01 >= lenSq20 {
+                    newFaces.append(MeshFace(indices: SIMD3(i0, mid, i2)))
+                    newFaces.append(MeshFace(indices: SIMD3(mid, i1, i2)))
+                } else if lenSq12 >= lenSq01 && lenSq12 >= lenSq20 {
+                    newFaces.append(MeshFace(indices: SIMD3(i0, i1, mid)))
+                    newFaces.append(MeshFace(indices: SIMD3(i0, mid, i2)))
+                } else {
+                    newFaces.append(MeshFace(indices: SIMD3(i0, i1, mid)))
+                    newFaces.append(MeshFace(indices: SIMD3(mid, i1, i2)))
+                }
+            }
+
+            seamFaces = newFaces
+            if !changed { break }
+        }
+
+        return Mesh(vertices: vertices, faces: interiorFaces + seamFaces)
     }
 
     private static func isBoundary(row: Int, col: Int, depths: [[Float]],
