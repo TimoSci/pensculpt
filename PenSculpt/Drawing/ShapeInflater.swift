@@ -30,29 +30,31 @@ enum ShapeInflater {
         let cols = max(2, Int((x1 - x0) / gridSpacing))
         let rows = max(2, Int((y1 - y0) / gridSpacing))
 
-        // Compute distance field: distance to nearest contour edge for interior points
-        var depths = [[Float]](repeating: [Float](repeating: 0, count: cols), count: rows)
-        var maxDist: Float = 0
-
-        for row in 0..<rows {
-            for col in 0..<cols {
-                let p = CGPoint(x: x0 + CGFloat(col) * gridSpacing, y: y0 + CGFloat(row) * gridSpacing)
-                if LassoSelection.contains(p, in: contour) {
-                    let dist = Float(distanceToEdge(p, contour: contour))
-                    depths[row][col] = dist
-                    maxDist = max(maxDist, dist)
+        // Compute distance field in parallel: each row processed on a separate core.
+        // containsAndDistance merges point-in-polygon + nearest-edge into one loop.
+        var depthBuffer = [Float](repeating: 0, count: rows * cols)
+        depthBuffer.withUnsafeMutableBufferPointer { buffer in
+            DispatchQueue.concurrentPerform(iterations: rows) { row in
+                let rowOffset = row * cols
+                for col in 0..<cols {
+                    let p = CGPoint(x: x0 + CGFloat(col) * gridSpacing, y: y0 + CGFloat(row) * gridSpacing)
+                    let (inside, dist) = containsAndDistance(p, contour: contour)
+                    if inside {
+                        buffer[rowOffset + col] = Float(dist)
+                    }
                 }
             }
         }
 
+        let maxDist = depthBuffer.max() ?? 0
         guard maxDist > 0 else { return Mesh() }
 
         // Convert distance to depth using a sphere-like profile:
         // depth = sqrt(d * (2*maxDist - d)) gives a semicircular cross-section.
-        // A circle becomes a sphere, a square becomes a smooth pillow.
+        var depths = [[Float]](repeating: [Float](repeating: 0, count: cols), count: rows)
         for row in 0..<rows {
             for col in 0..<cols {
-                let d = depths[row][col]
+                let d = depthBuffer[row * cols + col]
                 if d > 0 {
                     depths[row][col] = sqrt(d * (2 * maxDist - d))
                 }
@@ -64,26 +66,37 @@ enum ShapeInflater {
                           x0: Float(x0), y0: Float(y0), spacing: Float(gridSpacing))
     }
 
-    // MARK: - Distance computation
+    // MARK: - Combined containment + distance (single pass over contour edges)
 
-    private static func distanceToEdge(_ point: CGPoint, contour: [CGPoint]) -> CGFloat {
+    /// Performs point-in-polygon test and nearest-edge distance in one loop.
+    private static func containsAndDistance(_ point: CGPoint, contour: [CGPoint]) -> (inside: Bool, distance: CGFloat) {
+        var inside = false
         var minDist = CGFloat.infinity
+        var j = contour.count - 1
         for i in 0..<contour.count {
-            let a = contour[i]
-            let b = contour[(i + 1) % contour.count]
-            let dist = pointToSegmentDistance(point, a: a, b: b)
-            minDist = min(minDist, dist)
-        }
-        return minDist
-    }
+            let pi = contour[i]
+            let pj = contour[j]
 
-    private static func pointToSegmentDistance(_ p: CGPoint, a: CGPoint, b: CGPoint) -> CGFloat {
-        let dx = b.x - a.x, dy = b.y - a.y
-        let lenSq = dx * dx + dy * dy
-        guard lenSq > 0 else { return hypot(p.x - a.x, p.y - a.y) }
-        let t = max(0, min(1, ((p.x - a.x) * dx + (p.y - a.y) * dy) / lenSq))
-        let projX = a.x + t * dx, projY = a.y + t * dy
-        return hypot(p.x - projX, p.y - projY)
+            // Ray-casting containment test
+            if (pi.y > point.y) != (pj.y > point.y),
+               point.x < (pj.x - pi.x) * (point.y - pi.y) / (pj.y - pi.y) + pi.x {
+                inside.toggle()
+            }
+
+            // Distance to segment (pi, pj)
+            let dx = pj.x - pi.x, dy = pj.y - pi.y
+            let lenSq = dx * dx + dy * dy
+            if lenSq <= 0 {
+                minDist = min(minDist, hypot(point.x - pi.x, point.y - pi.y))
+            } else {
+                let t = max(0, min(1, ((point.x - pi.x) * dx + (point.y - pi.y) * dy) / lenSq))
+                let projX = pi.x + t * dx, projY = pi.y + t * dy
+                minDist = min(minDist, hypot(point.x - projX, point.y - projY))
+            }
+
+            j = i
+        }
+        return (inside, minDist)
     }
 
     // MARK: - Mesh generation

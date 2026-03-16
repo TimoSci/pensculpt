@@ -36,7 +36,7 @@ Status legend:
 
 ### Inference Pipeline
 - [x] ContourExtractor (Vision ML contour detection with fallback) — O[ ] S[ ]
-- [x] ShapeInflater (grid distance field → sphere-like depth → front/back mesh) — O[ ] S[x]
+- [x] ShapeInflater (grid distance field → sphere-like depth → front/back mesh) — O[x] S[x]
 - [x] SculptObject model — O[ ] S[ ]
 - [x] SculptConfig (gridSpacing, cameraTilt, contour params, displayMode) — O[ ] S[ ]
 
