@@ -26,6 +26,18 @@ fragment float4 stroke_fragment(StrokeVertexOut in [[stage_in]]) {
     return in.color;
 }
 
+// MARK: - 3D surface stroke rendering (lines on mesh)
+
+vertex StrokeVertexOut surface_stroke_vertex(const device float3 *positions [[buffer(0)]],
+                                              const device float4 *colors [[buffer(1)]],
+                                              constant StrokeUniforms &uniforms [[buffer(2)]],
+                                              uint vid [[vertex_id]]) {
+    StrokeVertexOut out;
+    out.position = uniforms.mvpMatrix * float4(positions[vid], 1.0);
+    out.color = colors[vid];
+    return out;
+}
+
 // MARK: - 3D mesh rendering
 
 struct MeshVertexIn {

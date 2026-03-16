@@ -8,6 +8,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var config: SculptConfig = .default
     var isRotateMode: Bool = false
     var onObjectTapped: (() -> Void)?
+    var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
 
     func makeUIView(context: Context) -> MTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -50,6 +51,7 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.renderer?.config = config
         context.coordinator.isRotateMode = isRotateMode
         context.coordinator.onObjectTapped = onObjectTapped
+        context.coordinator.onSurfaceStrokeCompleted = onSurfaceStrokeCompleted
     }
 
     func makeCoordinator() -> Coordinator {
@@ -60,6 +62,7 @@ struct MetalCanvasView: UIViewRepresentable {
         var renderer: SculptRenderer?
         var isRotateMode = false
         var onObjectTapped: (() -> Void)?
+        var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             guard let renderer = renderer else { return }
@@ -69,10 +72,31 @@ struct MetalCanvasView: UIViewRepresentable {
         }
 
         @objc func handleSinglePan(_ gesture: UIPanGestureRecognizer) {
-            guard isRotateMode, let renderer = renderer else { return }
-            let translation = gesture.translation(in: gesture.view)
-            renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
-            gesture.setTranslation(.zero, in: gesture.view)
+            guard let renderer = renderer else { return }
+
+            if isRotateMode {
+                let translation = gesture.translation(in: gesture.view)
+                renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
+                gesture.setTranslation(.zero, in: gesture.view)
+            } else {
+                let location = gesture.location(in: gesture.view)
+                let viewSize = gesture.view?.bounds.size ?? .zero
+
+                switch gesture.state {
+                case .began, .changed:
+                    if let hitPoint = renderer.hitTest(screenPoint: location, viewSize: viewSize) {
+                        renderer.currentStrokePoints.append(hitPoint)
+                    }
+                case .ended, .cancelled:
+                    if renderer.currentStrokePoints.count > 1 {
+                        let stroke = SurfaceStroke(points: renderer.currentStrokePoints)
+                        onSurfaceStrokeCompleted?(stroke)
+                    }
+                    renderer.currentStrokePoints.removeAll()
+                default:
+                    break
+                }
+            }
         }
 
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {

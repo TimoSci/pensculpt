@@ -15,7 +15,8 @@ struct SculptScreen: View {
             activeObjectID: activeObjectID,
             config: config,
             isRotateMode: isRotateMode,
-            onObjectTapped: cycleActiveObject
+            onObjectTapped: cycleActiveObject,
+            onSurfaceStrokeCompleted: handleSurfaceStroke
         )
         .ignoresSafeArea()
         .overlay(alignment: .topLeading) {
@@ -74,5 +75,10 @@ struct SculptScreen: View {
         guard sculptObjects.count > 1 else { return }
         let nextIdx = (activeObjectIndex + 1) % sculptObjects.count
         activeObjectID = sculptObjects[nextIdx].id
+    }
+
+    private func handleSurfaceStroke(_ stroke: SurfaceStroke) {
+        guard let idx = sculptObjects.firstIndex(where: { $0.id == activeObjectID }) else { return }
+        sculptObjects[idx].surfaceStrokes.append(stroke)
     }
 }

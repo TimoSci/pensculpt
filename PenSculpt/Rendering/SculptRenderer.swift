@@ -16,6 +16,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     let commandQueue: MTLCommandQueue
     let strokePipeline: MTLRenderPipelineState
     let meshPipeline: MTLRenderPipelineState
+    let surfaceStrokePipeline: MTLRenderPipelineState
 
     var strokes: [Stroke] = []
     var sculptObjects: [SculptObject] = [] {
@@ -28,6 +29,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var activeObjectID: UUID?
     var config: SculptConfig = .default
     var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
+    var currentStrokePoints: [SIMD3<Float>] = []
 
     private struct MeshBuffers {
         let vertex: MTLBuffer
@@ -70,10 +72,19 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         vertexDesc.layouts[0].stride = MemoryLayout<Float>.stride * 6 // 24 bytes
         meshDesc.vertexDescriptor = vertexDesc
 
+        // Surface stroke pipeline (3D lines on mesh)
+        let surfaceStrokeDesc = MTLRenderPipelineDescriptor()
+        surfaceStrokeDesc.vertexFunction = library.makeFunction(name: "surface_stroke_vertex")
+        surfaceStrokeDesc.fragmentFunction = library.makeFunction(name: "stroke_fragment")
+        surfaceStrokeDesc.colorAttachments[0].pixelFormat = .bgra8Unorm
+        surfaceStrokeDesc.depthAttachmentPixelFormat = .depth32Float
+
         guard let sp = try? device.makeRenderPipelineState(descriptor: strokeDesc),
-              let mp = try? device.makeRenderPipelineState(descriptor: meshDesc) else { return nil }
+              let mp = try? device.makeRenderPipelineState(descriptor: meshDesc),
+              let ssp = try? device.makeRenderPipelineState(descriptor: surfaceStrokeDesc) else { return nil }
         self.strokePipeline = sp
         self.meshPipeline = mp
+        self.surfaceStrokePipeline = ssp
 
         super.init()
     }
@@ -88,7 +99,9 @@ class SculptRenderer: NSObject, MTKViewDelegate {
               let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
 
         if !sculptObjects.isEmpty {
-            drawAllMeshes(in: view, encoder: encoder)
+            let mvp = combinedProjection(viewSize: view.bounds.size)
+            drawAllMeshes(mvp: mvp, encoder: encoder)
+            drawSurfaceStrokes(mvp: mvp, encoder: encoder)
         } else {
             drawStrokes(in: view, encoder: encoder)
         }
@@ -100,7 +113,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Mesh rendering
 
-    private func drawAllMeshes(in view: MTKView, encoder: MTLRenderCommandEncoder) {
+    private func drawAllMeshes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(meshPipeline)
 
         if let depthState = makeDepthState() {
@@ -112,8 +125,6 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         if config.displayMode == "wireframe" {
             encoder.setTriangleFillMode(.lines)
         }
-
-        let mvp = combinedProjection(viewSize: view.bounds.size)
 
         for obj in sculptObjects where !obj.mesh.isEmpty {
             guard let b = getOrCreateBuffers(for: obj), b.indexCount > 0 else { continue }
@@ -202,6 +213,94 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             let extent = maxP - minP
             combinedRadius = max(extent.x, max(extent.y, extent.z)) / 2 * 1.3
         }
+    }
+
+    // MARK: - Surface stroke rendering
+
+    private func drawSurfaceStrokes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
+        encoder.setRenderPipelineState(surfaceStrokePipeline)
+        encoder.setDepthBias(-0.001, slopeScale: -1.0, clamp: -0.01)
+
+        var uniforms = StrokeRenderUniforms(mvpMatrix: mvp)
+        encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
+
+        let strokeColor = SIMD4<Float>(0.2, 0.2, 0.8, 1.0)
+        for obj in sculptObjects {
+            for stroke in obj.surfaceStrokes {
+                drawLineStrip(stroke.points, color: strokeColor, encoder: encoder)
+            }
+        }
+
+        if !currentStrokePoints.isEmpty {
+            drawLineStrip(currentStrokePoints, color: SIMD4<Float>(0.2, 0.2, 0.8, 0.6), encoder: encoder)
+        }
+
+        encoder.setDepthBias(0, slopeScale: 0, clamp: 0)
+    }
+
+    private func drawLineStrip(_ points: [SIMD3<Float>], color: SIMD4<Float>, encoder: MTLRenderCommandEncoder) {
+        guard points.count > 1 else { return }
+        var positions = points
+        var colors = [SIMD4<Float>](repeating: color, count: points.count)
+        encoder.setVertexBytes(&positions, length: positions.count * MemoryLayout<SIMD3<Float>>.stride, index: 0)
+        encoder.setVertexBytes(&colors, length: colors.count * MemoryLayout<SIMD4<Float>>.stride, index: 1)
+        encoder.drawPrimitives(type: .lineStrip, vertexStart: 0, vertexCount: points.count)
+    }
+
+    // MARK: - Ray casting
+
+    func hitTest(screenPoint: CGPoint, viewSize: CGSize) -> SIMD3<Float>? {
+        guard let activeID = activeObjectID,
+              let obj = sculptObjects.first(where: { $0.id == activeID }),
+              !obj.mesh.isEmpty else { return nil }
+
+        let mvp = combinedProjection(viewSize: viewSize)
+        let invMVP = mvp.inverse
+
+        let ndcX = Float(2 * screenPoint.x / viewSize.width - 1)
+        let ndcY = Float(1 - 2 * screenPoint.y / viewSize.height)
+
+        let near4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
+        let far4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
+        let nearW = SIMD3<Float>(near4.x, near4.y, near4.z) / near4.w
+        let farW = SIMD3<Float>(far4.x, far4.y, far4.z) / far4.w
+        let direction = normalize(farW - nearW)
+
+        var closestT: Float = Float.infinity
+        var hitPoint: SIMD3<Float>?
+
+        let mesh = obj.mesh
+        for face in mesh.faces {
+            let v0 = mesh.vertices[Int(face.indices.x)].position
+            let v1 = mesh.vertices[Int(face.indices.y)].position
+            let v2 = mesh.vertices[Int(face.indices.z)].position
+
+            if let t = rayTriangleIntersect(origin: nearW, direction: direction, v0: v0, v1: v1, v2: v2),
+               t < closestT {
+                closestT = t
+                hitPoint = nearW + t * direction
+            }
+        }
+
+        return hitPoint
+    }
+
+    private func rayTriangleIntersect(origin: SIMD3<Float>, direction: SIMD3<Float>,
+                                       v0: SIMD3<Float>, v1: SIMD3<Float>, v2: SIMD3<Float>) -> Float? {
+        let edge1 = v1 - v0
+        let edge2 = v2 - v0
+        let h = cross(direction, edge2)
+        let a = dot(edge1, h)
+        guard abs(a) > 1e-6 else { return nil }
+        let f = 1.0 / a
+        let s = origin - v0
+        let u = f * dot(s, h)
+        guard u >= 0 && u <= 1 else { return nil }
+        let q = cross(s, edge1)
+        let v = f * dot(direction, q)
+        guard v >= 0 && u + v <= 1 else { return nil }
+        let t = f * dot(edge2, q)
+        return t > 1e-6 ? t : nil
     }
 
     private func makeDepthState() -> MTLDepthStencilState? {
