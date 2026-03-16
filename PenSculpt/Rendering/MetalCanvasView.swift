@@ -92,7 +92,11 @@ struct MetalCanvasView: UIViewRepresentable {
                             renderer.currentStrokePoints.append(result.point)
                             renderer.currentStrokeDiag.append((screen: location, t: result.t, hit: result.point))
                             renderer.lastHitT = result.t
+                        } else {
+                            renderer.rejectedCount += 1
                         }
+                    } else {
+                        renderer.missCount += 1
                     }
                 case .ended, .cancelled:
                     if renderer.currentStrokePoints.count > 1 {
@@ -105,6 +109,7 @@ struct MetalCanvasView: UIViewRepresentable {
                             print("  [\(i)] screen(\(String(format: "%.0f", d.screen.x)),\(String(format: "%.0f", d.screen.y))) t=\(String(format: "%.1f", d.t)) hit(\(String(format: "%.1f", d.hit.x)),\(String(format: "%.1f", d.hit.y)),\(String(format: "%.1f", d.hit.z)) jump=\(String(format: "%.1f", jump))")
                         }
                         if diag.count > 10 { print("  ... (\(diag.count - 10) more)") }
+                        print("[Draw] rejected: \(renderer.rejectedCount), missed: \(renderer.missCount)")
 
                         let stroke = SurfaceStroke(points: renderer.currentStrokePoints)
                         // Update renderer directly for immediate rendering
@@ -118,6 +123,8 @@ struct MetalCanvasView: UIViewRepresentable {
                     renderer.currentStrokePoints.removeAll()
                     renderer.currentStrokeDiag.removeAll()
                     renderer.lastHitT = 0
+                    renderer.rejectedCount = 0
+                    renderer.missCount = 0
                 default:
                     break
                 }

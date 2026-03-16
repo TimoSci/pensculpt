@@ -36,6 +36,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var currentStrokePoints: [SIMD3<Float>] = []
     var currentStrokeDiag: [(screen: CGPoint, t: Float, hit: SIMD3<Float>)] = []
     var lastHitT: Float = 0
+    var rejectedCount = 0
+    var missCount = 0
 
     private struct MeshBuffers {
         let vertex: MTLBuffer
@@ -230,7 +232,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         // offset slightly outward by hitTest, so they pass the depth test
         // against the mesh without z-fighting.
         let desc = MTLDepthStencilDescriptor()
-        desc.depthCompareFunction = .lessEqual
+        desc.depthCompareFunction = .always
         desc.isDepthWriteEnabled = false
         if let surfaceDepth = device.makeDepthStencilState(descriptor: desc) {
             encoder.setDepthStencilState(surfaceDepth)
@@ -314,7 +316,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let edge2 = v2 - v0
         let h = cross(direction, edge2)
         let a = dot(edge1, h)
-        guard abs(a) > 1e-6 else { return nil }
+        // a > 0 means triangle faces toward camera; reject back-facing hits
+        guard a > 1e-6 else { return nil }
         let f = 1.0 / a
         let s = origin - v0
         let u = f * dot(s, h)
