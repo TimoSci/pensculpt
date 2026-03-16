@@ -18,6 +18,7 @@ final class PenSculptDocument: ReferenceFileDocument, ObservableObject {
 
     @Published var canvas: Canvas
     @Published var drawingData: Data = Data()
+    @Published var sculptObjects: [SculptObject] = []
 
     init() {
         self.canvas = Canvas()
@@ -50,23 +51,36 @@ final class PenSculptDocument: ReferenceFileDocument, ObservableObject {
            let data = drawingWrapper.regularFileContents {
             self.drawingData = data
         }
+
+        if let sculptDir = wrapper["sculpt_objects"],
+           let sculptWrappers = sculptDir.fileWrappers {
+            let decoder = JSONDecoder()
+            self.sculptObjects = sculptWrappers.values.compactMap { fw in
+                fw.regularFileContents.flatMap { try? decoder.decode(SculptObject.self, from: $0) }
+            }
+        }
     }
 
     struct Snapshot {
         let strokes: Data
         let metadata: Data
         let drawing: Data
+        let sculptObjects: [(id: UUID, data: Data)]
     }
 
     func snapshot(contentType: UTType) throws -> Snapshot {
-        let strokesData = try JSONEncoder().encode(canvas.strokes)
+        let encoder = JSONEncoder()
+        let strokesData = try encoder.encode(canvas.strokes)
         let meta = DocumentMetadata(
             createdAt: Date(),
             canvasWidth: canvas.size.width,
             canvasHeight: canvas.size.height
         )
-        let metaData = try JSONEncoder().encode(meta)
-        return Snapshot(strokes: strokesData, metadata: metaData, drawing: drawingData)
+        let metaData = try encoder.encode(meta)
+        let sculptData = try sculptObjects.map { obj in
+            (id: obj.id, data: try encoder.encode(obj))
+        }
+        return Snapshot(strokes: strokesData, metadata: metaData, drawing: drawingData, sculptObjects: sculptData)
     }
 
     func fileWrapper(snapshot: Snapshot, configuration: WriteConfiguration) throws -> FileWrapper {
@@ -88,9 +102,13 @@ final class PenSculptDocument: ReferenceFileDocument, ObservableObject {
             )
         }
 
-        // Placeholder for sculpt_objects/ — Stage 2 will populate this
         let sculptDir = FileWrapper(directoryWithFileWrappers: [:])
         sculptDir.preferredFilename = "sculpt_objects"
+        for (id, data) in snapshot.sculptObjects {
+            let fw = FileWrapper(regularFileWithContents: data)
+            fw.preferredFilename = "\(id.uuidString).json"
+            sculptDir.addFileWrapper(fw)
+        }
         directory.addFileWrapper(sculptDir)
 
         return directory

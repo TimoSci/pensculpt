@@ -4,15 +4,17 @@ import PencilKit
 struct DrawingScreen: View {
     @Binding var documentCanvas: Canvas
     @Binding var drawingData: Data
+    @Binding var sculptObjects: [SculptObject]
     @State private var vm: DrawingViewModel
     @State private var pkDrawing = PKDrawing()
     @State private var drawingSyncTask: Task<Void, Never>?
     @State private var viewBridge = ViewBridge()
     @Environment(\.undoManager) private var undoManager
 
-    init(canvas: Binding<Canvas>, drawingData: Binding<Data>) {
+    init(canvas: Binding<Canvas>, drawingData: Binding<Data>, sculptObjects: Binding<[SculptObject]>) {
         _documentCanvas = canvas
         _drawingData = drawingData
+        _sculptObjects = sculptObjects
         _vm = State(initialValue: DrawingViewModel(canvas: canvas.wrappedValue))
     }
 
@@ -26,7 +28,7 @@ struct DrawingScreen: View {
         }
         .overlay(alignment: .top) { savedMessageOverlay }
         .fullScreenCover(isPresented: $vm.showSculptScreen) {
-            SculptScreen(strokes: vm.selectedStrokes)
+            SculptScreen(strokes: vm.selectedStrokes, sculptObjects: $sculptObjects)
         }
         .toolbar { navBarItems }
         .onAppear { loadDrawingData() }

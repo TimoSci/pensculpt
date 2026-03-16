@@ -12,6 +12,10 @@ struct PenSculptApp: App {
                 drawingData: Binding(
                     get: { config.document.drawingData },
                     set: { config.document.drawingData = $0 }
+                ),
+                sculptObjects: Binding(
+                    get: { config.document.sculptObjects },
+                    set: { config.document.sculptObjects = $0 }
                 )
             )
         }
