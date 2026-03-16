@@ -21,6 +21,12 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.renderer = renderer
         view.delegate = renderer
 
+        let panGesture = UIPanGestureRecognizer(target: context.coordinator,
+                                                 action: #selector(Coordinator.handlePan(_:)))
+        panGesture.minimumNumberOfTouches = 2
+        panGesture.maximumNumberOfTouches = 2
+        view.addGestureRecognizer(panGesture)
+
         return view
     }
 
@@ -34,7 +40,14 @@ struct MetalCanvasView: UIViewRepresentable {
         Coordinator()
     }
 
-    class Coordinator {
+    class Coordinator: NSObject {
         var renderer: SculptRenderer?
+
+        @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            guard let renderer = renderer else { return }
+            let translation = gesture.translation(in: gesture.view)
+            renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
+            gesture.setTranslation(.zero, in: gesture.view)
+        }
     }
 }

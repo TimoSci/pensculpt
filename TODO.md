@@ -48,7 +48,7 @@ Status legend:
 - [x] Metal shaders (vertex + fragment) — O[ ] S[ ]
 
 ### Sculpt Interaction
-- [ ] Rotation (two-finger drag, arcball) — O[ ] S[ ]
+- [x] Rotation (two-finger drag, arcball) — O[ ] S[ ]
 - [ ] Draw-on-surface (ray cast, bake at viewing angle) — O[ ] S[ ]
 - [ ] Thumb button for pen-rotate mode — O[ ] S[ ]
 - [ ] Mesh deformation (soft brush, Gaussian falloff) — O[ ] S[ ]

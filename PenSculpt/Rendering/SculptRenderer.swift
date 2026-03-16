@@ -20,6 +20,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var strokes: [Stroke] = []
     var sculptObject: SculptObject? { didSet { meshBuffersNeedUpdate = true } }
     var config: SculptConfig = .default
+    var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
 
     private var meshVertexBuffer: MTLBuffer?
     private var meshIndexBuffer: MTLBuffer?
@@ -152,8 +153,14 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         )
     }
 
+    func rotate(dx: Float, dy: Float) {
+        let sensitivity: Float = 0.005
+        let qx = simd_quatf(angle: -dy * sensitivity, axis: SIMD3(1, 0, 0))
+        let qy = simd_quatf(angle: dx * sensitivity, axis: SIMD3(0, 1, 0))
+        rotation = (qx * qy * rotation).normalized
+    }
+
     private func meshProjection(mesh: Mesh, viewSize: CGSize) -> simd_float4x4 {
-        // Compute bounding sphere
         var minP = SIMD3<Float>(Float.infinity, Float.infinity, Float.infinity)
         var maxP = SIMD3<Float>(-Float.infinity, -Float.infinity, -Float.infinity)
         for v in mesh.vertices {
@@ -170,20 +177,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             bottom: -radius, top: radius,
             near: -radius * 10, far: radius * 10
         )
-        // Slight tilt so the 3D depth is visible (not a flat front view)
-        let tilt = rotationX(-config.cameraTilt)
-        let view = tilt * translationMatrix(-center.x, -center.y, -center.z)
+        let view = simd_float4x4(rotation) * translationMatrix(-center.x, -center.y, -center.z)
         return proj * view
-    }
-
-    private func rotationX(_ angle: Float) -> simd_float4x4 {
-        let c = cos(angle), s = sin(angle)
-        return simd_float4x4(columns: (
-            SIMD4<Float>(1, 0, 0, 0),
-            SIMD4<Float>(0, c, s, 0),
-            SIMD4<Float>(0, -s, c, 0),
-            SIMD4<Float>(0, 0, 0, 1)
-        ))
     }
 
     private func makeDepthState() -> MTLDepthStencilState? {
