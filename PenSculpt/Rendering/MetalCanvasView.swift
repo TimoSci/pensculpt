@@ -2,7 +2,6 @@ import SwiftUI
 import MetalKit
 
 struct MetalCanvasView: UIViewRepresentable {
-    var strokes: [Stroke]
     var sculptObjects: [SculptObject]
     var activeObjectID: UUID?
     var config: SculptConfig = .default
@@ -45,7 +44,6 @@ struct MetalCanvasView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: MTKView, context: Context) {
-        context.coordinator.renderer?.strokes = strokes
         context.coordinator.renderer?.sculptObjects = sculptObjects
         context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
@@ -65,52 +63,51 @@ struct MetalCanvasView: UIViewRepresentable {
         var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
+            applyRotation(gesture)
+        }
+
+        @objc func handleSinglePan(_ gesture: UIPanGestureRecognizer) {
+            if isRotateMode {
+                applyRotation(gesture)
+            } else {
+                handleDraw(gesture)
+            }
+        }
+
+        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
+            onObjectTapped?()
+        }
+
+        private func applyRotation(_ gesture: UIPanGestureRecognizer) {
             guard let renderer = renderer else { return }
             let translation = gesture.translation(in: gesture.view)
             renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
             gesture.setTranslation(.zero, in: gesture.view)
         }
 
-        @objc func handleSinglePan(_ gesture: UIPanGestureRecognizer) {
+        private func handleDraw(_ gesture: UIPanGestureRecognizer) {
             guard let renderer = renderer else { return }
+            let location = gesture.location(in: gesture.view)
+            let viewSize = gesture.view?.bounds.size ?? .zero
 
-            if isRotateMode {
-                let translation = gesture.translation(in: gesture.view)
-                renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
-                gesture.setTranslation(.zero, in: gesture.view)
-            } else {
-                let location = gesture.location(in: gesture.view)
-                let viewSize = gesture.view?.bounds.size ?? .zero
-
-                switch gesture.state {
-                case .began, .changed:
-                    if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize) {
-                        let isFirst = renderer.currentStrokePoints.isEmpty
-                        let tContinuous = isFirst || abs(result.t - renderer.lastHitT) < renderer.config.surfaceStrokeMaxTJump
-                        if tContinuous {
-                            renderer.currentStrokePoints.append(result.point)
-                            renderer.lastHitT = result.t
-                        }
-                    }
-                case .ended, .cancelled:
-                    if renderer.currentStrokePoints.count > 1 {
-                        let stroke = SurfaceStroke(points: renderer.currentStrokePoints)
-                        if let activeID = renderer.activeObjectID,
-                           let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
-                            renderer.sculptObjects[idx].surfaceStrokes.append(stroke)
-                        }
-                        onSurfaceStrokeCompleted?(stroke)
-                    }
-                    renderer.currentStrokePoints.removeAll()
-                    renderer.lastHitT = 0
-                default:
-                    break
+            if gesture.state == .began || gesture.state == .changed {
+                if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize),
+                   renderer.isTContinuous(result.t) {
+                    renderer.currentStrokePoints.append(result.point)
+                    renderer.lastHitT = result.t
                 }
+            } else if gesture.state == .ended || gesture.state == .cancelled {
+                if renderer.currentStrokePoints.count > 1 {
+                    let stroke = SurfaceStroke(points: renderer.currentStrokePoints)
+                    if let activeID = renderer.activeObjectID,
+                       let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
+                        renderer.sculptObjects[idx].surfaceStrokes.append(stroke)
+                    }
+                    onSurfaceStrokeCompleted?(stroke)
+                }
+                renderer.currentStrokePoints.removeAll()
+                renderer.lastHitT = 0
             }
-        }
-
-        @objc func handleTap(_ gesture: UITapGestureRecognizer) {
-            onObjectTapped?()
         }
     }
 }

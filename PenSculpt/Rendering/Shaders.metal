@@ -1,7 +1,7 @@
 #include <metal_stdlib>
 using namespace metal;
 
-// MARK: - 2D stroke rendering (existing)
+// MARK: - Surface stroke rendering (3D lines on mesh)
 
 struct StrokeVertexOut {
     float4 position [[position]];
@@ -12,22 +12,6 @@ struct StrokeUniforms {
     float4x4 mvpMatrix;
 };
 
-vertex StrokeVertexOut stroke_vertex(const device float2 *positions [[buffer(0)]],
-                                      const device float4 *colors [[buffer(1)]],
-                                      constant StrokeUniforms &uniforms [[buffer(2)]],
-                                      uint vid [[vertex_id]]) {
-    StrokeVertexOut out;
-    out.position = uniforms.mvpMatrix * float4(positions[vid], 0.0, 1.0);
-    out.color = colors[vid];
-    return out;
-}
-
-fragment float4 stroke_fragment(StrokeVertexOut in [[stage_in]]) {
-    return in.color;
-}
-
-// MARK: - 3D surface stroke rendering (lines on mesh)
-
 vertex StrokeVertexOut surface_stroke_vertex(const device float3 *positions [[buffer(0)]],
                                               const device float4 *colors [[buffer(1)]],
                                               constant StrokeUniforms &uniforms [[buffer(2)]],
@@ -36,6 +20,10 @@ vertex StrokeVertexOut surface_stroke_vertex(const device float3 *positions [[bu
     out.position = uniforms.mvpMatrix * float4(positions[vid], 1.0);
     out.color = colors[vid];
     return out;
+}
+
+fragment float4 stroke_fragment(StrokeVertexOut in [[stage_in]]) {
+    return in.color;
 }
 
 // MARK: - 3D mesh rendering

@@ -10,7 +10,6 @@ struct SculptScreen: View {
 
     var body: some View {
         MetalCanvasView(
-            strokes: strokes,
             sculptObjects: sculptObjects,
             activeObjectID: activeObjectID,
             config: config,
@@ -76,7 +75,7 @@ struct SculptScreen: View {
     }
 
     private func handleSurfaceStroke(_ stroke: SurfaceStroke) {
-        guard let idx = sculptObjects.firstIndex(where: { $0.id == activeObjectID }) else { return }
-        sculptObjects[idx].surfaceStrokes.append(stroke)
+        guard activeObjectIndex < sculptObjects.count else { return }
+        sculptObjects[activeObjectIndex].surfaceStrokes.append(stroke)
     }
 }

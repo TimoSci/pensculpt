@@ -14,11 +14,11 @@ struct MeshRenderUniforms {
 class SculptRenderer: NSObject, MTKViewDelegate {
     let device: MTLDevice
     let commandQueue: MTLCommandQueue
-    let strokePipeline: MTLRenderPipelineState
     let meshPipeline: MTLRenderPipelineState
     let surfaceStrokePipeline: MTLRenderPipelineState
+    let meshDepthState: MTLDepthStencilState
+    let surfaceStrokeDepthState: MTLDepthStencilState
 
-    var strokes: [Stroke] = []
     var sculptObjects: [SculptObject] = [] {
         didSet {
             let currentIDs = Set(sculptObjects.map(\.id))
@@ -48,13 +48,6 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         guard let library = device.makeDefaultLibrary() else { return nil }
 
-        // Stroke pipeline (2D lines)
-        let strokeDesc = MTLRenderPipelineDescriptor()
-        strokeDesc.vertexFunction = library.makeFunction(name: "stroke_vertex")
-        strokeDesc.fragmentFunction = library.makeFunction(name: "stroke_fragment")
-        strokeDesc.colorAttachments[0].pixelFormat = .bgra8Unorm
-        strokeDesc.depthAttachmentPixelFormat = .depth32Float
-
         // Mesh pipeline (3D triangles with lighting)
         let meshDesc = MTLRenderPipelineDescriptor()
         meshDesc.vertexFunction = library.makeFunction(name: "mesh_vertex")
@@ -62,15 +55,14 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         meshDesc.colorAttachments[0].pixelFormat = .bgra8Unorm
         meshDesc.depthAttachmentPixelFormat = .depth32Float
 
-        // Vertex descriptor for mesh
         let vertexDesc = MTLVertexDescriptor()
         vertexDesc.attributes[0].format = .float3
         vertexDesc.attributes[0].offset = 0
         vertexDesc.attributes[0].bufferIndex = 0
         vertexDesc.attributes[1].format = .float3
-        vertexDesc.attributes[1].offset = MemoryLayout<Float>.stride * 3 // 12 bytes
+        vertexDesc.attributes[1].offset = MemoryLayout<Float>.stride * 3
         vertexDesc.attributes[1].bufferIndex = 0
-        vertexDesc.layouts[0].stride = MemoryLayout<Float>.stride * 6 // 24 bytes
+        vertexDesc.layouts[0].stride = MemoryLayout<Float>.stride * 6
         meshDesc.vertexDescriptor = vertexDesc
 
         // Surface stroke pipeline (3D lines on mesh)
@@ -80,32 +72,40 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         surfaceStrokeDesc.colorAttachments[0].pixelFormat = .bgra8Unorm
         surfaceStrokeDesc.depthAttachmentPixelFormat = .depth32Float
 
-        guard let sp = try? device.makeRenderPipelineState(descriptor: strokeDesc),
-              let mp = try? device.makeRenderPipelineState(descriptor: meshDesc),
+        guard let mp = try? device.makeRenderPipelineState(descriptor: meshDesc),
               let ssp = try? device.makeRenderPipelineState(descriptor: surfaceStrokeDesc) else { return nil }
-        self.strokePipeline = sp
         self.meshPipeline = mp
         self.surfaceStrokePipeline = ssp
+
+        // Pre-create depth stencil states
+        let meshDepthDesc = MTLDepthStencilDescriptor()
+        meshDepthDesc.depthCompareFunction = .less
+        meshDepthDesc.isDepthWriteEnabled = true
+
+        let strokeDepthDesc = MTLDepthStencilDescriptor()
+        strokeDepthDesc.depthCompareFunction = .always
+        strokeDepthDesc.isDepthWriteEnabled = false
+
+        guard let mds = device.makeDepthStencilState(descriptor: meshDepthDesc),
+              let sds = device.makeDepthStencilState(descriptor: strokeDepthDesc) else { return nil }
+        self.meshDepthState = mds
+        self.surfaceStrokeDepthState = sds
 
         super.init()
     }
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
-    
     func draw(in view: MTKView) {
-        guard let drawable = view.currentDrawable,
+        guard !sculptObjects.isEmpty,
+              let drawable = view.currentDrawable,
               let descriptor = view.currentRenderPassDescriptor,
               let commandBuffer = commandQueue.makeCommandBuffer(),
               let encoder = commandBuffer.makeRenderCommandEncoder(descriptor: descriptor) else { return }
 
-        if !sculptObjects.isEmpty {
-            let mvp = combinedProjection(viewSize: view.bounds.size)
-            drawAllMeshes(mvp: mvp, encoder: encoder)
-            drawSurfaceStrokes(mvp: mvp, encoder: encoder)
-        } else {
-            drawStrokes(in: view, encoder: encoder)
-        }
+        let mvp = combinedProjection(viewSize: view.bounds.size)
+        drawAllMeshes(mvp: mvp, encoder: encoder)
+        drawSurfaceStrokes(mvp: mvp, encoder: encoder)
 
         encoder.endEncoding()
         commandBuffer.present(drawable)
@@ -116,10 +116,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     private func drawAllMeshes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(meshPipeline)
-
-        if let depthState = makeDepthState() {
-            encoder.setDepthStencilState(depthState)
-        }
+        encoder.setDepthStencilState(meshDepthState)
         encoder.setCullMode(.back)
         encoder.setFrontFacing(.counterClockwise)
 
@@ -168,13 +165,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             indexData.append(contentsOf: [f.indices.x, f.indices.y, f.indices.z])
         }
 
-        guard let vb = device.makeBuffer(bytes: vertexData,
-                                           length: vertexData.count * MemoryLayout<Float>.stride,
-                                           options: .storageModeShared),
-              let ib = device.makeBuffer(bytes: indexData,
-                                          length: indexData.count * MemoryLayout<UInt32>.stride,
-                                          options: .storageModeShared)
-        else { return nil }
+        guard let vb = makeBuffer(vertexData),
+              let ib = makeBuffer(indexData) else { return nil }
 
         let buffers = MeshBuffers(vertex: vb, index: ib, indexCount: indexData.count)
         bufferCache[obj.id] = buffers
@@ -220,16 +212,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     private func drawSurfaceStrokes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(surfaceStrokePipeline)
-
-        // Use lessEqual depth test with no depth writes — surface strokes are
-        // offset slightly outward by hitTest, so they pass the depth test
-        // against the mesh without z-fighting.
-        let desc = MTLDepthStencilDescriptor()
-        desc.depthCompareFunction = .always
-        desc.isDepthWriteEnabled = false
-        if let surfaceDepth = device.makeDepthStencilState(descriptor: desc) {
-            encoder.setDepthStencilState(surfaceDepth)
-        }
+        encoder.setDepthStencilState(surfaceStrokeDepthState)
 
         var uniforms = StrokeRenderUniforms(mvpMatrix: mvp)
         encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
@@ -251,13 +234,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         var positions = points
         var colors = [SIMD4<Float>](repeating: color, count: points.count)
 
-        guard let posBuffer = device.makeBuffer(bytes: &positions,
-                                                 length: positions.count * MemoryLayout<SIMD3<Float>>.stride,
-                                                 options: .storageModeShared),
-              let colBuffer = device.makeBuffer(bytes: &colors,
-                                                 length: colors.count * MemoryLayout<SIMD4<Float>>.stride,
-                                                 options: .storageModeShared)
-        else { return }
+        guard let posBuffer = makeBuffer(&positions),
+              let colBuffer = makeBuffer(&colors) else { return }
 
         encoder.setVertexBuffer(posBuffer, offset: 0, index: 0)
         encoder.setVertexBuffer(colBuffer, offset: 0, index: 1)
@@ -303,6 +281,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         return (hp, closestT)
     }
 
+    func isTContinuous(_ newT: Float) -> Bool {
+        currentStrokePoints.isEmpty || abs(newT - lastHitT) < config.surfaceStrokeMaxTJump
+    }
+
     private func rayTriangleIntersect(origin: SIMD3<Float>, direction: SIMD3<Float>,
                                        v0: SIMD3<Float>, v1: SIMD3<Float>, v2: SIMD3<Float>) -> Float? {
         let edge1 = v1 - v0
@@ -322,46 +304,18 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         return t > 1e-6 ? t : nil
     }
 
-    private func makeDepthState() -> MTLDepthStencilState? {
-        let desc = MTLDepthStencilDescriptor()
-        desc.depthCompareFunction = .less
-        desc.isDepthWriteEnabled = true
-        return device.makeDepthStencilState(descriptor: desc)
+    // MARK: - Helpers
+
+    private func makeBuffer<T>(_ data: [T]) -> MTLBuffer? {
+        device.makeBuffer(bytes: data,
+                          length: data.count * MemoryLayout<T>.stride,
+                          options: .storageModeShared)
     }
 
-    // MARK: - Stroke rendering (fallback)
-
-    private func drawStrokes(in view: MTKView, encoder: MTLRenderCommandEncoder) {
-        encoder.setRenderPipelineState(strokePipeline)
-
-        let viewSize = view.bounds.size
-        var uniforms = StrokeRenderUniforms(mvpMatrix: Self.fittedProjection(strokes: strokes, viewSize: viewSize))
-        encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
-
-        for stroke in strokes {
-            guard stroke.points.count > 1 else { continue }
-            var positions = stroke.points.map {
-                SIMD2<Float>(Float($0.location.x), Float($0.location.y))
-            }
-            var colors = [SIMD4<Float>](repeating: SIMD4<Float>(
-                Float(stroke.color.red), Float(stroke.color.green),
-                Float(stroke.color.blue), Float(stroke.color.alpha)
-            ), count: positions.count)
-
-            encoder.setVertexBytes(&positions, length: positions.count * MemoryLayout<SIMD2<Float>>.stride, index: 0)
-            encoder.setVertexBytes(&colors, length: colors.count * MemoryLayout<SIMD4<Float>>.stride, index: 1)
-            encoder.drawPrimitives(type: .lineStrip, vertexStart: 0, vertexCount: positions.count)
-        }
-    }
-
-    // MARK: - Projections
-
-    static func fittedProjection(strokes: [Stroke], viewSize: CGSize) -> simd_float4x4 {
-        SculptRenderer.orthographicProjection(
-            left: 0, right: Float(viewSize.width),
-            bottom: Float(viewSize.height), top: 0,
-            near: -1, far: 1
-        )
+    private func makeBuffer<T>(_ data: inout [T]) -> MTLBuffer? {
+        device.makeBuffer(bytes: &data,
+                          length: data.count * MemoryLayout<T>.stride,
+                          options: .storageModeShared)
     }
 
     static func orthographicProjection(left: Float, right: Float, bottom: Float, top: Float, near: Float, far: Float) -> simd_float4x4 {

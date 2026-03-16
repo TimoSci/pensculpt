@@ -4,62 +4,55 @@ import simd
 
 final class SculptRendererTests: XCTestCase {
 
-    private let viewSize = CGSize(width: 1024, height: 1366)
+    func testOrthographicProjectionMapsCorners() {
+        let mvp = SculptRenderer.orthographicProjection(
+            left: -100, right: 100,
+            bottom: -100, top: 100,
+            near: -100, far: 100
+        )
 
-    private func makeStroke(from: CGPoint, to: CGPoint) -> Stroke {
-        Stroke(points: [
-            StrokePoint(location: from, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0),
-            StrokePoint(location: to, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0.1)
-        ])
+        // Origin maps to clip-space origin
+        let origin = mvp * SIMD4<Float>(0, 0, 0, 1)
+        XCTAssertEqual(origin.x, 0, accuracy: 0.001)
+        XCTAssertEqual(origin.y, 0, accuracy: 0.001)
+
+        // Left-bottom-near corner maps to (-1, -1, -1)
+        let lbn = mvp * SIMD4<Float>(-100, -100, -100, 1)
+        XCTAssertEqual(lbn.x, -1, accuracy: 0.001)
+        XCTAssertEqual(lbn.y, -1, accuracy: 0.001)
+
+        // Right-top-far corner maps to (1, 1, 1)
+        let rtf = mvp * SIMD4<Float>(100, 100, 100, 1)
+        XCTAssertEqual(rtf.x, 1, accuracy: 0.001)
+        XCTAssertEqual(rtf.y, 1, accuracy: 0.001)
     }
 
-    private func project(_ point: CGPoint, mvp: simd_float4x4) -> SIMD4<Float> {
-        mvp * SIMD4<Float>(Float(point.x), Float(point.y), 0, 1)
+    func testOrthographicProjectionPreservesAspect() {
+        let wide = SculptRenderer.orthographicProjection(
+            left: -200, right: 200,
+            bottom: -100, top: 100,
+            near: -1, far: 1
+        )
+
+        // A point at (100, 50) should map to (0.5, 0.5) — same relative position
+        let p = wide * SIMD4<Float>(100, 50, 0, 1)
+        XCTAssertEqual(p.x, 0.5, accuracy: 0.001)
+        XCTAssertEqual(p.y, 0.5, accuracy: 0.001)
     }
 
-    func testEmptyStrokesProduces1to1Projection() {
-        let mvp = SculptRenderer.fittedProjection(strokes: [], viewSize: viewSize)
+    func testOrthographicProjectionIsConsistent() {
+        let mvp1 = SculptRenderer.orthographicProjection(
+            left: -50, right: 50, bottom: -50, top: 50, near: -10, far: 10
+        )
+        let mvp2 = SculptRenderer.orthographicProjection(
+            left: -50, right: 50, bottom: -50, top: 50, near: -10, far: 10
+        )
 
-        let origin = project(.zero, mvp: mvp)
-        XCTAssertEqual(origin.x, -1, accuracy: 0.01)
-        XCTAssertEqual(origin.y, 1, accuracy: 0.01)
-
-        let corner = project(CGPoint(x: viewSize.width, y: viewSize.height), mvp: mvp)
-        XCTAssertEqual(corner.x, 1, accuracy: 0.01)
-        XCTAssertEqual(corner.y, -1, accuracy: 0.01)
-    }
-
-    func test1to1ProjectionPreservesPosition() {
-        // With the 1:1 projection, strokes appear at their original canvas position
-        let stroke = makeStroke(from: CGPoint(x: 500, y: 500), to: CGPoint(x: 600, y: 510))
-        let mvp = SculptRenderer.fittedProjection(strokes: [stroke], viewSize: viewSize)
-
-        // A point at the center of the viewport should map to clip-space (0, 0)
-        let center = project(CGPoint(x: 512, y: 683), mvp: mvp)
-        XCTAssertEqual(center.x, 0, accuracy: 0.01)
-        XCTAssertEqual(center.y, 0, accuracy: 0.01)
-
-        // The stroke position should map to the same relative position as on the canvas
-        let p = project(CGPoint(x: 500, y: 500), mvp: mvp)
-        let expectedX = (500.0 / 1024.0) * 2.0 - 1.0  // ≈ -0.024
-        let expectedY = -((500.0 / 1366.0) * 2.0 - 1.0) // ≈ 0.268
-        XCTAssertEqual(p.x, Float(expectedX), accuracy: 0.01)
-        XCTAssertEqual(p.y, Float(expectedY), accuracy: 0.01)
-    }
-
-    func testProjectionIsConsistentRegardlessOfStrokeContent() {
-        // 1:1 projection should be the same regardless of what strokes are passed
-        let small = makeStroke(from: CGPoint(x: 10, y: 10), to: CGPoint(x: 20, y: 20))
-        let large = makeStroke(from: CGPoint(x: 0, y: 0), to: CGPoint(x: 2000, y: 2000))
-
-        let mvpSmall = SculptRenderer.fittedProjection(strokes: [small], viewSize: viewSize)
-        let mvpLarge = SculptRenderer.fittedProjection(strokes: [large], viewSize: viewSize)
-
-        // Both should produce the same projection (1:1 viewport mapping)
-        let testPoint = CGPoint(x: 500, y: 500)
-        let pSmall = project(testPoint, mvp: mvpSmall)
-        let pLarge = project(testPoint, mvp: mvpLarge)
-        XCTAssertEqual(pSmall.x, pLarge.x, accuracy: 0.001)
-        XCTAssertEqual(pSmall.y, pLarge.y, accuracy: 0.001)
+        let testPoint = SIMD4<Float>(25, 25, 5, 1)
+        let p1 = mvp1 * testPoint
+        let p2 = mvp2 * testPoint
+        XCTAssertEqual(p1.x, p2.x, accuracy: 0.001)
+        XCTAssertEqual(p1.y, p2.y, accuracy: 0.001)
+        XCTAssertEqual(p1.z, p2.z, accuracy: 0.001)
     }
 }
