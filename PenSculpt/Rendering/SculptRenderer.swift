@@ -24,20 +24,13 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             let currentIDs = Set(sculptObjects.map(\.id))
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             recomputeCombinedBounds()
-            let totalStrokes = sculptObjects.reduce(0) { $0 + $1.surfaceStrokes.count }
-            if totalStrokes != oldValue.reduce(0, { $0 + $1.surfaceStrokes.count }) {
-                print("[Renderer] sculptObjects updated, total surface strokes: \(totalStrokes)")
-            }
         }
     }
     var activeObjectID: UUID?
     var config: SculptConfig = .default
     var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
     var currentStrokePoints: [SIMD3<Float>] = []
-    var currentStrokeDiag: [(screen: CGPoint, t: Float, hit: SIMD3<Float>)] = []
     var lastHitT: Float = 0
-    var rejectedCount = 0
-    var missCount = 0
 
     private struct MeshBuffers {
         let vertex: MTLBuffer

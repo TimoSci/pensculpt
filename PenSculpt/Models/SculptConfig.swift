@@ -23,11 +23,7 @@ struct SculptConfig: Codable, Equatable, Sendable {
     var cameraTilt: Float = 0.8
 
     /// Surface stroke offset along face normal to prevent z-fighting.
-    var surfaceStrokeOffset: Float = 5
-
-    /// Minimum alignment (cosine) between face normal and camera direction for ray cast hits.
-    /// Rejects glancing-angle triangles near seams. 0 = accept all, 1 = only directly facing.
-    var surfaceStrokeMinAlignment: Float = 0.15
+    var surfaceStrokeOffset: Float = 0.5
 
     /// Maximum allowed t-value jump between consecutive ray cast hits.
     /// Rejects points that cross to a different surface. Normal variation is ~5-20.

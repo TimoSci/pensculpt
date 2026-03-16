@@ -57,12 +57,10 @@ struct SculptScreen: View {
             let strokeIDs = Set(strokes.map(\.id))
             if let existing = sculptObjects.first(where: { $0.sourceStrokeIDs == strokeIDs }) {
                 activeObjectID = existing.id
-                print("[SculptScreen] Loaded saved sculpt object (\(existing.mesh.vertexCount) vertices)")
             } else {
                 let obj = ShapeInflater.sculpt(from: strokes, config: config)
                 sculptObjects.append(obj)
                 activeObjectID = obj.id
-                print("[SculptScreen] Created new sculpt object (\(obj.mesh.vertexCount) vertices)")
             }
         }
     }
@@ -78,11 +76,7 @@ struct SculptScreen: View {
     }
 
     private func handleSurfaceStroke(_ stroke: SurfaceStroke) {
-        guard let idx = sculptObjects.firstIndex(where: { $0.id == activeObjectID }) else {
-            print("[SculptScreen] handleSurfaceStroke: no matching object for activeObjectID")
-            return
-        }
+        guard let idx = sculptObjects.firstIndex(where: { $0.id == activeObjectID }) else { return }
         sculptObjects[idx].surfaceStrokes.append(stroke)
-        print("[SculptScreen] Saved surface stroke (\(stroke.points.count) pts), object now has \(sculptObjects[idx].surfaceStrokes.count) strokes")
     }
 }
