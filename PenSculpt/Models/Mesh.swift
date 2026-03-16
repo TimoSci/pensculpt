@@ -2,8 +2,8 @@ import Foundation
 import simd
 
 struct MeshVertex: Codable, Equatable, Sendable {
-    let position: SIMD3<Float>
-    let normal: SIMD3<Float>
+    var position: SIMD3<Float>
+    var normal: SIMD3<Float>
 }
 
 struct MeshFace: Codable, Equatable, Sendable {

@@ -285,6 +285,62 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         currentStrokePoints.isEmpty || abs(newT - lastHitT) < config.surfaceStrokeMaxTJump
     }
 
+    // MARK: - Mesh deformation
+
+    func deformMesh(at screenPoint: CGPoint, viewSize: CGSize) {
+        guard let activeID = activeObjectID,
+              let idx = sculptObjects.firstIndex(where: { $0.id == activeID }) else { return }
+        let mesh = sculptObjects[idx].mesh
+        guard !mesh.isEmpty else { return }
+
+        // Ray cast to find the deformation center
+        let mvp = combinedProjection(viewSize: viewSize)
+        let invMVP = mvp.inverse
+        let ndcX = Float(2 * screenPoint.x / viewSize.width - 1)
+        let ndcY = Float(1 - 2 * screenPoint.y / viewSize.height)
+        let near4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
+        let far4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
+        let nearW = SIMD3<Float>(near4.x, near4.y, near4.z) / near4.w
+        let farW = SIMD3<Float>(far4.x, far4.y, far4.z) / far4.w
+        let direction = normalize(farW - nearW)
+
+        var closestT: Float = Float.infinity
+        var center: SIMD3<Float>?
+        for face in mesh.faces {
+            let v0 = mesh.vertices[Int(face.indices.x)].position
+            let v1 = mesh.vertices[Int(face.indices.y)].position
+            let v2 = mesh.vertices[Int(face.indices.z)].position
+            if let t = rayTriangleIntersect(origin: nearW, direction: direction, v0: v0, v1: v1, v2: v2),
+               t < closestT {
+                closestT = t
+                center = nearW + t * direction
+            }
+        }
+        guard let center else { return }
+
+        // Displace vertices within brush radius using Gaussian falloff.
+        // Modify a local copy to avoid triggering didSet per vertex.
+        let radius = config.deformBrushRadius
+        let radiusSq = radius * radius
+        let strength = config.deformStrength
+        var vertices = sculptObjects[idx].mesh.vertices
+        var modified = false
+
+        for i in 0..<vertices.count {
+            let distSq = simd_length_squared(vertices[i].position - center)
+            if distSq < radiusSq {
+                let falloff = expf(-distSq / (radiusSq * 0.25))
+                vertices[i].position = vertices[i].position + vertices[i].normal * strength * falloff
+                modified = true
+            }
+        }
+
+        if modified {
+            sculptObjects[idx].mesh.vertices = vertices
+            bufferCache.removeValue(forKey: sculptObjects[idx].id)
+        }
+    }
+
     private func rayTriangleIntersect(origin: SIMD3<Float>, direction: SIMD3<Float>,
                                        v0: SIMD3<Float>, v1: SIMD3<Float>, v2: SIMD3<Float>) -> Float? {
         let edge1 = v1 - v0

@@ -6,8 +6,10 @@ struct MetalCanvasView: UIViewRepresentable {
     var activeObjectID: UUID?
     var config: SculptConfig = .default
     var isRotateMode: Bool = false
+    var isDeformMode: Bool = false
     var onObjectTapped: (() -> Void)?
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
+    var onMeshDeformed: ((UUID, Mesh) -> Void)?
 
     func makeUIView(context: Context) -> MTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -48,8 +50,10 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
         context.coordinator.isRotateMode = isRotateMode
+        context.coordinator.isDeformMode = isDeformMode
         context.coordinator.onObjectTapped = onObjectTapped
         context.coordinator.onSurfaceStrokeCompleted = onSurfaceStrokeCompleted
+        context.coordinator.onMeshDeformed = onMeshDeformed
     }
 
     func makeCoordinator() -> Coordinator {
@@ -59,8 +63,10 @@ struct MetalCanvasView: UIViewRepresentable {
     class Coordinator: NSObject {
         var renderer: SculptRenderer?
         var isRotateMode = false
+        var isDeformMode = false
         var onObjectTapped: (() -> Void)?
         var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
+        var onMeshDeformed: ((UUID, Mesh) -> Void)?
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             applyRotation(gesture)
@@ -69,6 +75,8 @@ struct MetalCanvasView: UIViewRepresentable {
         @objc func handleSinglePan(_ gesture: UIPanGestureRecognizer) {
             if isRotateMode {
                 applyRotation(gesture)
+            } else if isDeformMode {
+                handleDeform(gesture)
             } else {
                 handleDraw(gesture)
             }
@@ -83,6 +91,21 @@ struct MetalCanvasView: UIViewRepresentable {
             let translation = gesture.translation(in: gesture.view)
             renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
             gesture.setTranslation(.zero, in: gesture.view)
+        }
+
+        private func handleDeform(_ gesture: UIPanGestureRecognizer) {
+            guard let renderer = renderer else { return }
+            let location = gesture.location(in: gesture.view)
+            let viewSize = gesture.view?.bounds.size ?? .zero
+
+            if gesture.state == .began || gesture.state == .changed {
+                renderer.deformMesh(at: location, viewSize: viewSize)
+            } else if gesture.state == .ended || gesture.state == .cancelled {
+                if let activeID = renderer.activeObjectID,
+                   let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
+                    onMeshDeformed?(activeID, renderer.sculptObjects[idx].mesh)
+                }
+            }
         }
 
         private func handleDraw(_ gesture: UIPanGestureRecognizer) {

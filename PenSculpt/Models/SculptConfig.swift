@@ -25,6 +25,12 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Surface stroke offset along face normal to prevent z-fighting.
     var surfaceStrokeOffset: Float = 0.5
 
+    /// Brush radius for mesh deformation (in world units).
+    var deformBrushRadius: Float = 30
+
+    /// Displacement strength per gesture event for mesh deformation.
+    var deformStrength: Float = 10
+
     /// Number of adaptive edge-splitting passes for seam triangles.
     var seamSubdivisionPasses: Int = 5
 

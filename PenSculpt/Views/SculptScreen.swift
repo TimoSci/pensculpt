@@ -6,6 +6,7 @@ struct SculptScreen: View {
     var config: SculptConfig = .default
     @State private var activeObjectID: UUID?
     @State private var isRotateMode = false
+    @State private var isDeformMode = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -14,8 +15,10 @@ struct SculptScreen: View {
             activeObjectID: activeObjectID,
             config: config,
             isRotateMode: isRotateMode,
+            isDeformMode: isDeformMode,
             onObjectTapped: cycleActiveObject,
-            onSurfaceStrokeCompleted: handleSurfaceStroke
+            onSurfaceStrokeCompleted: handleSurfaceStroke,
+            onMeshDeformed: handleMeshDeformed
         )
         .ignoresSafeArea()
         .overlay(alignment: .topLeading) {
@@ -40,17 +43,29 @@ struct SculptScreen: View {
             }
         }
         .overlay(alignment: .bottomLeading) {
-            Image(systemName: isRotateMode ? "rotate.3d.fill" : "rotate.3d")
-                .font(.title)
-                .foregroundStyle(isRotateMode ? .blue : .secondary)
-                .frame(width: 60, height: 60)
-                .background(.ultraThinMaterial, in: Circle())
-                .padding(20)
-                .gesture(
-                    DragGesture(minimumDistance: 0)
-                        .onChanged { _ in isRotateMode = true }
-                        .onEnded { _ in isRotateMode = false }
-                )
+            HStack(spacing: 12) {
+                Image(systemName: isRotateMode ? "rotate.3d.fill" : "rotate.3d")
+                    .font(.title)
+                    .foregroundStyle(isRotateMode ? .blue : .secondary)
+                    .frame(width: 60, height: 60)
+                    .background(.ultraThinMaterial, in: Circle())
+                    .gesture(
+                        DragGesture(minimumDistance: 0)
+                            .onChanged { _ in isRotateMode = true }
+                            .onEnded { _ in isRotateMode = false }
+                    )
+
+                Button {
+                    isDeformMode.toggle()
+                } label: {
+                    Image(systemName: isDeformMode ? "hand.point.up.fill" : "hand.point.up")
+                        .font(.title)
+                        .foregroundStyle(isDeformMode ? .orange : .secondary)
+                        .frame(width: 60, height: 60)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
+            }
+            .padding(20)
         }
         .onAppear {
             let strokeIDs = Set(strokes.map(\.id))
@@ -77,5 +92,10 @@ struct SculptScreen: View {
     private func handleSurfaceStroke(_ stroke: SurfaceStroke) {
         guard activeObjectIndex < sculptObjects.count else { return }
         sculptObjects[activeObjectIndex].surfaceStrokes.append(stroke)
+    }
+
+    private func handleMeshDeformed(_ objectID: UUID, _ mesh: Mesh) {
+        guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
+        sculptObjects[idx].mesh = mesh
     }
 }

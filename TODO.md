@@ -51,7 +51,7 @@ Status legend:
 - [x] Rotation (two-finger drag, arcball) — O[ ] S[ ]
 - [x] Draw-on-surface (ray cast, bake at viewing angle) — O[ ] S[ ]
 - [x] Thumb button for pen-rotate mode — O[ ] S[ ]
-- [ ] Mesh deformation (soft brush, Gaussian falloff) — O[ ] S[ ]
+- [x] Mesh deformation (soft brush, Gaussian falloff) — O[ ] S[ ]
 - [ ] Re-inference (async, correction preservation, cross-fade) — O[ ] S[ ]
 
 ### Integration
