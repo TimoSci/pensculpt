@@ -22,6 +22,9 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Camera tilt angle in radians. Higher = more top-down view.
     var cameraTilt: Float = 0.8
 
+    /// Surface stroke offset along face normal to prevent z-fighting.
+    var surfaceStrokeOffset: Float = 5
+
     /// Display mode: "shaded" for lit surface, "wireframe" for debug mesh.
     /// var displayMode: String = "shaded"
     var displayMode: String = "wireframe"

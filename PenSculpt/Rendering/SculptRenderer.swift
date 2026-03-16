@@ -24,6 +24,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             let currentIDs = Set(sculptObjects.map(\.id))
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             recomputeCombinedBounds()
+            let totalStrokes = sculptObjects.reduce(0) { $0 + $1.surfaceStrokes.count }
+            if totalStrokes != oldValue.reduce(0, { $0 + $1.surfaceStrokes.count }) {
+                print("[Renderer] sculptObjects updated, total surface strokes: \(totalStrokes)")
+            }
         }
     }
     var activeObjectID: UUID?
@@ -219,7 +223,16 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     private func drawSurfaceStrokes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(surfaceStrokePipeline)
-        encoder.setDepthBias(-0.001, slopeScale: -1.0, clamp: -0.01)
+
+        // Use lessEqual depth test with no depth writes — surface strokes are
+        // offset slightly outward by hitTest, so they pass the depth test
+        // against the mesh without z-fighting.
+        let desc = MTLDepthStencilDescriptor()
+        desc.depthCompareFunction = .lessEqual
+        desc.isDepthWriteEnabled = false
+        if let surfaceDepth = device.makeDepthStencilState(descriptor: desc) {
+            encoder.setDepthStencilState(surfaceDepth)
+        }
 
         var uniforms = StrokeRenderUniforms(mvpMatrix: mvp)
         encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
@@ -234,16 +247,23 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         if !currentStrokePoints.isEmpty {
             drawLineStrip(currentStrokePoints, color: SIMD4<Float>(0.2, 0.2, 0.8, 0.6), encoder: encoder)
         }
-
-        encoder.setDepthBias(0, slopeScale: 0, clamp: 0)
     }
 
     private func drawLineStrip(_ points: [SIMD3<Float>], color: SIMD4<Float>, encoder: MTLRenderCommandEncoder) {
         guard points.count > 1 else { return }
         var positions = points
         var colors = [SIMD4<Float>](repeating: color, count: points.count)
-        encoder.setVertexBytes(&positions, length: positions.count * MemoryLayout<SIMD3<Float>>.stride, index: 0)
-        encoder.setVertexBytes(&colors, length: colors.count * MemoryLayout<SIMD4<Float>>.stride, index: 1)
+
+        guard let posBuffer = device.makeBuffer(bytes: &positions,
+                                                 length: positions.count * MemoryLayout<SIMD3<Float>>.stride,
+                                                 options: .storageModeShared),
+              let colBuffer = device.makeBuffer(bytes: &colors,
+                                                 length: colors.count * MemoryLayout<SIMD4<Float>>.stride,
+                                                 options: .storageModeShared)
+        else { return }
+
+        encoder.setVertexBuffer(posBuffer, offset: 0, index: 0)
+        encoder.setVertexBuffer(colBuffer, offset: 0, index: 1)
         encoder.drawPrimitives(type: .lineStrip, vertexStart: 0, vertexCount: points.count)
     }
 
@@ -278,7 +298,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             if let t = rayTriangleIntersect(origin: nearW, direction: direction, v0: v0, v1: v1, v2: v2),
                t < closestT {
                 closestT = t
-                hitPoint = nearW + t * direction
+                let faceNormal = normalize(cross(v1 - v0, v2 - v0))
+                // Ensure normal points toward camera (opposite to ray direction)
+                let outward = dot(faceNormal, direction) < 0 ? faceNormal : -faceNormal
+                hitPoint = nearW + t * direction + outward * config.surfaceStrokeOffset
             }
         }
 

@@ -78,7 +78,11 @@ struct SculptScreen: View {
     }
 
     private func handleSurfaceStroke(_ stroke: SurfaceStroke) {
-        guard let idx = sculptObjects.firstIndex(where: { $0.id == activeObjectID }) else { return }
+        guard let idx = sculptObjects.firstIndex(where: { $0.id == activeObjectID }) else {
+            print("[SculptScreen] handleSurfaceStroke: no matching object for activeObjectID")
+            return
+        }
         sculptObjects[idx].surfaceStrokes.append(stroke)
+        print("[SculptScreen] Saved surface stroke (\(stroke.points.count) pts), object now has \(sculptObjects[idx].surfaceStrokes.count) strokes")
     }
 }

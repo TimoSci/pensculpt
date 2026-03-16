@@ -90,6 +90,12 @@ struct MetalCanvasView: UIViewRepresentable {
                 case .ended, .cancelled:
                     if renderer.currentStrokePoints.count > 1 {
                         let stroke = SurfaceStroke(points: renderer.currentStrokePoints)
+                        // Update renderer directly for immediate rendering
+                        if let activeID = renderer.activeObjectID,
+                           let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
+                            renderer.sculptObjects[idx].surfaceStrokes.append(stroke)
+                        }
+                        // Save to document via SwiftUI binding
                         onSurfaceStrokeCompleted?(stroke)
                     }
                     renderer.currentStrokePoints.removeAll()
