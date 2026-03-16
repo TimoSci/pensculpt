@@ -5,6 +5,7 @@ struct SculptScreen: View {
     @Binding var sculptObjects: [SculptObject]
     var config: SculptConfig = .default
     @State private var activeObjectID: UUID?
+    @State private var isRotateMode = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -13,6 +14,7 @@ struct SculptScreen: View {
             sculptObjects: sculptObjects,
             activeObjectID: activeObjectID,
             config: config,
+            isRotateMode: isRotateMode,
             onObjectTapped: cycleActiveObject
         )
         .ignoresSafeArea()
@@ -36,6 +38,19 @@ struct SculptScreen: View {
                     .background(.ultraThinMaterial, in: Capsule())
                     .padding(.top, 60)
             }
+        }
+        .overlay(alignment: .bottomLeading) {
+            Image(systemName: isRotateMode ? "rotate.3d.fill" : "rotate.3d")
+                .font(.title)
+                .foregroundStyle(isRotateMode ? .blue : .secondary)
+                .frame(width: 60, height: 60)
+                .background(.ultraThinMaterial, in: Circle())
+                .padding(20)
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in isRotateMode = true }
+                        .onEnded { _ in isRotateMode = false }
+                )
         }
         .onAppear {
             let strokeIDs = Set(strokes.map(\.id))

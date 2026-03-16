@@ -6,6 +6,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var sculptObjects: [SculptObject]
     var activeObjectID: UUID?
     var config: SculptConfig = .default
+    var isRotateMode: Bool = false
     var onObjectTapped: (() -> Void)?
 
     func makeUIView(context: Context) -> MTKView {
@@ -33,6 +34,12 @@ struct MetalCanvasView: UIViewRepresentable {
                                                  action: #selector(Coordinator.handleTap(_:)))
         view.addGestureRecognizer(tapGesture)
 
+        let singlePan = UIPanGestureRecognizer(target: context.coordinator,
+                                                action: #selector(Coordinator.handleSinglePan(_:)))
+        singlePan.minimumNumberOfTouches = 1
+        singlePan.maximumNumberOfTouches = 1
+        view.addGestureRecognizer(singlePan)
+
         return view
     }
 
@@ -41,6 +48,7 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.renderer?.sculptObjects = sculptObjects
         context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
+        context.coordinator.isRotateMode = isRotateMode
         context.coordinator.onObjectTapped = onObjectTapped
     }
 
@@ -50,10 +58,18 @@ struct MetalCanvasView: UIViewRepresentable {
 
     class Coordinator: NSObject {
         var renderer: SculptRenderer?
+        var isRotateMode = false
         var onObjectTapped: (() -> Void)?
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             guard let renderer = renderer else { return }
+            let translation = gesture.translation(in: gesture.view)
+            renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
+            gesture.setTranslation(.zero, in: gesture.view)
+        }
+
+        @objc func handleSinglePan(_ gesture: UIPanGestureRecognizer) {
+            guard isRotateMode, let renderer = renderer else { return }
             let translation = gesture.translation(in: gesture.view)
             renderer.rotate(dx: Float(translation.x), dy: Float(translation.y))
             gesture.setTranslation(.zero, in: gesture.view)
