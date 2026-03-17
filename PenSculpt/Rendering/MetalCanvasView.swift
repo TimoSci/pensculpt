@@ -1,6 +1,38 @@
 import SwiftUI
 import MetalKit
 
+/// MTKView subclass that captures Apple Pencil force from touch events.
+class ForceMTKView: MTKView {
+    var currentForce: CGFloat = 0
+    var maximumForce: CGFloat = 0
+
+    override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesBegan(touches, with: event)
+        updateForce(touches)
+    }
+
+    override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesMoved(touches, with: event)
+        updateForce(touches)
+    }
+
+    override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesEnded(touches, with: event)
+        currentForce = 0
+    }
+
+    override func touchesCancelled(_ touches: Set<UITouch>, with event: UIEvent?) {
+        super.touchesCancelled(touches, with: event)
+        currentForce = 0
+    }
+
+    private func updateForce(_ touches: Set<UITouch>) {
+        guard let touch = touches.first, touch.maximumPossibleForce > 0 else { return }
+        currentForce = touch.force
+        maximumForce = touch.maximumPossibleForce
+    }
+}
+
 struct MetalCanvasView: UIViewRepresentable {
     var sculptObjects: [SculptObject]
     var activeObjectID: UUID?
@@ -11,16 +43,17 @@ struct MetalCanvasView: UIViewRepresentable {
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
     var onMeshDeformed: ((UUID, Mesh) -> Void)?
 
-    func makeUIView(context: Context) -> MTKView {
+    func makeUIView(context: Context) -> ForceMTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
             fatalError("Metal is not supported on this device")
         }
-        let view = MTKView(frame: .zero, device: device)
+        let view = ForceMTKView(frame: .zero, device: device)
         view.clearColor = MTLClearColor(red: 0.95, green: 0.95, blue: 0.96, alpha: 1)
         view.isPaused = false
         view.enableSetNeedsDisplay = false
         view.preferredFramesPerSecond = 60
         view.depthStencilPixelFormat = .depth32Float
+        view.isMultipleTouchEnabled = true
 
         let renderer = SculptRenderer(device: device)
         context.coordinator.renderer = renderer
@@ -40,12 +73,13 @@ struct MetalCanvasView: UIViewRepresentable {
                                                 action: #selector(Coordinator.handleSinglePan(_:)))
         singlePan.minimumNumberOfTouches = 1
         singlePan.maximumNumberOfTouches = 1
+        singlePan.cancelsTouchesInView = false
         view.addGestureRecognizer(singlePan)
 
         return view
     }
 
-    func updateUIView(_ uiView: MTKView, context: Context) {
+    func updateUIView(_ uiView: ForceMTKView, context: Context) {
         context.coordinator.renderer?.sculptObjects = sculptObjects
         context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
@@ -117,7 +151,7 @@ struct MetalCanvasView: UIViewRepresentable {
                 if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize),
                    renderer.isTContinuous(result.t) {
                     renderer.currentStrokePoints.append(result.point)
-                    renderer.currentStrokeWidths.append(renderer.config.surfaceStrokeWidth)
+                    renderer.currentStrokeWidths.append(pressureWidth(from: gesture))
                     renderer.lastHitT = result.t
                 }
             } else if gesture.state == .ended || gesture.state == .cancelled {
@@ -134,6 +168,18 @@ struct MetalCanvasView: UIViewRepresentable {
                 renderer.currentStrokeWidths.removeAll()
                 renderer.lastHitT = 0
             }
+        }
+
+        private func pressureWidth(from gesture: UIPanGestureRecognizer) -> Float {
+            guard let forceView = gesture.view as? ForceMTKView,
+                  forceView.maximumForce > 0,
+                  let renderer = renderer else {
+                return renderer?.config.surfaceStrokeWidth ?? 8
+            }
+            let normalized = Float(forceView.currentForce / forceView.maximumForce)
+            let baseWidth = renderer.config.surfaceStrokeWidth
+            // 20% minimum width at zero pressure, full width at max pressure
+            return baseWidth * (0.05 + 0.95 * normalized)
         }
     }
 }
