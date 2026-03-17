@@ -27,7 +27,7 @@ struct DrawingScreen: View {
             if vm.appMode == .select && vm.hasSelection { sculptButton }
         }
         .overlay(alignment: .top) { savedMessageOverlay }
-        .fullScreenCover(isPresented: $vm.showSculptScreen) {
+        .fullScreenCover(isPresented: $vm.showSculptScreen, onDismiss: projectSurfaceStrokes) {
             SculptScreen(strokes: vm.selectedStrokes, sculptObjects: $sculptObjects)
         }
         .toolbar { navBarItems }
@@ -217,6 +217,24 @@ struct DrawingScreen: View {
             undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
                 vm.addStroke(stroke)
             }
+        }
+    }
+
+    private func projectSurfaceStrokes() {
+        var newPKStrokes: [PKStroke] = []
+        for obj in sculptObjects {
+            for surfaceStroke in obj.surfaceStrokes where surfaceStroke.points.count > 1 {
+                let stroke2D = surfaceStroke.projectTo2D()
+                vm.addStroke(stroke2D)
+                newPKStrokes.append(StrokeConverter.toPKStroke(stroke2D))
+            }
+            // Clear projected strokes from the sculpt object to avoid duplicating on next dismiss
+            if let idx = sculptObjects.firstIndex(where: { $0.id == obj.id }) {
+                sculptObjects[idx].surfaceStrokes.removeAll()
+            }
+        }
+        if !newPKStrokes.isEmpty {
+            pkDrawing = PKDrawing(strokes: pkDrawing.strokes + newPKStrokes)
         }
     }
 

@@ -62,7 +62,7 @@ Status legend:
 - [ ] Sculpt mode guide — O[ ] S[ ]
 
 ## Future Stages
-- [ ] Project surface strokes back to 2D canvas — O[ ] S[ ]
+- [x] Project surface strokes back to 2D canvas — O[ ] S[ ]
 - [ ] Color picker and color strokes — O[ ] S[ ]
 - [ ] Grow selection (tap + hold duration) — O[ ] S[ ]
 - [ ] Export (image, OBJ/USDZ, share sheet) — O[ ] S[ ]

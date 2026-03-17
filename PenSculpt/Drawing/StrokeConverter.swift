@@ -27,6 +27,24 @@ enum StrokeConverter {
         drawing.strokes.map { convert($0) }
     }
 
+    static func toPKStroke(_ stroke: Stroke) -> PKStroke {
+        let controlPoints = stroke.points.map { p in
+            PKStrokePoint(
+                location: p.location,
+                timeOffset: p.timestamp,
+                size: CGSize(width: p.pressure * 8, height: p.pressure * 8),
+                opacity: stroke.color.alpha,
+                force: p.pressure,
+                azimuth: p.azimuth,
+                altitude: p.tilt
+            )
+        }
+        let path = PKStrokePath(controlPoints: controlPoints, creationDate: Date())
+        let color = UIColor(red: stroke.color.red, green: stroke.color.green,
+                            blue: stroke.color.blue, alpha: stroke.color.alpha)
+        return PKStroke(ink: PKInk(.pen, color: color), path: path)
+    }
+
     private static func colorFromPKInk(_ ink: PKInk) -> CodableColor {
         var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
         ink.color.getRed(&r, green: &g, blue: &b, alpha: &a)
