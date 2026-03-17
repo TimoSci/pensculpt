@@ -11,6 +11,7 @@ struct SculptScreen: View {
     @State private var brushOpacity: CGFloat = 1
     @State private var deformCursor: (position: CGPoint, radius: CGFloat)?
     @State private var rendererReplaceMesh: ((UUID, Mesh) -> Void)?
+    @State private var isReInferring = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -51,11 +52,16 @@ struct SculptScreen: View {
                 }
 
                 Button(action: reInfer) {
-                    Image(systemName: "arrow.clockwise.circle.fill")
-                        .font(.title)
-                        .symbolRenderingMode(.hierarchical)
-                        .foregroundStyle(.secondary)
+                    if isReInferring {
+                        ProgressView()
+                    } else {
+                        Image(systemName: "arrow.clockwise.circle.fill")
+                            .font(.title)
+                            .symbolRenderingMode(.hierarchical)
+                            .foregroundStyle(.secondary)
+                    }
                 }
+                .disabled(isReInferring)
             }
             .padding()
         }
@@ -106,9 +112,17 @@ struct SculptScreen: View {
             if let existing = sculptObjects.first(where: { $0.sourceStrokeIDs == strokeIDs }) {
                 activeObjectID = existing.id
             } else {
-                let obj = ShapeInflater.sculpt(from: strokes, config: config)
-                sculptObjects.append(obj)
-                activeObjectID = obj.id
+                isReInferring = true
+                let sourceStrokes = strokes
+                let cfg = config
+                Task.detached {
+                    let obj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+                    await MainActor.run {
+                        sculptObjects.append(obj)
+                        activeObjectID = obj.id
+                        isReInferring = false
+                    }
+                }
             }
         }
     }
@@ -134,11 +148,22 @@ struct SculptScreen: View {
     }
 
     private func reInfer() {
-        guard activeObjectIndex < sculptObjects.count else { return }
+        guard activeObjectIndex < sculptObjects.count, !isReInferring else { return }
         let id = sculptObjects[activeObjectIndex].id
-        let newObj = ShapeInflater.sculpt(from: strokes, config: config)
-        sculptObjects[activeObjectIndex].mesh = newObj.mesh
-        sculptObjects[activeObjectIndex].originRect = newObj.originRect
-        rendererReplaceMesh?(id, newObj.mesh)
+        let sourceStrokes = strokes
+        let cfg = config
+        isReInferring = true
+
+        Task.detached {
+            let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+            await MainActor.run {
+                if let idx = sculptObjects.firstIndex(where: { $0.id == id }) {
+                    sculptObjects[idx].mesh = newObj.mesh
+                    sculptObjects[idx].originRect = newObj.originRect
+                    rendererReplaceMesh?(id, newObj.mesh)
+                }
+                isReInferring = false
+            }
+        }
     }
 }
