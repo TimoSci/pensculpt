@@ -330,15 +330,28 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Mesh deformation
 
-    func deformMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float) {
+    func deformMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float, screenVelocity: CGPoint) {
         guard let activeID = activeObjectID,
               let idx = sculptObjects.firstIndex(where: { $0.id == activeID }) else { return }
         let mesh = sculptObjects[idx].mesh
         guard !mesh.isEmpty else { return }
 
-        // Ray cast to find the deformation center
         let mvp = combinedProjection(viewSize: viewSize)
         let invMVP = mvp.inverse
+
+        // Convert screen velocity to world-space displacement direction
+        let dxNDC = Float(screenVelocity.x * 2 / viewSize.width)
+        let dyNDC = Float(-screenVelocity.y * 2 / viewSize.height)
+        let p0 = invMVP * SIMD4<Float>(0, 0, 0, 1)
+        let p1 = invMVP * SIMD4<Float>(dxNDC, dyNDC, 0, 1)
+        let p0w = SIMD3<Float>(p0.x, p0.y, p0.z) / p0.w
+        let p1w = SIMD3<Float>(p1.x, p1.y, p1.z) / p1.w
+        let moveDir = p1w - p0w
+        let moveDirLen = simd_length(moveDir)
+        guard moveDirLen > 0.001 else { return }
+        let worldDir = moveDir / moveDirLen
+
+        // Ray cast to find the deformation center
         let ndcX = Float(2 * screenPoint.x / viewSize.width - 1)
         let ndcY = Float(1 - 2 * screenPoint.y / viewSize.height)
         let near4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
@@ -361,20 +374,18 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         }
         guard let center else { return }
 
-        // Displace vertices within brush radius using Gaussian falloff.
-        // Collect affected vertex normals (pre-deformation) for stroke displacement.
+        // Displace vertices within brush radius using Gaussian falloff
+        // along the pen movement direction.
         let radius = config.deformBrushRadius
         let radiusSq = radius * radius
         var vertices = sculptObjects[idx].mesh.vertices
-        var affectedNormals: [(position: SIMD3<Float>, normal: SIMD3<Float>)] = []
         var modified = false
 
         for i in 0..<vertices.count {
             let distSq = simd_length_squared(vertices[i].position - center)
             if distSq < radiusSq {
-                affectedNormals.append((vertices[i].position, vertices[i].normal))
                 let falloff = expf(-distSq / (radiusSq * 0.25))
-                vertices[i].position = vertices[i].position + vertices[i].normal * strength * falloff
+                vertices[i].position = vertices[i].position + worldDir * strength * falloff
                 modified = true
             }
         }
@@ -385,7 +396,6 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         }
 
         // Also displace surface stroke points so they move with the mesh
-        guard !affectedNormals.isEmpty else { return }
         var strokes = sculptObjects[idx].surfaceStrokes
         var strokesModified = false
 
@@ -395,14 +405,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
                 let distSq = simd_length_squared(pos - center)
                 if distSq < radiusSq {
                     let falloff = expf(-distSq / (radiusSq * 0.25))
-                    // Use nearest affected vertex's normal for displacement direction
-                    var nearestNormal = affectedNormals[0].normal
-                    var minD = simd_length_squared(affectedNormals[0].position - pos)
-                    for av in affectedNormals.dropFirst() {
-                        let d = simd_length_squared(av.position - pos)
-                        if d < minD { minD = d; nearestNormal = av.normal }
-                    }
-                    strokes[s].points[p] = pos + nearestNormal * strength * falloff
+                    strokes[s].points[p] = pos + worldDir * strength * falloff
                     strokesModified = true
                 }
             }
