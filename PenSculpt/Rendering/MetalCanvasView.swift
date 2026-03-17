@@ -45,7 +45,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
     var onMeshDeformed: ((UUID, Mesh, [SurfaceStroke]) -> Void)?
     var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
-    var onRendererReady: ((@escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, Mesh, [SurfaceStroke]?) -> Void) -> Void)?
+    var onRendererReady: ((@escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, MeshBVH) -> Void) -> Void)?
 
     func makeUIView(context: Context) -> ForceMTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -69,6 +69,9 @@ struct MetalCanvasView: UIViewRepresentable {
             },
             { [weak renderer] objectID, newMesh, newStrokes in
                 renderer?.morphMesh(objectID: objectID, mesh: newMesh, surfaceStrokes: newStrokes)
+            },
+            { [weak renderer] objectID, bvh in
+                renderer?.cacheBVH(bvh, for: objectID)
             }
         )
 

@@ -93,8 +93,16 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         surfaceStrokeDesc.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
         surfaceStrokeDesc.depthAttachmentPixelFormat = .depth32Float
 
-        guard let mp = try? device.makeRenderPipelineState(descriptor: meshDesc),
-              let ssp = try? device.makeRenderPipelineState(descriptor: surfaceStrokeDesc) else { return nil }
+        // Compile both pipelines in parallel to reduce init time
+        var mp: MTLRenderPipelineState?
+        var ssp: MTLRenderPipelineState?
+        let group = DispatchGroup()
+        group.enter()
+        device.makeRenderPipelineState(descriptor: meshDesc) { state, _ in mp = state; group.leave() }
+        group.enter()
+        device.makeRenderPipelineState(descriptor: surfaceStrokeDesc) { state, _ in ssp = state; group.leave() }
+        group.wait()
+        guard let mp, let ssp else { return nil }
         self.meshPipeline = mp
         self.surfaceStrokePipeline = ssp
 
@@ -338,6 +346,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         currentStrokePoints.isEmpty || abs(newT - lastHitT) < config.surfaceStrokeMaxTJump
     }
 
+    func cacheBVH(_ bvh: MeshBVH, for objectID: UUID) {
+        bvhCache[objectID] = bvh
+    }
+
     private func getOrCreateBVH(for objectID: UUID, mesh: Mesh) -> MeshBVH {
         if let cached = bvhCache[objectID] { return cached }
         let bvh = MeshBVH(mesh: mesh)
@@ -347,7 +359,16 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     private func prebuildBVHs() {
         for obj in sculptObjects where !obj.mesh.isEmpty && bvhCache[obj.id] == nil {
-            bvhCache[obj.id] = MeshBVH(mesh: obj.mesh)
+            let id = obj.id
+            let mesh = obj.mesh
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let bvh = MeshBVH(mesh: mesh)
+                DispatchQueue.main.async {
+                    if self?.bvhCache[id] == nil {
+                        self?.bvhCache[id] = bvh
+                    }
+                }
+            }
         }
     }
 

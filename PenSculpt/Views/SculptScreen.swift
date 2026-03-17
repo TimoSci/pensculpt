@@ -12,6 +12,7 @@ struct SculptScreen: View {
     @State private var deformCursor: (position: CGPoint, radius: CGFloat)?
     @State private var rendererReplaceMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
     @State private var rendererMorphMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
+    @State private var rendererCacheBVH: ((UUID, MeshBVH) -> Void)?
     @State private var isReInferring = false
     @Environment(\.dismiss) private var dismiss
 
@@ -28,7 +29,7 @@ struct SculptScreen: View {
             onSurfaceStrokeCompleted: handleSurfaceStroke,
             onMeshDeformed: handleMeshDeformed,
             onDeformCursor: { deformCursor = $0 },
-            onRendererReady: { replace, morph in DispatchQueue.main.async { rendererReplaceMesh = replace; rendererMorphMesh = morph } }
+            onRendererReady: { replace, morph, cacheBVH in DispatchQueue.main.async { rendererReplaceMesh = replace; rendererMorphMesh = morph; rendererCacheBVH = cacheBVH } }
         )
         .ignoresSafeArea()
         .overlay {
@@ -173,9 +174,11 @@ struct SculptScreen: View {
         let cfg = config
         Task.detached {
             let obj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+            let bvh = MeshBVH(mesh: obj.mesh)
             await MainActor.run {
                 sculptObjects.append(obj)
                 activeObjectID = obj.id
+                rendererCacheBVH?(obj.id, bvh)
                 isReInferring = false
             }
         }
@@ -190,6 +193,7 @@ struct SculptScreen: View {
         Task.detached {
             let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
             let reprojected = oldStrokes.isEmpty ? [] : Self.reprojectStrokes(oldStrokes, onto: newObj.mesh, config: cfg)
+            let bvh = MeshBVH(mesh: newObj.mesh)
             await MainActor.run {
                 if let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) {
                     sculptObjects[idx].mesh = newObj.mesh
@@ -198,6 +202,7 @@ struct SculptScreen: View {
                     sculptObjects[idx].surfaceStrokes = reprojected
                     rendererReplaceMesh?(objectID, newObj.mesh, reprojected)
                 }
+                rendererCacheBVH?(objectID, bvh)
                 isReInferring = false
             }
         }
@@ -214,6 +219,7 @@ struct SculptScreen: View {
         Task.detached {
             let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
             let reprojected = oldStrokes.isEmpty ? [] : Self.reprojectStrokes(oldStrokes, onto: newObj.mesh, config: cfg)
+            let bvh = MeshBVH(mesh: newObj.mesh)
             await MainActor.run {
                 if let idx = sculptObjects.firstIndex(where: { $0.id == id }) {
                     sculptObjects[idx].mesh = newObj.mesh
@@ -221,6 +227,7 @@ struct SculptScreen: View {
                     sculptObjects[idx].surfaceStrokes = reprojected
                     rendererReplaceMesh?(id, newObj.mesh, reprojected)
                 }
+                rendererCacheBVH?(id, bvh)
                 isReInferring = false
             }
         }
@@ -237,12 +244,14 @@ struct SculptScreen: View {
         Task.detached {
             let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
             let reprojected = oldStrokes.isEmpty ? [] : Self.reprojectStrokes(oldStrokes, onto: newObj.mesh, config: cfg)
+            let bvh = MeshBVH(mesh: newObj.mesh)
             await MainActor.run {
                 if let idx = sculptObjects.firstIndex(where: { $0.id == id }) {
                     sculptObjects[idx].originRect = newObj.originRect
                     sculptObjects[idx].surfaceStrokes = reprojected
                     rendererMorphMesh?(id, newObj.mesh, reprojected)
                 }
+                rendererCacheBVH?(id, bvh)
                 // Update binding mesh after morph completes
                 Task {
                     try? await Task.sleep(for: .milliseconds(350))
