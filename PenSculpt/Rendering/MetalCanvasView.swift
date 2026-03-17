@@ -43,7 +43,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var brushOpacity: Float = 1
     var onObjectTapped: (() -> Void)?
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
-    var onMeshDeformed: ((UUID, Mesh) -> Void)?
+    var onMeshDeformed: ((UUID, Mesh, [SurfaceStroke]) -> Void)?
     var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
     var onRendererReady: ((@escaping (UUID, Mesh, [SurfaceStroke]?) -> Void) -> Void)?
 
@@ -116,7 +116,7 @@ struct MetalCanvasView: UIViewRepresentable {
         var brushOpacity: Float = 1
         var onObjectTapped: (() -> Void)?
         var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
-        var onMeshDeformed: ((UUID, Mesh) -> Void)?
+        var onMeshDeformed: ((UUID, Mesh, [SurfaceStroke]) -> Void)?
         var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
         var isCurrentlyDeforming = false
 
@@ -169,7 +169,8 @@ struct MetalCanvasView: UIViewRepresentable {
                 onDeformCursor?(nil)
                 if let activeID = renderer.activeObjectID,
                    let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
-                    onMeshDeformed?(activeID, renderer.sculptObjects[idx].mesh)
+                    let obj = renderer.sculptObjects[idx]
+                    onMeshDeformed?(activeID, obj.mesh, obj.surfaceStrokes)
                 }
             }
         }

@@ -139,9 +139,10 @@ struct SculptScreen: View {
         sculptObjects[activeObjectIndex].surfaceStrokes.append(stroke)
     }
 
-    private func handleMeshDeformed(_ objectID: UUID, _ mesh: Mesh) {
+    private func handleMeshDeformed(_ objectID: UUID, _ mesh: Mesh, _ surfaceStrokes: [SurfaceStroke]) {
         guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
         sculptObjects[idx].mesh = mesh
+        sculptObjects[idx].surfaceStrokes = surfaceStrokes
     }
 
     private func bestOverlappingObject(for strokeIDs: Set<UUID>) -> SculptObject? {
