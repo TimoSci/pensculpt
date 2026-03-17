@@ -11,6 +11,7 @@ struct SculptScreen: View {
     @State private var brushOpacity: CGFloat = 1
     @State private var deformCursor: (position: CGPoint, radius: CGFloat)?
     @State private var rendererReplaceMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
+    @State private var rendererMorphMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
     @State private var isReInferring = false
     @Environment(\.dismiss) private var dismiss
 
@@ -27,7 +28,7 @@ struct SculptScreen: View {
             onSurfaceStrokeCompleted: handleSurfaceStroke,
             onMeshDeformed: handleMeshDeformed,
             onDeformCursor: { deformCursor = $0 },
-            onRendererReady: { closure in DispatchQueue.main.async { rendererReplaceMesh = closure } }
+            onRendererReady: { replace, morph in DispatchQueue.main.async { rendererReplaceMesh = replace; rendererMorphMesh = morph } }
         )
         .ignoresSafeArea()
         .overlay {
@@ -59,6 +60,21 @@ struct SculptScreen: View {
                             .font(.title)
                             .symbolRenderingMode(.hierarchical)
                             .foregroundStyle(.secondary)
+                    }
+                }
+                .disabled(isReInferring)
+
+                Button(action: reInferMorph) {
+                    if isReInferring {
+                        ProgressView()
+                    } else {
+                        VStack(spacing: 2) {
+                            Image(systemName: "sparkles")
+                                .font(.title3)
+                            Text("beta")
+                                .font(.system(size: 8))
+                        }
+                        .foregroundStyle(.secondary)
                     }
                 }
                 .disabled(isReInferring)
@@ -204,6 +220,35 @@ struct SculptScreen: View {
                     sculptObjects[idx].originRect = newObj.originRect
                     sculptObjects[idx].surfaceStrokes = reprojected
                     rendererReplaceMesh?(id, newObj.mesh, reprojected)
+                }
+                isReInferring = false
+            }
+        }
+    }
+
+    private func reInferMorph() {
+        guard activeObjectIndex < sculptObjects.count, !isReInferring else { return }
+        let id = sculptObjects[activeObjectIndex].id
+        let oldStrokes = sculptObjects[activeObjectIndex].surfaceStrokes
+        let sourceStrokes = strokes
+        let cfg = config
+        isReInferring = true
+
+        Task.detached {
+            let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+            let reprojected = oldStrokes.isEmpty ? [] : Self.reprojectStrokes(oldStrokes, onto: newObj.mesh, config: cfg)
+            await MainActor.run {
+                if let idx = sculptObjects.firstIndex(where: { $0.id == id }) {
+                    sculptObjects[idx].originRect = newObj.originRect
+                    sculptObjects[idx].surfaceStrokes = reprojected
+                    rendererMorphMesh?(id, newObj.mesh, reprojected)
+                }
+                // Update binding mesh after morph completes
+                Task {
+                    try? await Task.sleep(for: .milliseconds(350))
+                    if let idx = sculptObjects.firstIndex(where: { $0.id == id }) {
+                        sculptObjects[idx].mesh = newObj.mesh
+                    }
                 }
                 isReInferring = false
             }

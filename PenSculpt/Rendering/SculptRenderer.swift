@@ -43,6 +43,17 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     private var combinedCenter = SIMD3<Float>(0, 0, 0)
     private(set) var combinedRadius: Float = 1
 
+    private struct MorphState {
+        let objectID: UUID
+        let fromVertices: [MeshVertex]
+        let toVertices: [MeshVertex]
+        let toMesh: Mesh
+        let toStrokes: [SurfaceStroke]?
+        let startTime: CFTimeInterval
+        let duration: CFTimeInterval
+    }
+    private var activeMorph: MorphState?
+
     init?(device: MTLDevice) {
         self.device = device
         guard let queue = device.makeCommandQueue() else { return nil }
@@ -99,6 +110,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
     func draw(in view: MTKView) {
+        if activeMorph != nil { updateMorph() }
+
         guard !sculptObjects.isEmpty,
               let drawable = view.currentDrawable,
               let descriptor = view.currentRenderPassDescriptor,
@@ -333,6 +346,53 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         sculptObjects[idx].mesh = mesh
         if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
         bufferCache.removeValue(forKey: objectID)
+    }
+
+    func morphMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
+        guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
+        let oldVertices = sculptObjects[idx].mesh.vertices
+
+        if oldVertices.count == mesh.vertices.count {
+            activeMorph = MorphState(
+                objectID: objectID,
+                fromVertices: oldVertices,
+                toVertices: mesh.vertices,
+                toMesh: mesh,
+                toStrokes: surfaceStrokes,
+                startTime: CACurrentMediaTime(),
+                duration: 0.3
+            )
+        } else {
+            replaceMesh(objectID: objectID, mesh: mesh, surfaceStrokes: surfaceStrokes)
+        }
+    }
+
+    private func updateMorph() {
+        guard let morph = activeMorph,
+              let idx = sculptObjects.firstIndex(where: { $0.id == morph.objectID }) else {
+            activeMorph = nil
+            return
+        }
+
+        let elapsed = CACurrentMediaTime() - morph.startTime
+        let t = Float(min(elapsed / morph.duration, 1.0))
+        // Smooth ease-in-out
+        let smooth = t * t * (3 - 2 * t)
+
+        var vertices = morph.fromVertices
+        for i in 0..<min(vertices.count, morph.toVertices.count) {
+            vertices[i].position = mix(morph.fromVertices[i].position, morph.toVertices[i].position, t: smooth)
+            vertices[i].normal = normalize(mix(morph.fromVertices[i].normal, morph.toVertices[i].normal, t: smooth))
+        }
+        sculptObjects[idx].mesh.vertices = vertices
+        bufferCache.removeValue(forKey: morph.objectID)
+
+        if t >= 1.0 {
+            sculptObjects[idx].mesh = morph.toMesh
+            if let strokes = morph.toStrokes { sculptObjects[idx].surfaceStrokes = strokes }
+            bufferCache.removeValue(forKey: morph.objectID)
+            activeMorph = nil
+        }
     }
 
     // MARK: - Mesh deformation

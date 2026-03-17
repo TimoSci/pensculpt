@@ -45,7 +45,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
     var onMeshDeformed: ((UUID, Mesh, [SurfaceStroke]) -> Void)?
     var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
-    var onRendererReady: ((@escaping (UUID, Mesh, [SurfaceStroke]?) -> Void) -> Void)?
+    var onRendererReady: ((@escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, Mesh, [SurfaceStroke]?) -> Void) -> Void)?
 
     func makeUIView(context: Context) -> ForceMTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -63,9 +63,14 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.renderer = renderer
         view.delegate = renderer
 
-        onRendererReady? { [weak renderer] objectID, newMesh, newStrokes in
-            renderer?.replaceMesh(objectID: objectID, mesh: newMesh, surfaceStrokes: newStrokes)
-        }
+        onRendererReady? (
+            { [weak renderer] objectID, newMesh, newStrokes in
+                renderer?.replaceMesh(objectID: objectID, mesh: newMesh, surfaceStrokes: newStrokes)
+            },
+            { [weak renderer] objectID, newMesh, newStrokes in
+                renderer?.morphMesh(objectID: objectID, mesh: newMesh, surfaceStrokes: newStrokes)
+            }
+        )
 
         let panGesture = UIPanGestureRecognizer(target: context.coordinator,
                                                  action: #selector(Coordinator.handlePan(_:)))
