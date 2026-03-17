@@ -60,7 +60,7 @@ final class MeshTests: XCTestCase {
 
 final class MeshBVHTests: XCTestCase {
 
-    /// Brute-force ray cast for comparison (front-face only, matching BVH).
+    /// Brute-force ray cast for comparison (camera-facing, matching BVH).
     private func bruteForceRaycast(mesh: Mesh, origin: SIMD3<Float>, direction: SIMD3<Float>) -> (t: Float, faceIndex: Int)? {
         var closestT: Float = Float.infinity
         var hitFace = -1
@@ -71,7 +71,7 @@ final class MeshBVHTests: XCTestCase {
             let edge1 = v1 - v0, edge2 = v2 - v0
             let h = cross(direction, edge2)
             let a = dot(edge1, h)
-            guard a > 1e-6 else { continue }
+            guard a < -1e-6 else { continue }
             let f = 1.0 / a
             let s = origin - v0
             let u = f * dot(s, h)
@@ -86,79 +86,73 @@ final class MeshBVHTests: XCTestCase {
         return hitFace >= 0 ? (closestT, hitFace) : nil
     }
 
-    /// Two parallel quads at z=5 and z=0. Ray from z=10 going in -z should hit z=5 first.
+    /// Two parallel quads at z=5 and z=0. Ray from z=-10 going in +z hits z=0 first.
+    /// (Ray goes from scene side toward camera; a < -1e-6 selects camera-facing triangles.)
     func testBVHReturnsNearestSurface() {
-        // Near quad at z=5 (front-facing: CCW from +z perspective)
-        // Far quad at z=0
+        // Two quads with CW winding from +z (normals in -z, camera-facing for +z ray)
         let vertices = [
-            // Near quad (z=5)
-            MeshVertex(position: SIMD3(-1, -1, 5), normal: SIMD3(0, 0, 1)),
-            MeshVertex(position: SIMD3( 1, -1, 5), normal: SIMD3(0, 0, 1)),
-            MeshVertex(position: SIMD3( 1,  1, 5), normal: SIMD3(0, 0, 1)),
-            MeshVertex(position: SIMD3(-1,  1, 5), normal: SIMD3(0, 0, 1)),
-            // Far quad (z=0)
-            MeshVertex(position: SIMD3(-1, -1, 0), normal: SIMD3(0, 0, 1)),
-            MeshVertex(position: SIMD3( 1, -1, 0), normal: SIMD3(0, 0, 1)),
-            MeshVertex(position: SIMD3( 1,  1, 0), normal: SIMD3(0, 0, 1)),
-            MeshVertex(position: SIMD3(-1,  1, 0), normal: SIMD3(0, 0, 1)),
+            MeshVertex(position: SIMD3(-1, -1, 5), normal: SIMD3(0, 0, -1)),
+            MeshVertex(position: SIMD3( 1, -1, 5), normal: SIMD3(0, 0, -1)),
+            MeshVertex(position: SIMD3( 1,  1, 5), normal: SIMD3(0, 0, -1)),
+            MeshVertex(position: SIMD3(-1,  1, 5), normal: SIMD3(0, 0, -1)),
+            MeshVertex(position: SIMD3(-1, -1, 0), normal: SIMD3(0, 0, -1)),
+            MeshVertex(position: SIMD3( 1, -1, 0), normal: SIMD3(0, 0, -1)),
+            MeshVertex(position: SIMD3( 1,  1, 0), normal: SIMD3(0, 0, -1)),
+            MeshVertex(position: SIMD3(-1,  1, 0), normal: SIMD3(0, 0, -1)),
         ]
         let faces = [
-            // Near quad (CCW from +z: 0,1,2 and 0,2,3)
-            MeshFace(indices: SIMD3(0, 1, 2)),
-            MeshFace(indices: SIMD3(0, 2, 3)),
-            // Far quad (CCW from +z: 4,5,6 and 4,6,7)
-            MeshFace(indices: SIMD3(4, 5, 6)),
-            MeshFace(indices: SIMD3(4, 6, 7)),
+            // CW from +z → normals in -z → a < 0 for +z ray → accepted
+            MeshFace(indices: SIMD3(0, 2, 1)), MeshFace(indices: SIMD3(0, 3, 2)),
+            MeshFace(indices: SIMD3(4, 6, 5)), MeshFace(indices: SIMD3(4, 7, 6)),
         ]
         let mesh = Mesh(vertices: vertices, faces: faces)
         let bvh = MeshBVH(mesh: mesh)
 
-        let origin = SIMD3<Float>(0, 0, 10)
-        let direction = SIMD3<Float>(0, 0, -1)
+        let origin = SIMD3<Float>(0, 0, -10)
+        let direction = SIMD3<Float>(0, 0, 1)
 
         let bvhResult = bvh.raycast(origin: origin, direction: direction)
         let bruteResult = bruteForceRaycast(mesh: mesh, origin: origin, direction: direction)
 
         XCTAssertNotNil(bvhResult)
         XCTAssertNotNil(bruteResult)
-        XCTAssertEqual(bvhResult!.t, bruteResult!.t, accuracy: 1e-4,
-                       "BVH t=\(bvhResult!.t) but brute force t=\(bruteResult!.t)")
-        // Near surface is at z=5, so t should be 5 (origin z=10, direction z=-1)
-        XCTAssertEqual(bvhResult!.t, 5.0, accuracy: 1e-4,
-                       "Should hit near surface at t=5, got t=\(bvhResult!.t)")
+        XCTAssertEqual(bvhResult!.t, bruteResult!.t, accuracy: 1e-4)
+        // Nearest quad from origin is at z=0 → t=10
+        XCTAssertEqual(bvhResult!.t, 10.0, accuracy: 1e-4,
+                       "Should hit nearest surface at z=0, got t=\(bvhResult!.t)")
     }
 
     /// Many overlapping layers — BVH must still find the closest.
     func testBVHWithManyOverlappingLayers() {
         var vertices: [MeshVertex] = []
         var faces: [MeshFace] = []
-        // Create 10 front-facing quads at z = 0, 1, 2, ..., 9
+        // Create 10 quads at z = 0..9 with CW winding (camera-facing for +z ray)
         for layer in 0..<10 {
             let z = Float(layer)
             let base = UInt32(layer * 4)
             vertices.append(contentsOf: [
-                MeshVertex(position: SIMD3(-1, -1, z), normal: SIMD3(0, 0, 1)),
-                MeshVertex(position: SIMD3( 1, -1, z), normal: SIMD3(0, 0, 1)),
-                MeshVertex(position: SIMD3( 1,  1, z), normal: SIMD3(0, 0, 1)),
-                MeshVertex(position: SIMD3(-1,  1, z), normal: SIMD3(0, 0, 1)),
+                MeshVertex(position: SIMD3(-1, -1, z), normal: SIMD3(0, 0, -1)),
+                MeshVertex(position: SIMD3( 1, -1, z), normal: SIMD3(0, 0, -1)),
+                MeshVertex(position: SIMD3( 1,  1, z), normal: SIMD3(0, 0, -1)),
+                MeshVertex(position: SIMD3(-1,  1, z), normal: SIMD3(0, 0, -1)),
             ])
-            faces.append(MeshFace(indices: SIMD3(base, base+1, base+2)))
-            faces.append(MeshFace(indices: SIMD3(base, base+2, base+3)))
+            faces.append(MeshFace(indices: SIMD3(base, base+2, base+1)))
+            faces.append(MeshFace(indices: SIMD3(base, base+3, base+2)))
         }
         let mesh = Mesh(vertices: vertices, faces: faces)
         let bvh = MeshBVH(mesh: mesh)
 
-        let origin = SIMD3<Float>(0, 0, 20)
-        let direction = SIMD3<Float>(0, 0, -1)
+        let origin = SIMD3<Float>(0, 0, -10)
+        let direction = SIMD3<Float>(0, 0, 1)
 
         let bvhResult = bvh.raycast(origin: origin, direction: direction)
         let bruteResult = bruteForceRaycast(mesh: mesh, origin: origin, direction: direction)
 
         XCTAssertNotNil(bvhResult)
         XCTAssertNotNil(bruteResult)
-        // Nearest layer is at z=9, so t should be 11 (origin z=20, z=9 → t=11)
-        XCTAssertEqual(bvhResult!.t, 11.0, accuracy: 1e-4,
-                       "Should hit nearest layer at z=9, got t=\(bvhResult!.t)")
+        // Nearest layer is at z=0, so t should be 10
+        XCTAssertEqual(bvhResult!.t, 10.0, accuracy: 1e-4,
+                       "Should hit nearest layer at z=0, got t=\(bvhResult!.t)")
         XCTAssertEqual(bvhResult!.t, bruteResult!.t, accuracy: 1e-4)
     }
 
@@ -214,31 +208,24 @@ final class MeshBVHTests: XCTestCase {
         let mvp = proj * view
         let invMVP = mvp.inverse
 
-        // Unproject screen center
+        // Ray from scene side (z_ndc=+1) toward behind-camera (z_ndc=-1),
+        // matching the simplified SculptRenderer hitTest.
         let ndcX = Float(2 * 512.0 / viewSize.width - 1)
         let ndcY = Float(1 - 2 * 512.0 / viewSize.height)
-        let near4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
-        let far4  = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
-        let nearW = SIMD3<Float>(near4.x, near4.y, near4.z) / near4.w
-        let farW  = SIMD3<Float>(far4.x, far4.y, far4.z) / far4.w
-        let direction = normalize(farW - nearW)
+        let origin4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
+        let target4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
+        let origin = SIMD3<Float>(origin4.x, origin4.y, origin4.z) / origin4.w
+        let target = SIMD3<Float>(target4.x, target4.y, target4.z) / target4.w
+        let direction = normalize(target - origin)
 
         let bvh = MeshBVH(mesh: mesh)
-
-        // Default (closest): hits the farthest-from-camera visible surface
-        let closest = bvh.raycast(origin: nearW, direction: direction, farthest: false)
-        XCTAssertNotNil(closest)
-        let closestZ = nearW.z + closest!.t * direction.z
-        // Closest t hits surface farthest from camera (ray starts behind camera)
-
-        // Farthest: hits the nearest-to-camera visible surface
-        let farthest = bvh.raycast(origin: nearW, direction: direction, farthest: true)
-        XCTAssertNotNil(farthest)
-        let farthestZ = nearW.z + farthest!.t * direction.z
-        // With orthographic ray from behind camera, largest t = nearest to viewer
-        XCTAssertLessThan(farthestZ, closestZ,
-            "Farthest t should hit surface nearer to camera (more negative z_view). " +
-            "farthestZ=\(farthestZ), closestZ=\(closestZ)")
+        let result = bvh.raycast(origin: origin, direction: direction)
+        XCTAssertNotNil(result, "Should hit the visible surface")
+        let hitPoint = origin + result!.t * direction
+        // The camera-facing (visible) surface is at z=-5.
+        // With origin on the scene side, smallest t = nearest to viewer.
+        XCTAssertEqual(hitPoint.z, -5.0, accuracy: 0.1,
+            "Should hit visible surface at z=-5, got z=\(hitPoint.z)")
     }
 
     /// Exhaustive comparison: cast many rays and verify BVH matches brute force.
@@ -265,34 +252,34 @@ final class MeshBVHTests: XCTestCase {
                 vertices.append(MeshVertex(position: SIMD3(fx, fy, Float(z)), normal: SIMD3(0, 0, -1)))
             }
         }
-        // Front surface faces (CCW from +z)
+        // Front surface faces (CW from +z → normals in -z → camera-facing for +z ray)
         let n = gridSize
         for y in 0..<(n-1) {
             for x in 0..<(n-1) {
                 let i = UInt32(y * n + x)
-                faces.append(MeshFace(indices: SIMD3(i, i+1, i+UInt32(n)+1)))
-                faces.append(MeshFace(indices: SIMD3(i, i+UInt32(n)+1, i+UInt32(n))))
+                faces.append(MeshFace(indices: SIMD3(i, i+UInt32(n)+1, i+1)))
+                faces.append(MeshFace(indices: SIMD3(i, i+UInt32(n), i+UInt32(n)+1)))
             }
         }
-        // Back surface faces (CCW from -z, reversed winding)
+        // Back surface faces (CW from -z → normals in +z → NOT camera-facing for +z ray)
         let offset = UInt32(n * n)
         for y in 0..<(n-1) {
             for x in 0..<(n-1) {
                 let i = offset + UInt32(y * n + x)
-                faces.append(MeshFace(indices: SIMD3(i, i+UInt32(n)+1, i+1)))
-                faces.append(MeshFace(indices: SIMD3(i, i+UInt32(n), i+UInt32(n)+1)))
+                faces.append(MeshFace(indices: SIMD3(i, i+1, i+UInt32(n)+1)))
+                faces.append(MeshFace(indices: SIMD3(i, i+UInt32(n)+1, i+UInt32(n))))
             }
         }
 
         let mesh = Mesh(vertices: vertices, faces: faces)
         let bvh = MeshBVH(mesh: mesh)
-        let direction = SIMD3<Float>(0, 0, -1)
+        let direction = SIMD3<Float>(0, 0, 1)
         var mismatches = 0
 
-        // Cast rays across a grid
+        // Cast rays across a grid (from scene side, going toward +z)
         for sy in stride(from: -4.0, through: 4.0, by: 0.5) {
             for sx in stride(from: -4.0, through: 4.0, by: 0.5) {
-                let origin = SIMD3<Float>(Float(sx), Float(sy), 20)
+                let origin = SIMD3<Float>(Float(sx), Float(sy), -20)
                 let bvhResult = bvh.raycast(origin: origin, direction: direction)
                 let bruteResult = bruteForceRaycast(mesh: mesh, origin: origin, direction: direction)
 

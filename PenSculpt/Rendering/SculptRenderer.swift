@@ -314,15 +314,18 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let ndcX = Float(2 * screenPoint.x / viewSize.width - 1)
         let ndcY = Float(1 - 2 * screenPoint.y / viewSize.height)
 
-        let near4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
-        let far4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
-        let nearW = SIMD3<Float>(near4.x, near4.y, near4.z) / near4.w
-        let farW = SIMD3<Float>(far4.x, far4.y, far4.z) / far4.w
-        let direction = normalize(farW - nearW)
+        // z_ndc +1 maps to the scene side (in front of camera) due to the
+        // orthographic projection's z-flip. Starting the ray here makes
+        // smallest t = nearest to viewer.
+        let origin4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
+        let target4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
+        let origin = SIMD3<Float>(origin4.x, origin4.y, origin4.z) / origin4.w
+        let target = SIMD3<Float>(target4.x, target4.y, target4.z) / target4.w
+        let direction = normalize(target - origin)
 
         let bvh = getOrCreateBVH(for: activeID, mesh: obj.mesh)
-        guard let result = bvh.raycast(origin: nearW, direction: direction, farthest: true) else { return nil }
-        let hitPoint = nearW + result.t * direction - direction * config.surfaceStrokeOffset
+        guard let result = bvh.raycast(origin: origin, direction: direction) else { return nil }
+        let hitPoint = origin + result.t * direction + direction * config.surfaceStrokeOffset
         return (hitPoint, result.t)
     }
 
@@ -435,15 +438,15 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         // Ray cast to find the deformation center
         let ndcX = Float(2 * screenPoint.x / viewSize.width - 1)
         let ndcY = Float(1 - 2 * screenPoint.y / viewSize.height)
-        let near4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
-        let far4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
-        let nearW = SIMD3<Float>(near4.x, near4.y, near4.z) / near4.w
-        let farW = SIMD3<Float>(far4.x, far4.y, far4.z) / far4.w
-        let direction = normalize(farW - nearW)
+        let origin4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
+        let target4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
+        let origin = SIMD3<Float>(origin4.x, origin4.y, origin4.z) / origin4.w
+        let target = SIMD3<Float>(target4.x, target4.y, target4.z) / target4.w
+        let direction = normalize(target - origin)
 
         let bvh = getOrCreateBVH(for: activeID, mesh: mesh)
-        guard let result = bvh.raycast(origin: nearW, direction: direction, farthest: true) else { return }
-        let center = nearW + result.t * direction
+        guard let result = bvh.raycast(origin: origin, direction: direction) else { return }
+        let center = origin + result.t * direction
 
         // Displace vertices within brush radius using Gaussian falloff
         // along the pen movement direction.
