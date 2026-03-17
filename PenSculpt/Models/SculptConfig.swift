@@ -28,8 +28,11 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Default width of surface strokes in world units.
     var surfaceStrokeWidth: Float = 8
 
-    /// Brush radius for mesh deformation (in world units).
-    var deformBrushRadius: Float = 30
+    /// Minimum deform brush radius in world units (slider at minimum).
+    var deformRadiusMin: Float = 5
+
+    /// Maximum deform brush radius in world units (slider at maximum).
+    var deformRadiusMax: Float = 80
 
     /// Minimum displacement strength (at slow pen speed).
     var deformMinStrength: Float = 1

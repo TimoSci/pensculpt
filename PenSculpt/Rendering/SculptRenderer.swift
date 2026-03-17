@@ -41,7 +41,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     }
     private var bufferCache: [UUID: MeshBuffers] = [:]
     private var combinedCenter = SIMD3<Float>(0, 0, 0)
-    private var combinedRadius: Float = 1
+    private(set) var combinedRadius: Float = 1
 
     init?(device: MTLDevice) {
         self.device = device
@@ -330,7 +330,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Mesh deformation
 
-    func deformMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float, screenVelocity: CGPoint) {
+    func deformMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float, radius: Float, screenVelocity: CGPoint) {
         guard let activeID = activeObjectID,
               let idx = sculptObjects.firstIndex(where: { $0.id == activeID }) else { return }
         let mesh = sculptObjects[idx].mesh
@@ -376,7 +376,6 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         // Displace vertices within brush radius using Gaussian falloff
         // along the pen movement direction.
-        let radius = config.deformBrushRadius
         let radiusSq = radius * radius
         var vertices = sculptObjects[idx].mesh.vertices
         var modified = false

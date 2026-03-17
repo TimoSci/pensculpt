@@ -44,6 +44,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var onObjectTapped: (() -> Void)?
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
     var onMeshDeformed: ((UUID, Mesh) -> Void)?
+    var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
 
     func makeUIView(context: Context) -> ForceMTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -82,7 +83,9 @@ struct MetalCanvasView: UIViewRepresentable {
     }
 
     func updateUIView(_ uiView: ForceMTKView, context: Context) {
-        context.coordinator.renderer?.sculptObjects = sculptObjects
+        if !context.coordinator.isCurrentlyDeforming {
+            context.coordinator.renderer?.sculptObjects = sculptObjects
+        }
         context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
         context.coordinator.isRotateMode = isRotateMode
@@ -93,6 +96,7 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.onObjectTapped = onObjectTapped
         context.coordinator.onSurfaceStrokeCompleted = onSurfaceStrokeCompleted
         context.coordinator.onMeshDeformed = onMeshDeformed
+        context.coordinator.onDeformCursor = onDeformCursor
     }
 
     func makeCoordinator() -> Coordinator {
@@ -108,6 +112,8 @@ struct MetalCanvasView: UIViewRepresentable {
         var onObjectTapped: (() -> Void)?
         var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
         var onMeshDeformed: ((UUID, Mesh) -> Void)?
+        var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
+        var isCurrentlyDeforming = false
 
         @objc func handlePan(_ gesture: UIPanGestureRecognizer) {
             applyRotation(gesture)
@@ -138,15 +144,24 @@ struct MetalCanvasView: UIViewRepresentable {
             guard let renderer = renderer else { return }
             let location = gesture.location(in: gesture.view)
             let viewSize = gesture.view?.bounds.size ?? .zero
+            let sliderT = (brushSize - 1) / 19  // normalize 1...20 to 0...1
+            let worldRadius = renderer.config.deformRadiusMin + sliderT * (renderer.config.deformRadiusMax - renderer.config.deformRadiusMin)
 
             if gesture.state == .began || gesture.state == .changed {
+                isCurrentlyDeforming = true
                 let velocity = gesture.velocity(in: gesture.view)
                 let speed = Float(hypot(velocity.x, velocity.y))
                 let config = renderer.config
                 let t = min(speed / config.deformMaxSpeed, 1.0)
                 let strength = config.deformMinStrength + t * (config.deformMaxStrength - config.deformMinStrength)
-                renderer.deformMesh(at: location, viewSize: viewSize, strength: strength, screenVelocity: velocity)
+                renderer.deformMesh(at: location, viewSize: viewSize, strength: strength,
+                                     radius: worldRadius, screenVelocity: velocity)
+
+                let screenRadius = CGFloat(worldRadius) * viewSize.height / CGFloat(2 * renderer.combinedRadius)
+                onDeformCursor?((position: location, radius: screenRadius))
             } else if gesture.state == .ended || gesture.state == .cancelled {
+                isCurrentlyDeforming = false
+                onDeformCursor?(nil)
                 if let activeID = renderer.activeObjectID,
                    let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
                     onMeshDeformed?(activeID, renderer.sculptObjects[idx].mesh)

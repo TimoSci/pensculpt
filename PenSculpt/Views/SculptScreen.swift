@@ -9,6 +9,7 @@ struct SculptScreen: View {
     @State private var isDeformMode = false
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
+    @State private var deformCursor: (position: CGPoint, radius: CGFloat)?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -22,9 +23,20 @@ struct SculptScreen: View {
             brushOpacity: Float(brushOpacity),
             onObjectTapped: cycleActiveObject,
             onSurfaceStrokeCompleted: handleSurfaceStroke,
-            onMeshDeformed: handleMeshDeformed
+            onMeshDeformed: handleMeshDeformed,
+            onDeformCursor: { deformCursor = $0 }
         )
         .ignoresSafeArea()
+        .overlay {
+            if let cursor = deformCursor {
+                Circle()
+                    .strokeBorder(style: StrokeStyle(lineWidth: 1.5, dash: [6, 4]))
+                    .foregroundStyle(.white.opacity(0.7))
+                    .frame(width: cursor.radius * 2, height: cursor.radius * 2)
+                    .position(cursor.position)
+                    .allowsHitTesting(false)
+            }
+        }
         .overlay(alignment: .topLeading) {
             Button {
                 dismiss()
