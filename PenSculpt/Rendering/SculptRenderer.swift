@@ -215,6 +215,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         encoder.setRenderPipelineState(surfaceStrokePipeline)
         encoder.setDepthStencilState(surfaceStrokeDepthState)
         encoder.setCullMode(.none)
+        encoder.setTriangleFillMode(.fill)
 
         var uniforms = StrokeRenderUniforms(mvpMatrix: mvp)
         encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
