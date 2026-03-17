@@ -10,7 +10,7 @@ struct SculptScreen: View {
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
     @State private var deformCursor: (position: CGPoint, radius: CGFloat)?
-    @State private var rendererReplaceMesh: ((UUID, Mesh) -> Void)?
+    @State private var rendererReplaceMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
     @State private var isReInferring = false
     @Environment(\.dismiss) private var dismiss
 
@@ -165,17 +165,21 @@ struct SculptScreen: View {
     }
 
     private func autoReInfer(objectID: UUID, newStrokeIDs: Set<UUID>) {
+        guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
+        let oldStrokes = sculptObjects[idx].surfaceStrokes
         isReInferring = true
         let sourceStrokes = strokes
         let cfg = config
         Task.detached {
             let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+            let reprojected = oldStrokes.isEmpty ? [] : Self.reprojectStrokes(oldStrokes, onto: newObj.mesh, offset: cfg.surfaceStrokeOffset)
             await MainActor.run {
                 if let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) {
                     sculptObjects[idx].mesh = newObj.mesh
                     sculptObjects[idx].sourceStrokeIDs = newStrokeIDs
                     sculptObjects[idx].originRect = newObj.originRect
-                    rendererReplaceMesh?(objectID, newObj.mesh)
+                    sculptObjects[idx].surfaceStrokes = reprojected
+                    rendererReplaceMesh?(objectID, newObj.mesh, reprojected)
                 }
                 isReInferring = false
             }
@@ -185,20 +189,28 @@ struct SculptScreen: View {
     private func reInfer() {
         guard activeObjectIndex < sculptObjects.count, !isReInferring else { return }
         let id = sculptObjects[activeObjectIndex].id
+        let oldStrokes = sculptObjects[activeObjectIndex].surfaceStrokes
         let sourceStrokes = strokes
         let cfg = config
         isReInferring = true
 
         Task.detached {
             let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+            let reprojected = oldStrokes.isEmpty ? [] : Self.reprojectStrokes(oldStrokes, onto: newObj.mesh, offset: cfg.surfaceStrokeOffset)
             await MainActor.run {
                 if let idx = sculptObjects.firstIndex(where: { $0.id == id }) {
                     sculptObjects[idx].mesh = newObj.mesh
                     sculptObjects[idx].originRect = newObj.originRect
-                    rendererReplaceMesh?(id, newObj.mesh)
+                    sculptObjects[idx].surfaceStrokes = reprojected
+                    rendererReplaceMesh?(id, newObj.mesh, reprojected)
                 }
                 isReInferring = false
             }
         }
+    }
+
+    private static func reprojectStrokes(_ strokes: [SurfaceStroke], onto mesh: Mesh, offset: Float) -> [SurfaceStroke] {
+        let rayDir = SIMD3<Float>(0, 0, -1)
+        return strokes.compactMap { $0.reprojected(onto: mesh, rayDir: rayDir, offset: offset) }
     }
 }

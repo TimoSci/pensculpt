@@ -328,9 +328,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         currentStrokePoints.isEmpty || abs(newT - lastHitT) < config.surfaceStrokeMaxTJump
     }
 
-    func replaceMesh(objectID: UUID, mesh: Mesh) {
+    func replaceMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
         guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
         sculptObjects[idx].mesh = mesh
+        if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
         bufferCache.removeValue(forKey: objectID)
     }
 
