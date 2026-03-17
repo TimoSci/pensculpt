@@ -4,10 +4,20 @@ import simd
 struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     var points: [SIMD3<Float>]
+    var widths: [Float]
 
-    init(id: UUID = UUID(), points: [SIMD3<Float>] = []) {
+    init(id: UUID = UUID(), points: [SIMD3<Float>] = [], widths: [Float] = []) {
         self.id = id
         self.points = points
+        self.widths = widths
+    }
+
+    init(from decoder: Decoder) throws {
+        let container = try decoder.container(keyedBy: CodingKeys.self)
+        id = try container.decode(UUID.self, forKey: .id)
+        points = try container.decode([SIMD3<Float>].self, forKey: .points)
+        widths = try container.decodeIfPresent([Float].self, forKey: .widths)
+            ?? Array(repeating: 3.0, count: points.count)
     }
 }
 

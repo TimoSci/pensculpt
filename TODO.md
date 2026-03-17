@@ -43,7 +43,7 @@ Status legend:
 ### Metal Renderer
 - [x] MetalCanvasView (MTKView, orthographic camera) — O[ ] S[ ]
 - [x] Mesh rendering (diffuse lighting, wireframe debug mode) — O[x] S[ ]
-- [ ] Stroke rendering (triangle strips, pressure-based width) — O[ ] S[ ]
+- [x] Stroke rendering (triangle strips, pressure-based width) — O[ ] S[ ]
 - [ ] Stroke style toggle (screen-space vs surface-space) — O[ ] S[ ]
 - [x] Metal shaders (vertex + fragment) — O[ ] S[ ]
 

@@ -25,6 +25,9 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Surface stroke offset along face normal to prevent z-fighting.
     var surfaceStrokeOffset: Float = 0.5
 
+    /// Default width of surface strokes in world units.
+    var surfaceStrokeWidth: Float = 8
+
     /// Brush radius for mesh deformation (in world units).
     var deformBrushRadius: Float = 30
 

@@ -30,6 +30,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var config: SculptConfig = .default
     var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
     var currentStrokePoints: [SIMD3<Float>] = []
+    var currentStrokeWidths: [Float] = []
     var lastHitT: Float = 0
 
     private struct MeshBuffers {
@@ -213,6 +214,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     private func drawSurfaceStrokes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(surfaceStrokePipeline)
         encoder.setDepthStencilState(surfaceStrokeDepthState)
+        encoder.setCullMode(.none)
 
         var uniforms = StrokeRenderUniforms(mvpMatrix: mvp)
         encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
@@ -220,26 +222,65 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let strokeColor = SIMD4<Float>(0.2, 0.2, 0.8, 1.0)
         for obj in sculptObjects {
             for stroke in obj.surfaceStrokes {
-                drawLineStrip(stroke.points, color: strokeColor, encoder: encoder)
+                drawStrokeStrip(stroke.points, widths: stroke.widths, color: strokeColor, encoder: encoder)
             }
         }
 
-        if !currentStrokePoints.isEmpty {
-            drawLineStrip(currentStrokePoints, color: SIMD4<Float>(0.2, 0.2, 0.8, 0.6), encoder: encoder)
+        if currentStrokePoints.count > 1 {
+            let widths = currentStrokeWidths.isEmpty
+                ? [Float](repeating: config.surfaceStrokeWidth, count: currentStrokePoints.count)
+                : currentStrokeWidths
+            drawStrokeStrip(currentStrokePoints, widths: widths,
+                            color: SIMD4<Float>(0.2, 0.2, 0.8, 0.6), encoder: encoder)
         }
     }
 
-    private func drawLineStrip(_ points: [SIMD3<Float>], color: SIMD4<Float>, encoder: MTLRenderCommandEncoder) {
+    private func drawStrokeStrip(_ points: [SIMD3<Float>], widths: [Float], color: SIMD4<Float>,
+                                  encoder: MTLRenderCommandEncoder) {
         guard points.count > 1 else { return }
-        var positions = points
-        var colors = [SIMD4<Float>](repeating: color, count: points.count)
+        var stripVerts = buildTriangleStrip(points: points, widths: widths)
+        var colors = [SIMD4<Float>](repeating: color, count: stripVerts.count)
 
-        guard let posBuffer = makeBuffer(&positions),
+        guard let posBuffer = makeBuffer(&stripVerts),
               let colBuffer = makeBuffer(&colors) else { return }
 
         encoder.setVertexBuffer(posBuffer, offset: 0, index: 0)
         encoder.setVertexBuffer(colBuffer, offset: 0, index: 1)
-        encoder.drawPrimitives(type: .lineStrip, vertexStart: 0, vertexCount: points.count)
+        encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: stripVerts.count)
+    }
+
+    private func buildTriangleStrip(points: [SIMD3<Float>], widths: [Float]) -> [SIMD3<Float>] {
+        let viewDir = simd_act(simd_inverse(rotation), SIMD3<Float>(0, 0, -1))
+        var vertices: [SIMD3<Float>] = []
+        vertices.reserveCapacity(points.count * 2)
+        var lastRight = SIMD3<Float>(1, 0, 0)
+
+        for i in 0..<points.count {
+            let raw: SIMD3<Float>
+            if i == 0 {
+                raw = points[1] - points[0]
+            } else if i == points.count - 1 {
+                raw = points[i] - points[i - 1]
+            } else {
+                raw = points[i + 1] - points[i - 1]
+            }
+
+            // Only update perpendicular when direction is well-defined
+            let dirLen = simd_length(raw)
+            if dirLen > 0.001 {
+                let dir = raw / dirLen
+                let r = cross(dir, viewDir)
+                let rLen = simd_length(r)
+                if rLen > 0.001 {
+                    lastRight = r / rLen
+                }
+            }
+
+            let hw = (i < widths.count ? widths[i] : 3) / 2
+            vertices.append(points[i] - lastRight * hw)
+            vertices.append(points[i] + lastRight * hw)
+        }
+        return vertices
     }
 
     // MARK: - Ray casting
