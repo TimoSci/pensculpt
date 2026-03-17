@@ -25,6 +25,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             bvhCache = bvhCache.filter { currentIDs.contains($0.key) }
             recomputeCombinedBounds()
+            prebuildBVHs()
         }
     }
     var activeObjectID: UUID?
@@ -334,6 +335,22 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let bvh = MeshBVH(mesh: mesh)
         bvhCache[objectID] = bvh
         return bvh
+    }
+
+    private func prebuildBVHs() {
+        for obj in sculptObjects where !obj.mesh.isEmpty && bvhCache[obj.id] == nil {
+            let id = obj.id
+            let mesh = obj.mesh
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                let bvh = MeshBVH(mesh: mesh)
+                DispatchQueue.main.async {
+                    // Only cache if not already built (e.g. by a hit test that arrived first)
+                    if self?.bvhCache[id] == nil {
+                        self?.bvhCache[id] = bvh
+                    }
+                }
+            }
+        }
     }
 
     func replaceMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
