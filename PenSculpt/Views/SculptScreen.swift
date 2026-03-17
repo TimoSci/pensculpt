@@ -109,20 +109,17 @@ struct SculptScreen: View {
         }
         .onAppear {
             let strokeIDs = Set(strokes.map(\.id))
-            if let existing = sculptObjects.first(where: { $0.sourceStrokeIDs == strokeIDs }) {
-                activeObjectID = existing.id
+
+            if let exact = sculptObjects.first(where: { $0.sourceStrokeIDs == strokeIDs }) {
+                // Exact match — use existing
+                activeObjectID = exact.id
+            } else if let best = bestOverlappingObject(for: strokeIDs) {
+                // Strokes changed — re-infer the closest matching object
+                activeObjectID = best.id
+                autoReInfer(objectID: best.id, newStrokeIDs: strokeIDs)
             } else {
-                isReInferring = true
-                let sourceStrokes = strokes
-                let cfg = config
-                Task.detached {
-                    let obj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
-                    await MainActor.run {
-                        sculptObjects.append(obj)
-                        activeObjectID = obj.id
-                        isReInferring = false
-                    }
-                }
+                // No match — create new
+                inferNewObject()
             }
         }
     }
@@ -145,6 +142,44 @@ struct SculptScreen: View {
     private func handleMeshDeformed(_ objectID: UUID, _ mesh: Mesh) {
         guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
         sculptObjects[idx].mesh = mesh
+    }
+
+    private func bestOverlappingObject(for strokeIDs: Set<UUID>) -> SculptObject? {
+        sculptObjects
+            .filter { !$0.sourceStrokeIDs.intersection(strokeIDs).isEmpty }
+            .max(by: { $0.sourceStrokeIDs.intersection(strokeIDs).count < $1.sourceStrokeIDs.intersection(strokeIDs).count })
+    }
+
+    private func inferNewObject() {
+        isReInferring = true
+        let sourceStrokes = strokes
+        let cfg = config
+        Task.detached {
+            let obj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+            await MainActor.run {
+                sculptObjects.append(obj)
+                activeObjectID = obj.id
+                isReInferring = false
+            }
+        }
+    }
+
+    private func autoReInfer(objectID: UUID, newStrokeIDs: Set<UUID>) {
+        isReInferring = true
+        let sourceStrokes = strokes
+        let cfg = config
+        Task.detached {
+            let newObj = ShapeInflater.sculpt(from: sourceStrokes, config: cfg)
+            await MainActor.run {
+                if let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) {
+                    sculptObjects[idx].mesh = newObj.mesh
+                    sculptObjects[idx].sourceStrokeIDs = newStrokeIDs
+                    sculptObjects[idx].originRect = newObj.originRect
+                    rendererReplaceMesh?(objectID, newObj.mesh)
+                }
+                isReInferring = false
+            }
+        }
     }
 
     private func reInfer() {
