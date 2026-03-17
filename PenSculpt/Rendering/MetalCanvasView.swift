@@ -195,7 +195,8 @@ struct MetalCanvasView: UIViewRepresentable {
             } else if gesture.state == .ended || gesture.state == .cancelled {
                 if renderer.currentStrokePoints.count > 1 {
                     let stroke = SurfaceStroke(points: renderer.currentStrokePoints,
-                                                widths: renderer.currentStrokeWidths)
+                                                widths: renderer.currentStrokeWidths,
+                                                opacity: renderer.brushOpacity)
                     if let activeID = renderer.activeObjectID,
                        let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
                         renderer.sculptObjects[idx].surfaceStrokes.append(stroke)

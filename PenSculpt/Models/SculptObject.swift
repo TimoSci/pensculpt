@@ -5,11 +5,13 @@ struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
     let id: UUID
     var points: [SIMD3<Float>]
     var widths: [Float]
+    var opacity: Float
 
-    init(id: UUID = UUID(), points: [SIMD3<Float>] = [], widths: [Float] = []) {
+    init(id: UUID = UUID(), points: [SIMD3<Float>] = [], widths: [Float] = [], opacity: Float = 1) {
         self.id = id
         self.points = points
         self.widths = widths
+        self.opacity = opacity
     }
 
     init(from decoder: Decoder) throws {
@@ -18,6 +20,7 @@ struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
         points = try container.decode([SIMD3<Float>].self, forKey: .points)
         widths = try container.decodeIfPresent([Float].self, forKey: .widths)
             ?? Array(repeating: 3.0, count: points.count)
+        opacity = try container.decodeIfPresent(Float.self, forKey: .opacity) ?? 1
     }
 }
 

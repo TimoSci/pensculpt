@@ -86,6 +86,11 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         surfaceStrokeDesc.vertexFunction = library.makeFunction(name: "surface_stroke_vertex")
         surfaceStrokeDesc.fragmentFunction = library.makeFunction(name: "stroke_fragment")
         surfaceStrokeDesc.colorAttachments[0].pixelFormat = .bgra8Unorm
+        surfaceStrokeDesc.colorAttachments[0].isBlendingEnabled = true
+        surfaceStrokeDesc.colorAttachments[0].sourceRGBBlendFactor = .sourceAlpha
+        surfaceStrokeDesc.colorAttachments[0].destinationRGBBlendFactor = .oneMinusSourceAlpha
+        surfaceStrokeDesc.colorAttachments[0].sourceAlphaBlendFactor = .one
+        surfaceStrokeDesc.colorAttachments[0].destinationAlphaBlendFactor = .oneMinusSourceAlpha
         surfaceStrokeDesc.depthAttachmentPixelFormat = .depth32Float
 
         guard let mp = try? device.makeRenderPipelineState(descriptor: meshDesc),
@@ -237,10 +242,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         var uniforms = StrokeRenderUniforms(mvpMatrix: mvp)
         encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
 
-        let strokeColor = SIMD4<Float>(0.2, 0.2, 0.8, 1.0)
         for obj in sculptObjects {
             for stroke in obj.surfaceStrokes {
-                drawStrokeStrip(stroke.points, widths: stroke.widths, color: strokeColor, encoder: encoder)
+                let color = SIMD4<Float>(0.2, 0.2, 0.8, stroke.opacity)
+                drawStrokeStrip(stroke.points, widths: stroke.widths, color: color, encoder: encoder)
             }
         }
 
@@ -342,17 +347,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     private func prebuildBVHs() {
         for obj in sculptObjects where !obj.mesh.isEmpty && bvhCache[obj.id] == nil {
-            let id = obj.id
-            let mesh = obj.mesh
-            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-                let bvh = MeshBVH(mesh: mesh)
-                DispatchQueue.main.async {
-                    // Only cache if not already built (e.g. by a hit test that arrived first)
-                    if self?.bvhCache[id] == nil {
-                        self?.bvhCache[id] = bvh
-                    }
-                }
-            }
+            bvhCache[obj.id] = MeshBVH(mesh: obj.mesh)
         }
     }
 
@@ -361,7 +356,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         sculptObjects[idx].mesh = mesh
         if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
         bufferCache.removeValue(forKey: objectID)
-        bvhCache.removeValue(forKey: objectID)
+        // Build BVH immediately so it's ready before the user's first touch
+        bvhCache[objectID] = MeshBVH(mesh: mesh)
     }
 
     func morphMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
