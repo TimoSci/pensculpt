@@ -319,16 +319,18 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         guard let center else { return }
 
         // Displace vertices within brush radius using Gaussian falloff.
-        // Modify a local copy to avoid triggering didSet per vertex.
+        // Collect affected vertex normals (pre-deformation) for stroke displacement.
         let radius = config.deformBrushRadius
         let radiusSq = radius * radius
         let strength = config.deformStrength
         var vertices = sculptObjects[idx].mesh.vertices
+        var affectedNormals: [(position: SIMD3<Float>, normal: SIMD3<Float>)] = []
         var modified = false
 
         for i in 0..<vertices.count {
             let distSq = simd_length_squared(vertices[i].position - center)
             if distSq < radiusSq {
+                affectedNormals.append((vertices[i].position, vertices[i].normal))
                 let falloff = expf(-distSq / (radiusSq * 0.25))
                 vertices[i].position = vertices[i].position + vertices[i].normal * strength * falloff
                 modified = true
@@ -338,6 +340,34 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         if modified {
             sculptObjects[idx].mesh.vertices = vertices
             bufferCache.removeValue(forKey: sculptObjects[idx].id)
+        }
+
+        // Also displace surface stroke points so they move with the mesh
+        guard !affectedNormals.isEmpty else { return }
+        var strokes = sculptObjects[idx].surfaceStrokes
+        var strokesModified = false
+
+        for s in 0..<strokes.count {
+            for p in 0..<strokes[s].points.count {
+                let pos = strokes[s].points[p]
+                let distSq = simd_length_squared(pos - center)
+                if distSq < radiusSq {
+                    let falloff = expf(-distSq / (radiusSq * 0.25))
+                    // Use nearest affected vertex's normal for displacement direction
+                    var nearestNormal = affectedNormals[0].normal
+                    var minD = simd_length_squared(affectedNormals[0].position - pos)
+                    for av in affectedNormals.dropFirst() {
+                        let d = simd_length_squared(av.position - pos)
+                        if d < minD { minD = d; nearestNormal = av.normal }
+                    }
+                    strokes[s].points[p] = pos + nearestNormal * strength * falloff
+                    strokesModified = true
+                }
+            }
+        }
+
+        if strokesModified {
+            sculptObjects[idx].surfaceStrokes = strokes
         }
     }
 
