@@ -330,7 +330,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Mesh deformation
 
-    func deformMesh(at screenPoint: CGPoint, viewSize: CGSize) {
+    func deformMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float) {
         guard let activeID = activeObjectID,
               let idx = sculptObjects.firstIndex(where: { $0.id == activeID }) else { return }
         let mesh = sculptObjects[idx].mesh
@@ -365,7 +365,6 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         // Collect affected vertex normals (pre-deformation) for stroke displacement.
         let radius = config.deformBrushRadius
         let radiusSq = radius * radius
-        let strength = config.deformStrength
         var vertices = sculptObjects[idx].mesh.vertices
         var affectedNormals: [(position: SIMD3<Float>, normal: SIMD3<Float>)] = []
         var modified = false

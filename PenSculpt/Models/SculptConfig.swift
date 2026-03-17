@@ -31,8 +31,14 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Brush radius for mesh deformation (in world units).
     var deformBrushRadius: Float = 30
 
-    /// Displacement strength per gesture event for mesh deformation.
-    var deformStrength: Float = 10
+    /// Minimum displacement strength (at slow pen speed).
+    var deformMinStrength: Float = 1
+
+    /// Maximum displacement strength (at fast pen speed).
+    var deformMaxStrength: Float = 15
+
+    /// Pen speed (in points/sec) at which maximum deformation strength is reached.
+    var deformMaxSpeed: Float = 1500
 
     /// Number of adaptive edge-splitting passes for seam triangles.
     var seamSubdivisionPasses: Int = 5

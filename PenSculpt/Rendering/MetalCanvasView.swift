@@ -140,7 +140,12 @@ struct MetalCanvasView: UIViewRepresentable {
             let viewSize = gesture.view?.bounds.size ?? .zero
 
             if gesture.state == .began || gesture.state == .changed {
-                renderer.deformMesh(at: location, viewSize: viewSize)
+                let velocity = gesture.velocity(in: gesture.view)
+                let speed = Float(hypot(velocity.x, velocity.y))
+                let config = renderer.config
+                let t = min(speed / config.deformMaxSpeed, 1.0)
+                let strength = config.deformMinStrength + t * (config.deformMaxStrength - config.deformMinStrength)
+                renderer.deformMesh(at: location, viewSize: viewSize, strength: strength)
             } else if gesture.state == .ended || gesture.state == .cancelled {
                 if let activeID = renderer.activeObjectID,
                    let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
