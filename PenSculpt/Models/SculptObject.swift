@@ -24,16 +24,19 @@ struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
 extension SurfaceStroke {
     /// Re-projects stroke points onto a new mesh by casting rays along `rayDir`.
     /// Points that miss the mesh are dropped. Returns nil if no points survive.
-    func reprojected(onto mesh: Mesh, rayDir: SIMD3<Float>, offset: Float) -> SurfaceStroke? {
+    func reprojected(onto mesh: Mesh, rayDir: SIMD3<Float>, offset: Float, maxTJump: Float = 50) -> SurfaceStroke? {
         var newPoints: [SIMD3<Float>] = []
         var newWidths: [Float] = []
+        var lastT: Float = 0
 
         for i in 0..<points.count {
-            // Cast ray from the point along both directions to find the new surface
-            if let hit = Self.castOntoMesh(from: points[i], direction: rayDir, mesh: mesh, offset: offset)
-                ?? Self.castOntoMesh(from: points[i], direction: -rayDir, mesh: mesh, offset: offset) {
-                newPoints.append(hit)
-                newWidths.append(i < widths.count ? widths[i] : 3)
+            if let (hit, t) = Self.castOntoMesh(from: points[i], direction: rayDir, mesh: mesh, offset: offset) {
+                let isFirst = newPoints.isEmpty
+                if isFirst || abs(t - lastT) < maxTJump {
+                    newPoints.append(hit)
+                    newWidths.append(i < widths.count ? widths[i] : 3)
+                    lastT = t
+                }
             }
         }
 
@@ -42,7 +45,7 @@ extension SurfaceStroke {
     }
 
     private static func castOntoMesh(from origin: SIMD3<Float>, direction: SIMD3<Float>,
-                                      mesh: Mesh, offset: Float) -> SIMD3<Float>? {
+                                      mesh: Mesh, offset: Float) -> (SIMD3<Float>, Float)? {
         var closestT: Float = Float.infinity
         var hitPoint: SIMD3<Float>?
 
@@ -68,7 +71,8 @@ extension SurfaceStroke {
                 hitPoint = origin + t * direction - direction * offset
             }
         }
-        return hitPoint
+        guard let hp = hitPoint else { return nil }
+        return (hp, closestT)
     }
 }
 
