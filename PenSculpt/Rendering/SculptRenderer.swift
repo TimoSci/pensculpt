@@ -328,6 +328,12 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         currentStrokePoints.isEmpty || abs(newT - lastHitT) < config.surfaceStrokeMaxTJump
     }
 
+    func replaceMesh(objectID: UUID, mesh: Mesh) {
+        guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
+        sculptObjects[idx].mesh = mesh
+        bufferCache.removeValue(forKey: objectID)
+    }
+
     // MARK: - Mesh deformation
 
     func deformMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float, radius: Float, screenVelocity: CGPoint) {

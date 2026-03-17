@@ -10,6 +10,7 @@ struct SculptScreen: View {
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
     @State private var deformCursor: (position: CGPoint, radius: CGFloat)?
+    @State private var rendererReplaceMesh: ((UUID, Mesh) -> Void)?
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -24,7 +25,8 @@ struct SculptScreen: View {
             onObjectTapped: cycleActiveObject,
             onSurfaceStrokeCompleted: handleSurfaceStroke,
             onMeshDeformed: handleMeshDeformed,
-            onDeformCursor: { deformCursor = $0 }
+            onDeformCursor: { deformCursor = $0 },
+            onRendererReady: { closure in DispatchQueue.main.async { rendererReplaceMesh = closure } }
         )
         .ignoresSafeArea()
         .overlay {
@@ -38,15 +40,24 @@ struct SculptScreen: View {
             }
         }
         .overlay(alignment: .topLeading) {
-            Button {
-                dismiss()
-            } label: {
-                Image(systemName: "xmark.circle.fill")
-                    .font(.title)
-                    .symbolRenderingMode(.hierarchical)
-                    .foregroundStyle(.secondary)
-                    .padding()
+            HStack(spacing: 12) {
+                Button {
+                    dismiss()
+                } label: {
+                    Image(systemName: "xmark.circle.fill")
+                        .font(.title)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                }
+
+                Button(action: reInfer) {
+                    Image(systemName: "arrow.clockwise.circle.fill")
+                        .font(.title)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                }
             }
+            .padding()
         }
         .overlay(alignment: .top) {
             if sculptObjects.count > 1 {
@@ -120,5 +131,14 @@ struct SculptScreen: View {
     private func handleMeshDeformed(_ objectID: UUID, _ mesh: Mesh) {
         guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
         sculptObjects[idx].mesh = mesh
+    }
+
+    private func reInfer() {
+        guard activeObjectIndex < sculptObjects.count else { return }
+        let id = sculptObjects[activeObjectIndex].id
+        let newObj = ShapeInflater.sculpt(from: strokes, config: config)
+        sculptObjects[activeObjectIndex].mesh = newObj.mesh
+        sculptObjects[activeObjectIndex].originRect = newObj.originRect
+        rendererReplaceMesh?(id, newObj.mesh)
     }
 }

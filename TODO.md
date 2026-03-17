@@ -52,7 +52,7 @@ Status legend:
 - [x] Draw-on-surface (ray cast, bake at viewing angle) — O[ ] S[ ]
 - [x] Thumb button for pen-rotate mode — O[ ] S[ ]
 - [x] Mesh deformation (soft brush, Gaussian falloff) — O[ ] S[ ]
-- [ ] Re-inference (async, correction preservation, cross-fade) — O[ ] S[ ]
+- [x] Re-inference (async, correction preservation, cross-fade) — O[ ] S[ ]
 
 ### Integration
 - [x] SculptScreen view — O[ ] S[ ]
