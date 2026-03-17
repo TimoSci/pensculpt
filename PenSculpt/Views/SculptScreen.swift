@@ -92,34 +92,34 @@ struct SculptScreen: View {
             }
         }
         .overlay(alignment: .bottom) {
-            VStack(spacing: 12) {
-                BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity)
-                    .padding(.horizontal, 16)
-                    .padding(.vertical, 10)
-                    .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-
-                HStack(spacing: 12) {
-                    Image(systemName: isRotateMode ? "rotate.3d.fill" : "rotate.3d")
-                        .font(.title)
-                        .foregroundStyle(isRotateMode ? .blue : .secondary)
-                        .frame(width: 60, height: 60)
-                        .background(.ultraThinMaterial, in: Circle())
-                        .gesture(
-                            DragGesture(minimumDistance: 0)
-                                .onChanged { _ in isRotateMode = true }
-                                .onEnded { _ in isRotateMode = false }
-                        )
-
-                    Button {
-                        isDeformMode.toggle()
-                    } label: {
-                        Image(systemName: isDeformMode ? "hand.point.up.fill" : "hand.point.up")
-                            .font(.title)
-                            .foregroundStyle(isDeformMode ? .orange : .secondary)
-                            .frame(width: 60, height: 60)
-                            .background(.ultraThinMaterial, in: Circle())
-                    }
-                }
+            BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity)
+                .padding(.horizontal, 16)
+                .padding(.vertical, 10)
+                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+                .padding(.bottom, 20)
+        }
+        .overlay(alignment: .bottomLeading) {
+            Image(systemName: isRotateMode ? "rotate.3d.fill" : "rotate.3d")
+                .font(.title)
+                .foregroundStyle(isRotateMode ? .blue : .secondary)
+                .frame(width: 60, height: 60)
+                .background(.ultraThinMaterial, in: Circle())
+                .gesture(
+                    DragGesture(minimumDistance: 0)
+                        .onChanged { _ in isRotateMode = true }
+                        .onEnded { _ in isRotateMode = false }
+                )
+                .padding(20)
+        }
+        .overlay(alignment: .bottomTrailing) {
+            Button {
+                isDeformMode.toggle()
+            } label: {
+                Image(systemName: isDeformMode ? "hand.point.up.fill" : "hand.point.up")
+                    .font(.title)
+                    .foregroundStyle(isDeformMode ? .orange : .secondary)
+                    .frame(width: 60, height: 60)
+                    .background(.ultraThinMaterial, in: Circle())
             }
             .padding(20)
         }
