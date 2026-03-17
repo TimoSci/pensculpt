@@ -45,8 +45,11 @@ struct MeshBVH {
                 hi = simd_max(hi, p)
             }
         }
-        nodes[nodeIdx].boundsMin = lo
-        nodes[nodeIdx].boundsMax = hi
+        // Expand bounds by epsilon so triangles on AABB boundaries are not
+        // missed when ray direction has zero components (0 * inf = NaN in slab test).
+        let eps = SIMD3<Float>(repeating: 1e-4)
+        nodes[nodeIdx].boundsMin = lo - eps
+        nodes[nodeIdx].boundsMax = hi + eps
 
         let count = end - start
         if count <= Self.maxLeafSize {
@@ -86,12 +89,15 @@ struct MeshBVH {
 
     // MARK: - Query
 
-    /// Cast a ray and return the closest front-face hit (t value and face index).
-    func raycast(origin: SIMD3<Float>, direction: SIMD3<Float>) -> (t: Float, faceIndex: Int)? {
+    /// Cast a ray and return a hit. When `farthest` is false (default), returns the
+    /// closest front-face hit (smallest t). When true, returns the farthest front-face
+    /// hit (largest t) — needed when ray origin is behind the camera in orthographic
+    /// projection, where the largest t corresponds to the surface nearest the viewer.
+    func raycast(origin: SIMD3<Float>, direction: SIMD3<Float>, farthest: Bool = false) -> (t: Float, faceIndex: Int)? {
         guard !nodes.isEmpty else { return nil }
         let invDir = SIMD3<Float>(1 / direction.x, 1 / direction.y, 1 / direction.z)
 
-        var closestT: Float = Float.infinity
+        var bestT: Float = farthest ? 0 : Float.infinity
         var hitFace = -1
         var stack = ContiguousArray<Int32>()
         stack.reserveCapacity(64)
@@ -100,9 +106,15 @@ struct MeshBVH {
         while let nodeIdx = stack.popLast() {
             let node = nodes[Int(nodeIdx)]
 
-            guard rayIntersectsAABB(origin: origin, invDir: invDir,
-                                    lo: node.boundsMin, hi: node.boundsMax,
-                                    maxT: closestT) else { continue }
+            if farthest {
+                guard rayAABBCanContainFarther(origin: origin, invDir: invDir,
+                                               lo: node.boundsMin, hi: node.boundsMax,
+                                               minT: bestT) else { continue }
+            } else {
+                guard rayIntersectsAABB(origin: origin, invDir: invDir,
+                                        lo: node.boundsMin, hi: node.boundsMax,
+                                        maxT: bestT) else { continue }
+            }
 
             if node.count > 0 {
                 // Leaf
@@ -112,11 +124,12 @@ struct MeshBVH {
                     let v0 = positions[Int(f.x)]
                     let v1 = positions[Int(f.y)]
                     let v2 = positions[Int(f.z)]
-                    if let t = Self.frontFaceIntersect(origin: origin, direction: direction,
-                                                       v0: v0, v1: v1, v2: v2),
-                       t < closestT {
-                        closestT = t
-                        hitFace = fi
+                    if let t = Self.rayTriangleIntersect(origin: origin, direction: direction,
+                                                         v0: v0, v1: v1, v2: v2) {
+                        if farthest ? (t > bestT) : (t < bestT) {
+                            bestT = t
+                            hitFace = fi
+                        }
                     }
                 }
             } else {
@@ -125,7 +138,7 @@ struct MeshBVH {
             }
         }
 
-        return hitFace >= 0 ? (closestT, hitFace) : nil
+        return hitFace >= 0 ? (bestT, hitFace) : nil
     }
 
     // MARK: - Ray-AABB (slab method)
@@ -142,10 +155,23 @@ struct MeshBVH {
         return enter <= exit && exit > 0 && enter < maxT
     }
 
+    /// For farthest-hit queries: can this AABB contain a hit with t > minT?
+    private func rayAABBCanContainFarther(origin: SIMD3<Float>, invDir: SIMD3<Float>,
+                                           lo: SIMD3<Float>, hi: SIMD3<Float>,
+                                           minT: Float) -> Bool {
+        let t1 = (lo - origin) * invDir
+        let t2 = (hi - origin) * invDir
+        let tmin = simd_min(t1, t2)
+        let tmax = simd_max(t1, t2)
+        let enter = max(tmin.x, max(tmin.y, tmin.z))
+        let exit = min(tmax.x, min(tmax.y, tmax.z))
+        return enter <= exit && exit > minT
+    }
+
     // MARK: - Ray-triangle (Moller-Trumbore, front-face only)
 
-    private static func frontFaceIntersect(origin: SIMD3<Float>, direction: SIMD3<Float>,
-                                            v0: SIMD3<Float>, v1: SIMD3<Float>, v2: SIMD3<Float>) -> Float? {
+    private static func rayTriangleIntersect(origin: SIMD3<Float>, direction: SIMD3<Float>,
+                                              v0: SIMD3<Float>, v1: SIMD3<Float>, v2: SIMD3<Float>) -> Float? {
         let edge1 = v1 - v0
         let edge2 = v2 - v0
         let h = cross(direction, edge2)

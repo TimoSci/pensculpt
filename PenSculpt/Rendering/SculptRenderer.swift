@@ -99,7 +99,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         meshDepthDesc.isDepthWriteEnabled = true
 
         let strokeDepthDesc = MTLDepthStencilDescriptor()
-        strokeDepthDesc.depthCompareFunction = .always
+        strokeDepthDesc.depthCompareFunction = .lessEqual
         strokeDepthDesc.isDepthWriteEnabled = false
 
         guard let mds = device.makeDepthStencilState(descriptor: meshDepthDesc),
@@ -321,7 +321,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let direction = normalize(farW - nearW)
 
         let bvh = getOrCreateBVH(for: activeID, mesh: obj.mesh)
-        guard let result = bvh.raycast(origin: nearW, direction: direction) else { return nil }
+        guard let result = bvh.raycast(origin: nearW, direction: direction, farthest: true) else { return nil }
         let hitPoint = nearW + result.t * direction - direction * config.surfaceStrokeOffset
         return (hitPoint, result.t)
     }
@@ -442,7 +442,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let direction = normalize(farW - nearW)
 
         let bvh = getOrCreateBVH(for: activeID, mesh: mesh)
-        guard let result = bvh.raycast(origin: nearW, direction: direction) else { return }
+        guard let result = bvh.raycast(origin: nearW, direction: direction, farthest: true) else { return }
         let center = nearW + result.t * direction
 
         // Displace vertices within brush radius using Gaussian falloff
