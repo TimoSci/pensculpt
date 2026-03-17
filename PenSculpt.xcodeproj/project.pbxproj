@@ -27,6 +27,7 @@
 		BC351352DE5D98824538DEE9 /* BrushControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = BC01AF044A0AAABECBF26AB1 /* BrushControls.swift */; };
 		2E6F7089A234560102B3C4D6 /* DrawingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */; };
 		3F60718293A4B5C6D7E8F002 /* Mesh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F60718293A4B5C6D7E8F001 /* Mesh.swift */; };
+		5A70819293A4B5C6D7E8F002 /* MeshBVH.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A70819293A4B5C6D7E8F001 /* MeshBVH.swift */; };
 		3F60718293A4B5C6D7E8F004 /* SculptObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F60718293A4B5C6D7E8F003 /* SculptObject.swift */; };
 		3F60718293A4B5C6D7E8F006 /* MeshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F60718293A4B5C6D7E8F005 /* MeshTests.swift */; };
 		2F7089A234560102B3C4D5E7 /* DrawingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */; };
@@ -77,6 +78,7 @@
 		20F53120679F63904EB7A842 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		2E6F7089A234560102B3C4D5 /* DrawingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModel.swift; sourceTree = "<group>"; };
 		3F60718293A4B5C6D7E8F001 /* Mesh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mesh.swift; sourceTree = "<group>"; };
+		5A70819293A4B5C6D7E8F001 /* MeshBVH.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshBVH.swift; sourceTree = "<group>"; };
 		3F60718293A4B5C6D7E8F003 /* SculptObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptObject.swift; sourceTree = "<group>"; };
 		3F60718293A4B5C6D7E8F005 /* MeshTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshTests.swift; sourceTree = "<group>"; };
 		2F7089A234560102B3C4D5E6 /* DrawingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModelTests.swift; sourceTree = "<group>"; };
@@ -200,6 +202,7 @@
 				82600F3015BC14804942380E /* Canvas.swift */,
 				D7A1F3B2C4E50689A2347890 /* DrawingTool.swift */,
 				3F60718293A4B5C6D7E8F001 /* Mesh.swift */,
+				5A70819293A4B5C6D7E8F001 /* MeshBVH.swift */,
 				4760718293A4B5C6D7E8F001 /* SculptConfig.swift */,
 				3F60718293A4B5C6D7E8F003 /* SculptObject.swift */,
 				C103499A3841733723268595 /* Stroke.swift */,
@@ -353,6 +356,7 @@
 				E02DD6005263EAD261542098 /* PenSculptApp.swift in Sources */,
 				5FA3E0CC9696AAE77E3E8C95 /* PenSculptDocument.swift in Sources */,
 				3F60718293A4B5C6D7E8F002 /* Mesh.swift in Sources */,
+				5A70819293A4B5C6D7E8F002 /* MeshBVH.swift in Sources */,
 				3F60718293A4B5C6D7E8F004 /* SculptObject.swift in Sources */,
 				1F06F508B357184A0D298B76 /* Stroke.swift in Sources */,
 				620DF5FFBEBB74AE891E2932 /* StrokeConverter.swift in Sources */,

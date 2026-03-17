@@ -23,6 +23,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         didSet {
             let currentIDs = Set(sculptObjects.map(\.id))
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
+            bvhCache = bvhCache.filter { currentIDs.contains($0.key) }
             recomputeCombinedBounds()
         }
     }
@@ -40,6 +41,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let indexCount: Int
     }
     private var bufferCache: [UUID: MeshBuffers] = [:]
+    private var bvhCache: [UUID: MeshBVH] = [:]
     private var combinedCenter = SIMD3<Float>(0, 0, 0)
     private(set) var combinedRadius: Float = 1
 
@@ -317,28 +319,21 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let farW = SIMD3<Float>(far4.x, far4.y, far4.z) / far4.w
         let direction = normalize(farW - nearW)
 
-        var closestT: Float = Float.infinity
-        var hitPoint: SIMD3<Float>?
-
-        let mesh = obj.mesh
-        for face in mesh.faces {
-            let v0 = mesh.vertices[Int(face.indices.x)].position
-            let v1 = mesh.vertices[Int(face.indices.y)].position
-            let v2 = mesh.vertices[Int(face.indices.z)].position
-
-            if let t = rayTriangleIntersect(origin: nearW, direction: direction, v0: v0, v1: v1, v2: v2),
-               t < closestT {
-                closestT = t
-                hitPoint = nearW + t * direction - direction * config.surfaceStrokeOffset
-            }
-        }
-
-        guard let hp = hitPoint else { return nil }
-        return (hp, closestT)
+        let bvh = getOrCreateBVH(for: activeID, mesh: obj.mesh)
+        guard let result = bvh.raycast(origin: nearW, direction: direction) else { return nil }
+        let hitPoint = nearW + result.t * direction - direction * config.surfaceStrokeOffset
+        return (hitPoint, result.t)
     }
 
     func isTContinuous(_ newT: Float) -> Bool {
         currentStrokePoints.isEmpty || abs(newT - lastHitT) < config.surfaceStrokeMaxTJump
+    }
+
+    private func getOrCreateBVH(for objectID: UUID, mesh: Mesh) -> MeshBVH {
+        if let cached = bvhCache[objectID] { return cached }
+        let bvh = MeshBVH(mesh: mesh)
+        bvhCache[objectID] = bvh
+        return bvh
     }
 
     func replaceMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
@@ -346,6 +341,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         sculptObjects[idx].mesh = mesh
         if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
         bufferCache.removeValue(forKey: objectID)
+        bvhCache.removeValue(forKey: objectID)
     }
 
     func morphMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
@@ -391,6 +387,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             sculptObjects[idx].mesh = morph.toMesh
             if let strokes = morph.toStrokes { sculptObjects[idx].surfaceStrokes = strokes }
             bufferCache.removeValue(forKey: morph.objectID)
+            bvhCache.removeValue(forKey: morph.objectID)
             activeMorph = nil
         }
     }
@@ -427,19 +424,9 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let farW = SIMD3<Float>(far4.x, far4.y, far4.z) / far4.w
         let direction = normalize(farW - nearW)
 
-        var closestT: Float = Float.infinity
-        var center: SIMD3<Float>?
-        for face in mesh.faces {
-            let v0 = mesh.vertices[Int(face.indices.x)].position
-            let v1 = mesh.vertices[Int(face.indices.y)].position
-            let v2 = mesh.vertices[Int(face.indices.z)].position
-            if let t = rayTriangleIntersect(origin: nearW, direction: direction, v0: v0, v1: v1, v2: v2),
-               t < closestT {
-                closestT = t
-                center = nearW + t * direction
-            }
-        }
-        guard let center else { return }
+        let bvh = getOrCreateBVH(for: activeID, mesh: mesh)
+        guard let result = bvh.raycast(origin: nearW, direction: direction) else { return }
+        let center = nearW + result.t * direction
 
         // Displace vertices within brush radius using Gaussian falloff
         // along the pen movement direction.
@@ -480,25 +467,6 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         if strokesModified {
             sculptObjects[idx].surfaceStrokes = strokes
         }
-    }
-
-    private func rayTriangleIntersect(origin: SIMD3<Float>, direction: SIMD3<Float>,
-                                       v0: SIMD3<Float>, v1: SIMD3<Float>, v2: SIMD3<Float>) -> Float? {
-        let edge1 = v1 - v0
-        let edge2 = v2 - v0
-        let h = cross(direction, edge2)
-        let a = dot(edge1, h)
-        // a > 0 means triangle faces toward camera; reject back-facing hits
-        guard a > 1e-6 else { return nil }
-        let f = 1.0 / a
-        let s = origin - v0
-        let u = f * dot(s, h)
-        guard u >= 0 && u <= 1 else { return nil }
-        let q = cross(s, edge1)
-        let v = f * dot(direction, q)
-        guard v >= 0 && u + v <= 1 else { return nil }
-        let t = f * dot(edge2, q)
-        return t > 1e-6 ? t : nil
     }
 
     // MARK: - Helpers
