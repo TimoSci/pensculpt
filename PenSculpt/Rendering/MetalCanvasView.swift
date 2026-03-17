@@ -39,6 +39,8 @@ struct MetalCanvasView: UIViewRepresentable {
     var config: SculptConfig = .default
     var isRotateMode: Bool = false
     var isDeformMode: Bool = false
+    var brushSize: Float = 8
+    var brushOpacity: Float = 1
     var onObjectTapped: (() -> Void)?
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
     var onMeshDeformed: ((UUID, Mesh) -> Void)?
@@ -85,6 +87,9 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.renderer?.config = config
         context.coordinator.isRotateMode = isRotateMode
         context.coordinator.isDeformMode = isDeformMode
+        context.coordinator.brushSize = brushSize
+        context.coordinator.brushOpacity = brushOpacity
+        context.coordinator.renderer?.brushOpacity = brushOpacity
         context.coordinator.onObjectTapped = onObjectTapped
         context.coordinator.onSurfaceStrokeCompleted = onSurfaceStrokeCompleted
         context.coordinator.onMeshDeformed = onMeshDeformed
@@ -98,6 +103,8 @@ struct MetalCanvasView: UIViewRepresentable {
         var renderer: SculptRenderer?
         var isRotateMode = false
         var isDeformMode = false
+        var brushSize: Float = 8
+        var brushOpacity: Float = 1
         var onObjectTapped: (() -> Void)?
         var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
         var onMeshDeformed: ((UUID, Mesh) -> Void)?
@@ -172,14 +179,11 @@ struct MetalCanvasView: UIViewRepresentable {
 
         private func pressureWidth(from gesture: UIPanGestureRecognizer) -> Float {
             guard let forceView = gesture.view as? ForceMTKView,
-                  forceView.maximumForce > 0,
-                  let renderer = renderer else {
-                return renderer?.config.surfaceStrokeWidth ?? 8
+                  forceView.maximumForce > 0 else {
+                return brushSize
             }
             let normalized = Float(forceView.currentForce / forceView.maximumForce)
-            let baseWidth = renderer.config.surfaceStrokeWidth
-            // 20% minimum width at zero pressure, full width at max pressure
-            return baseWidth * (0.05 + 0.95 * normalized)
+            return brushSize * (0.05 + 0.95 * normalized)
         }
     }
 }

@@ -10,21 +10,8 @@ struct FloatingToolbar: View {
 
     var body: some View {
         VStack(spacing: 8) {
-            // Sliders row
-            HStack(spacing: 16) {
-                Image(systemName: "lineweight")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Slider(value: $strokeWidth, in: 1...20, step: 0.5)
-                    .frame(width: 120)
-
-                Image(systemName: "circle.lefthalf.filled")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                Slider(value: $strokeOpacity, in: 0.05...1, step: 0.05)
-                    .frame(width: 120)
-            }
-            .padding(.horizontal, 16)
+            BrushControls(brushSize: $strokeWidth, brushOpacity: $strokeOpacity)
+                .padding(.horizontal, 16)
 
             // Tools row
             HStack(spacing: 12) {

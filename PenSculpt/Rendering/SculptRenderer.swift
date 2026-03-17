@@ -31,6 +31,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
     var currentStrokePoints: [SIMD3<Float>] = []
     var currentStrokeWidths: [Float] = []
+    var brushOpacity: Float = 1
     var lastHitT: Float = 0
 
     private struct MeshBuffers {
@@ -232,7 +233,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
                 ? [Float](repeating: config.surfaceStrokeWidth, count: currentStrokePoints.count)
                 : currentStrokeWidths
             drawStrokeStrip(currentStrokePoints, widths: widths,
-                            color: SIMD4<Float>(0.2, 0.2, 0.8, 0.6), encoder: encoder)
+                            color: SIMD4<Float>(0.2, 0.2, 0.8, brushOpacity * 0.6), encoder: encoder)
         }
     }
 
