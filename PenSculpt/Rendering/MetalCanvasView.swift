@@ -1,19 +1,25 @@
 import SwiftUI
 import MetalKit
 
-/// MTKView subclass that captures Apple Pencil force from touch events.
+/// MTKView subclass that captures Apple Pencil coalesced touches for high-fidelity strokes.
 class ForceMTKView: MTKView {
     var currentForce: CGFloat = 0
     var maximumForce: CGFloat = 0
+    /// Buffered coalesced touch samples (up to 240Hz with Apple Pencil).
+    var coalescedSamples: [(location: CGPoint, force: CGFloat, maxForce: CGFloat)] = []
 
     override func touchesBegan(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesBegan(touches, with: event)
-        updateForce(touches)
+        guard let touch = touches.first else { return }
+        bufferCoalesced(touch: touch, event: event)
+        updateForce(touch)
     }
 
     override func touchesMoved(_ touches: Set<UITouch>, with event: UIEvent?) {
         super.touchesMoved(touches, with: event)
-        updateForce(touches)
+        guard let touch = touches.first else { return }
+        bufferCoalesced(touch: touch, event: event)
+        updateForce(touch)
     }
 
     override func touchesEnded(_ touches: Set<UITouch>, with event: UIEvent?) {
@@ -26,8 +32,23 @@ class ForceMTKView: MTKView {
         currentForce = 0
     }
 
-    private func updateForce(_ touches: Set<UITouch>) {
-        guard let touch = touches.first, touch.maximumPossibleForce > 0 else { return }
+    private func bufferCoalesced(touch: UITouch, event: UIEvent?) {
+        let maxForce = touch.maximumPossibleForce
+        if let coalesced = event?.coalescedTouches(for: touch) {
+            for ct in coalesced {
+                coalescedSamples.append((location: ct.location(in: self),
+                                         force: ct.force,
+                                         maxForce: maxForce))
+            }
+        } else {
+            coalescedSamples.append((location: touch.location(in: self),
+                                     force: touch.force,
+                                     maxForce: maxForce))
+        }
+    }
+
+    private func updateForce(_ touch: UITouch) {
+        guard touch.maximumPossibleForce > 0 else { return }
         currentForce = touch.force
         maximumForce = touch.maximumPossibleForce
     }
@@ -208,30 +229,40 @@ struct MetalCanvasView: UIViewRepresentable {
         }
 
         private func handleDraw(_ gesture: UIPanGestureRecognizer) {
-            guard let renderer = renderer else { return }
-            let location = gesture.location(in: gesture.view)
-            let viewSize = gesture.view?.bounds.size ?? .zero
+            guard let renderer = renderer,
+                  let forceView = gesture.view as? ForceMTKView else { return }
+            let viewSize = forceView.bounds.size
 
             if isEraseStrokeMode {
                 if gesture.state == .began || gesture.state == .changed {
-                    if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize),
-                       let activeID = renderer.activeObjectID,
-                       let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
-                        renderer.eraseNearestStroke(at: result.point, objectIndex: idx,
-                                                    threshold: brushSize * 2)
+                    let samples = forceView.coalescedSamples
+                    forceView.coalescedSamples.removeAll()
+                    for sample in samples {
+                        if let result = renderer.hitTest(screenPoint: sample.location, viewSize: viewSize),
+                           let activeID = renderer.activeObjectID,
+                           let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
+                            renderer.eraseNearestStroke(at: result.point, objectIndex: idx,
+                                                        threshold: brushSize * 2)
+                        }
                     }
                 }
                 return
             }
 
             if gesture.state == .began || gesture.state == .changed {
-                if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize),
-                   renderer.isTContinuous(result.t) {
-                    renderer.currentStrokePoints.append(result.point)
-                    renderer.currentStrokeWidths.append(pressureWidth(from: gesture))
-                    renderer.lastHitT = result.t
+                let samples = forceView.coalescedSamples
+                forceView.coalescedSamples.removeAll()
+                for sample in samples {
+                    if let result = renderer.hitTest(screenPoint: sample.location, viewSize: viewSize),
+                       renderer.isTContinuous(result.t) {
+                        renderer.currentStrokePoints.append(result.point)
+                        renderer.currentStrokeWidths.append(pressureWidth(force: sample.force,
+                                                                           maxForce: sample.maxForce))
+                        renderer.lastHitT = result.t
+                    }
                 }
             } else if gesture.state == .ended || gesture.state == .cancelled {
+                forceView.coalescedSamples.removeAll()
                 if renderer.currentStrokePoints.count > 1 {
                     let stroke = SurfaceStroke(points: renderer.currentStrokePoints,
                                                 widths: renderer.currentStrokeWidths,
@@ -248,12 +279,9 @@ struct MetalCanvasView: UIViewRepresentable {
             }
         }
 
-        private func pressureWidth(from gesture: UIPanGestureRecognizer) -> Float {
-            guard let forceView = gesture.view as? ForceMTKView,
-                  forceView.maximumForce > 0 else {
-                return brushSize
-            }
-            let normalized = Float(forceView.currentForce / forceView.maximumForce)
+        private func pressureWidth(force: CGFloat, maxForce: CGFloat) -> Float {
+            guard maxForce > 0 else { return brushSize }
+            let normalized = Float(force / maxForce)
             return brushSize * (0.05 + 0.95 * normalized)
         }
     }
