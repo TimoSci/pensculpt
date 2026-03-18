@@ -40,6 +40,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var isRotateMode: Bool = false
     var isDeformMode: Bool = false
     var isSmoothMode: Bool = false
+    var isEraseStrokeMode: Bool = false
     var brushSize: Float = 8
     var brushOpacity: Float = 1
     var onObjectTapped: (() -> Void)?
@@ -109,6 +110,7 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.isRotateMode = isRotateMode
         context.coordinator.isDeformMode = isDeformMode
         context.coordinator.isSmoothMode = isSmoothMode
+        context.coordinator.isEraseStrokeMode = isEraseStrokeMode
         context.coordinator.brushSize = brushSize
         context.coordinator.brushOpacity = brushOpacity
         context.coordinator.renderer?.brushOpacity = brushOpacity
@@ -127,6 +129,7 @@ struct MetalCanvasView: UIViewRepresentable {
         var isRotateMode = false
         var isDeformMode = false
         var isSmoothMode = false
+        var isEraseStrokeMode = false
         var brushSize: Float = 8
         var brushOpacity: Float = 1
         var onObjectTapped: (() -> Void)?
@@ -208,6 +211,18 @@ struct MetalCanvasView: UIViewRepresentable {
             guard let renderer = renderer else { return }
             let location = gesture.location(in: gesture.view)
             let viewSize = gesture.view?.bounds.size ?? .zero
+
+            if isEraseStrokeMode {
+                if gesture.state == .began || gesture.state == .changed {
+                    if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize),
+                       let activeID = renderer.activeObjectID,
+                       let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
+                        renderer.eraseNearestStroke(at: result.point, objectIndex: idx,
+                                                    threshold: brushSize * 2)
+                    }
+                }
+                return
+            }
 
             if gesture.state == .began || gesture.state == .changed {
                 if let result = renderer.hitTest(screenPoint: location, viewSize: viewSize),

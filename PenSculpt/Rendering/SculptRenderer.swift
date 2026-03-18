@@ -515,6 +515,28 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         }
     }
 
+    // MARK: - Stroke erasing
+
+    func eraseNearestStroke(at point: SIMD3<Float>, objectIndex idx: Int, threshold: Float) {
+        let strokes = sculptObjects[idx].surfaceStrokes
+        var bestDist: Float = Float.infinity
+        var bestIndex: Int?
+
+        for (si, stroke) in strokes.enumerated() {
+            for p in stroke.points {
+                let dist = simd_length(p - point)
+                if dist < bestDist {
+                    bestDist = dist
+                    bestIndex = si
+                }
+            }
+        }
+
+        if let si = bestIndex, bestDist < threshold {
+            sculptObjects[idx].surfaceStrokes.remove(at: si)
+        }
+    }
+
     // MARK: - Laplacian smooth
 
     func smoothMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float, radius: Float) {

@@ -9,6 +9,7 @@ struct SculptScreen: View {
     @State private var isRotateMode = false
     @State private var isDeformMode = false
     @State private var isSmoothMode = false
+    @State private var isEraseStrokeMode = false
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
     @State private var savedDrawOpacity: CGFloat = 1
@@ -27,6 +28,7 @@ struct SculptScreen: View {
             isRotateMode: isRotateMode,
             isDeformMode: isDeformMode,
             isSmoothMode: isSmoothMode,
+            isEraseStrokeMode: isEraseStrokeMode,
             brushSize: Float(brushSize),
             brushOpacity: Float(brushOpacity),
             onObjectTapped: cycleActiveObject,
@@ -127,16 +129,19 @@ struct SculptScreen: View {
         }
         .overlay(alignment: .bottomTrailing) {
             HStack(spacing: 12) {
-                if isDeformMode {
-                    Button {
+                Button {
+                    if isDeformMode {
                         isSmoothMode.toggle()
-                    } label: {
-                        Image(systemName: isSmoothMode ? "eraser.fill" : "eraser")
-                            .font(.title2)
-                            .foregroundStyle(isSmoothMode ? .mint : .secondary)
-                            .frame(width: 50, height: 50)
-                            .background(.ultraThinMaterial, in: Circle())
+                    } else {
+                        isEraseStrokeMode.toggle()
                     }
+                } label: {
+                    let active = isDeformMode ? isSmoothMode : isEraseStrokeMode
+                    Image(systemName: active ? "eraser.fill" : "eraser")
+                        .font(.title2)
+                        .foregroundStyle(active ? .mint : .secondary)
+                        .frame(width: 50, height: 50)
+                        .background(.ultraThinMaterial, in: Circle())
                 }
 
                 Button {
@@ -147,6 +152,7 @@ struct SculptScreen: View {
                     } else {
                         savedDrawOpacity = brushOpacity
                         isDeformMode = true
+                        isEraseStrokeMode = false
                         brushOpacity = CGFloat(config.deformDefaultForce)
                     }
                 } label: {
@@ -160,7 +166,11 @@ struct SculptScreen: View {
             .padding(20)
         }
         .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in
-            if isDeformMode { isSmoothMode.toggle() }
+            if isDeformMode {
+                isSmoothMode.toggle()
+            } else {
+                isEraseStrokeMode.toggle()
+            }
         }
         .onAppear {
             let strokeIDs = Set(strokes.map(\.id))
