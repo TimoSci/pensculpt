@@ -158,7 +158,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             encoder.setTriangleFillMode(.lines)
         }
 
-        for obj in sculptObjects where !obj.mesh.isEmpty {
+        for obj in sculptObjects where !obj.mesh.isEmpty && obj.id == activeObjectID {
             guard let b = getOrCreateBuffers(for: obj), b.indexCount > 0 else { continue }
 
             let isActive = obj.id == activeObjectID
@@ -258,7 +258,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         var uniforms = StrokeRenderUniforms(mvpMatrix: mvp)
         encoder.setVertexBytes(&uniforms, length: MemoryLayout<StrokeRenderUniforms>.size, index: 2)
 
-        for obj in sculptObjects {
+        for obj in sculptObjects where obj.id == activeObjectID {
             for stroke in obj.surfaceStrokes {
                 let color = SIMD4<Float>(0.2, 0.2, 0.8, stroke.opacity)
                 drawStrokeStrip(stroke.points, widths: stroke.widths, color: color, encoder: encoder)
