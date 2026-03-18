@@ -22,16 +22,16 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var sculptObjects: [SculptObject] = [] {
         didSet {
             let currentIDs = Set(sculptObjects.map(\.id))
-            let oldIDs = Set(oldValue.map(\.id))
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             bvhCache = bvhCache.filter { currentIDs.contains($0.key) }
-            if currentIDs != oldIDs {
-                recomputeCombinedBounds()
-            }
             prebuildBVHs()
         }
     }
-    var activeObjectID: UUID?
+    var activeObjectID: UUID? {
+        didSet {
+            if activeObjectID != oldValue { recomputeCombinedBounds() }
+        }
+    }
     var config: SculptConfig = .default
     var rotation = simd_quatf(angle: -SculptConfig.default.cameraTilt, axis: SIMD3(1, 0, 0))
     var currentStrokePoints: [SIMD3<Float>] = []
@@ -234,7 +234,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     private func recomputeCombinedBounds() {
         var minP = SIMD3<Float>(Float.infinity, Float.infinity, Float.infinity)
         var maxP = SIMD3<Float>(-Float.infinity, -Float.infinity, -Float.infinity)
-        for obj in sculptObjects {
+        // Only compute bounds for the active object since we only render it
+        for obj in sculptObjects where activeObjectID == nil || obj.id == activeObjectID {
             for v in obj.mesh.vertices {
                 minP = min(minP, v.position)
                 maxP = max(maxP, v.position)
