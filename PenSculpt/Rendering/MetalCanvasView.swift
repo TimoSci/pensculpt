@@ -85,6 +85,10 @@ struct MetalCanvasView: UIViewRepresentable {
                                                  action: #selector(Coordinator.handleTap(_:)))
         view.addGestureRecognizer(tapGesture)
 
+        let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator,
+                                                     action: #selector(Coordinator.handlePinch(_:)))
+        view.addGestureRecognizer(pinchGesture)
+
         let singlePan = UIPanGestureRecognizer(target: context.coordinator,
                                                 action: #selector(Coordinator.handleSinglePan(_:)))
         singlePan.minimumNumberOfTouches = 1
@@ -144,6 +148,14 @@ struct MetalCanvasView: UIViewRepresentable {
 
         @objc func handleTap(_ gesture: UITapGestureRecognizer) {
             onObjectTapped?()
+        }
+
+        @objc func handlePinch(_ gesture: UIPinchGestureRecognizer) {
+            guard let renderer = renderer else { return }
+            if gesture.state == .changed {
+                renderer.zoom(by: Float(gesture.scale))
+                gesture.scale = 1
+            }
         }
 
         private func applyRotation(_ gesture: UIPanGestureRecognizer) {

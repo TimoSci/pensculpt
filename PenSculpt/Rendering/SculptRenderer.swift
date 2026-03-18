@@ -204,6 +204,11 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         return buffers
     }
 
+    func zoom(by scale: Float) {
+        combinedRadius /= scale
+        combinedRadius = max(combinedRadius, 0.1)
+    }
+
     func rotate(dx: Float, dy: Float) {
         let sensitivity: Float = 0.005
         let qx = simd_quatf(angle: -dy * sensitivity, axis: SIMD3(1, 0, 0))
