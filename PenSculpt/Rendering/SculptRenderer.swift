@@ -515,6 +515,62 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         }
     }
 
+    // MARK: - Laplacian smooth
+
+    func smoothMesh(at screenPoint: CGPoint, viewSize: CGSize, strength: Float, radius: Float) {
+        guard let activeID = activeObjectID,
+              let idx = sculptObjects.firstIndex(where: { $0.id == activeID }) else { return }
+        let mesh = sculptObjects[idx].mesh
+        guard !mesh.isEmpty else { return }
+
+        let mvp = combinedProjection(viewSize: viewSize)
+        let invMVP = mvp.inverse
+
+        let ndcX = Float(2 * screenPoint.x / viewSize.width - 1)
+        let ndcY = Float(1 - 2 * screenPoint.y / viewSize.height)
+        let origin4 = invMVP * SIMD4<Float>(ndcX, ndcY, 1, 1)
+        let target4 = invMVP * SIMD4<Float>(ndcX, ndcY, -1, 1)
+        let origin = SIMD3<Float>(origin4.x, origin4.y, origin4.z) / origin4.w
+        let target = SIMD3<Float>(target4.x, target4.y, target4.z) / target4.w
+        let direction = normalize(target - origin)
+
+        let bvh = getOrCreateBVH(for: activeID, mesh: mesh)
+        guard let result = bvh.raycast(origin: origin, direction: direction) else { return }
+        let center = origin + result.t * direction
+
+        // Build adjacency: for each vertex, collect its neighbor indices
+        var neighbors: [[Int]] = Array(repeating: [], count: mesh.vertices.count)
+        for face in mesh.faces {
+            let i0 = Int(face.indices.x), i1 = Int(face.indices.y), i2 = Int(face.indices.z)
+            neighbors[i0].append(i1); neighbors[i0].append(i2)
+            neighbors[i1].append(i0); neighbors[i1].append(i2)
+            neighbors[i2].append(i0); neighbors[i2].append(i1)
+        }
+
+        let radiusSq = radius * radius
+        var vertices = mesh.vertices
+        var modified = false
+
+        for i in 0..<vertices.count {
+            let distSq = simd_length_squared(vertices[i].position - center)
+            if distSq < radiusSq && !neighbors[i].isEmpty {
+                let falloff = expf(-distSq / (radiusSq * 0.25))
+                // Laplacian: average of neighbors
+                var avg = SIMD3<Float>(0, 0, 0)
+                for ni in neighbors[i] { avg += mesh.vertices[ni].position }
+                avg /= Float(neighbors[i].count)
+                let delta = avg - vertices[i].position
+                vertices[i].position += delta * strength * falloff
+                modified = true
+            }
+        }
+
+        if modified {
+            sculptObjects[idx].mesh.vertices = vertices
+            bufferCache.removeValue(forKey: activeID)
+        }
+    }
+
     // MARK: - Helpers
 
     private func makeBuffer<T>(_ data: [T]) -> MTLBuffer? {

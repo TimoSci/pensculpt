@@ -39,6 +39,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var config: SculptConfig = .default
     var isRotateMode: Bool = false
     var isDeformMode: Bool = false
+    var isSmoothMode: Bool = false
     var brushSize: Float = 8
     var brushOpacity: Float = 1
     var onObjectTapped: (() -> Void)?
@@ -107,6 +108,7 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.renderer?.config = config
         context.coordinator.isRotateMode = isRotateMode
         context.coordinator.isDeformMode = isDeformMode
+        context.coordinator.isSmoothMode = isSmoothMode
         context.coordinator.brushSize = brushSize
         context.coordinator.brushOpacity = brushOpacity
         context.coordinator.renderer?.brushOpacity = brushOpacity
@@ -124,6 +126,7 @@ struct MetalCanvasView: UIViewRepresentable {
         var renderer: SculptRenderer?
         var isRotateMode = false
         var isDeformMode = false
+        var isSmoothMode = false
         var brushSize: Float = 8
         var brushOpacity: Float = 1
         var onObjectTapped: (() -> Void)?
@@ -174,14 +177,19 @@ struct MetalCanvasView: UIViewRepresentable {
 
             if gesture.state == .began || gesture.state == .changed {
                 isCurrentlyDeforming = true
-                let velocity = gesture.velocity(in: gesture.view)
-                let speed = Float(hypot(velocity.x, velocity.y))
-                let config = renderer.config
-                let t = min(speed / config.deformMaxSpeed, 1.0)
-                let baseStrength = config.deformMinStrength + t * (config.deformMaxStrength - config.deformMinStrength)
-                let strength = baseStrength * brushOpacity
-                renderer.deformMesh(at: location, viewSize: viewSize, strength: strength,
-                                     radius: worldRadius, screenVelocity: velocity)
+                if isSmoothMode {
+                    renderer.smoothMesh(at: location, viewSize: viewSize,
+                                        strength: brushOpacity, radius: worldRadius)
+                } else {
+                    let velocity = gesture.velocity(in: gesture.view)
+                    let speed = Float(hypot(velocity.x, velocity.y))
+                    let config = renderer.config
+                    let t = min(speed / config.deformMaxSpeed, 1.0)
+                    let baseStrength = config.deformMinStrength + t * (config.deformMaxStrength - config.deformMinStrength)
+                    let strength = baseStrength * brushOpacity
+                    renderer.deformMesh(at: location, viewSize: viewSize, strength: strength,
+                                         radius: worldRadius, screenVelocity: velocity)
+                }
 
                 let screenRadius = CGFloat(worldRadius) * viewSize.height / CGFloat(2 * renderer.combinedRadius)
                 onDeformCursor?((position: location, radius: screenRadius))

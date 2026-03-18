@@ -8,6 +8,7 @@ struct SculptScreen: View {
     @State private var activeObjectID: UUID?
     @State private var isRotateMode = false
     @State private var isDeformMode = false
+    @State private var isSmoothMode = false
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
     @State private var savedDrawOpacity: CGFloat = 1
@@ -25,13 +26,14 @@ struct SculptScreen: View {
             config: config,
             isRotateMode: isRotateMode,
             isDeformMode: isDeformMode,
+            isSmoothMode: isSmoothMode,
             brushSize: Float(brushSize),
             brushOpacity: Float(brushOpacity),
             onObjectTapped: cycleActiveObject,
             onSurfaceStrokeCompleted: handleSurfaceStroke,
             onMeshDeformed: handleMeshDeformed,
             onDeformCursor: { deformCursor = $0 },
-            onRendererReady: { replace, morph, cacheBVH in DispatchQueue.main.async { rendererReplaceMesh = replace; rendererMorphMesh = morph; rendererCacheBVH = cacheBVH } }
+            onRendererReady: { replace, morph, cacheBVH in Task { @MainActor in rendererReplaceMesh = replace; rendererMorphMesh = morph; rendererCacheBVH = cacheBVH } }
         )
         .ignoresSafeArea()
         .overlay {
@@ -124,23 +126,41 @@ struct SculptScreen: View {
                 .padding(20)
         }
         .overlay(alignment: .bottomTrailing) {
-            Button {
+            HStack(spacing: 12) {
                 if isDeformMode {
-                    isDeformMode = false
-                    brushOpacity = savedDrawOpacity
-                } else {
-                    savedDrawOpacity = brushOpacity
-                    isDeformMode = true
-                    brushOpacity = CGFloat(config.deformDefaultForce)
+                    Button {
+                        isSmoothMode.toggle()
+                    } label: {
+                        Image(systemName: isSmoothMode ? "eraser.fill" : "eraser")
+                            .font(.title2)
+                            .foregroundStyle(isSmoothMode ? .mint : .secondary)
+                            .frame(width: 50, height: 50)
+                            .background(.ultraThinMaterial, in: Circle())
+                    }
                 }
-            } label: {
-                Image(systemName: isDeformMode ? "hand.point.up.fill" : "hand.point.up")
-                    .font(.title)
-                    .foregroundStyle(isDeformMode ? .orange : .secondary)
-                    .frame(width: 60, height: 60)
-                    .background(.ultraThinMaterial, in: Circle())
+
+                Button {
+                    if isDeformMode {
+                        isDeformMode = false
+                        isSmoothMode = false
+                        brushOpacity = savedDrawOpacity
+                    } else {
+                        savedDrawOpacity = brushOpacity
+                        isDeformMode = true
+                        brushOpacity = CGFloat(config.deformDefaultForce)
+                    }
+                } label: {
+                    Image(systemName: isDeformMode ? "hand.point.up.fill" : "hand.point.up")
+                        .font(.title)
+                        .foregroundStyle(isDeformMode ? .orange : .secondary)
+                        .frame(width: 60, height: 60)
+                        .background(.ultraThinMaterial, in: Circle())
+                }
             }
             .padding(20)
+        }
+        .onReceive(NotificationCenter.default.publisher(for: .pencilDoubleTap)) { _ in
+            if isDeformMode { isSmoothMode.toggle() }
         }
         .onAppear {
             let strokeIDs = Set(strokes.map(\.id))
