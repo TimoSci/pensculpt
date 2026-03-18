@@ -178,7 +178,8 @@ struct MetalCanvasView: UIViewRepresentable {
                 let speed = Float(hypot(velocity.x, velocity.y))
                 let config = renderer.config
                 let t = min(speed / config.deformMaxSpeed, 1.0)
-                let strength = config.deformMinStrength + t * (config.deformMaxStrength - config.deformMinStrength)
+                let baseStrength = config.deformMinStrength + t * (config.deformMaxStrength - config.deformMinStrength)
+                let strength = baseStrength * brushOpacity
                 renderer.deformMesh(at: location, viewSize: viewSize, strength: strength,
                                      radius: worldRadius, screenVelocity: velocity)
 

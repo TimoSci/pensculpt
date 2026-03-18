@@ -93,7 +93,7 @@ struct SculptScreen: View {
             }
         }
         .overlay(alignment: .bottom) {
-            BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity)
+            BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity, isDeformMode: isDeformMode)
                 .padding(.horizontal, 16)
                 .padding(.vertical, 10)
                 .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
