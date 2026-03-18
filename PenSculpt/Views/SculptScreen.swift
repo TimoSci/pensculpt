@@ -9,6 +9,7 @@ struct SculptScreen: View {
     @State private var isDeformMode = false
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
+    @State private var savedDrawOpacity: CGFloat = 1
     @State private var deformCursor: (position: CGPoint, radius: CGFloat)?
     @State private var rendererReplaceMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
     @State private var rendererMorphMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
@@ -114,7 +115,14 @@ struct SculptScreen: View {
         }
         .overlay(alignment: .bottomTrailing) {
             Button {
-                isDeformMode.toggle()
+                if isDeformMode {
+                    isDeformMode = false
+                    brushOpacity = savedDrawOpacity
+                } else {
+                    savedDrawOpacity = brushOpacity
+                    isDeformMode = true
+                    brushOpacity = CGFloat(config.deformDefaultForce)
+                }
             } label: {
                 Image(systemName: isDeformMode ? "hand.point.up.fill" : "hand.point.up")
                     .font(.title)

@@ -43,6 +43,9 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Pen speed (in points/sec) at which maximum deformation strength is reached.
     var deformMaxSpeed: Float = 1500
 
+    /// Default deform force (0.05...1). Slider starts here when entering distort mode.
+    var deformDefaultForce: Float = 0.5
+
     /// Number of adaptive edge-splitting passes for seam triangles.
     var seamSubdivisionPasses: Int = 5
 
