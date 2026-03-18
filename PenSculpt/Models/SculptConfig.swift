@@ -46,6 +46,15 @@ struct SculptConfig: Codable, Equatable, Sendable {
     /// Default deform force (0.05...1). Slider starts here when entering distort mode.
     var deformDefaultForce: Float = 0.5
 
+    /// Deform cursor circle line width in points.
+    var deformCursorLineWidth: CGFloat = 2.5
+
+    /// Deform cursor circle dash pattern [dash length, gap length].
+    var deformCursorDash: [CGFloat] = [8, 5]
+
+    /// Deform cursor circle opacity (0...1).
+    var deformCursorOpacity: CGFloat = 0.9
+
     /// Number of adaptive edge-splitting passes for seam triangles.
     var seamSubdivisionPasses: Int = 5
 

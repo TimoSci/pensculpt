@@ -22,9 +22,12 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var sculptObjects: [SculptObject] = [] {
         didSet {
             let currentIDs = Set(sculptObjects.map(\.id))
+            let oldIDs = Set(oldValue.map(\.id))
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             bvhCache = bvhCache.filter { currentIDs.contains($0.key) }
-            recomputeCombinedBounds()
+            if currentIDs != oldIDs {
+                recomputeCombinedBounds()
+            }
             prebuildBVHs()
         }
     }

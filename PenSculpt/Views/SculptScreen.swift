@@ -36,8 +36,8 @@ struct SculptScreen: View {
         .overlay {
             if let cursor = deformCursor {
                 Circle()
-                    .strokeBorder(style: StrokeStyle(lineWidth: 2.5, dash: [8, 5]))
-                    .foregroundStyle(.orange.opacity(0.9))
+                    .strokeBorder(style: StrokeStyle(lineWidth: config.deformCursorLineWidth, dash: config.deformCursorDash))
+                    .foregroundStyle(.orange.opacity(config.deformCursorOpacity))
                     .frame(width: cursor.radius * 2, height: cursor.radius * 2)
                     .position(cursor.position)
                     .allowsHitTesting(false)
