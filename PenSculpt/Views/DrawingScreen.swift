@@ -9,6 +9,8 @@ struct DrawingScreen: View {
     @State private var pkDrawing = PKDrawing()
     @State private var drawingSyncTask: Task<Void, Never>?
     @State private var viewBridge = ViewBridge()
+    @State private var projectedStrokeIDs: Set<UUID> = []
+    @State private var autoProjectStrokes = true
     @Environment(\.undoManager) private var undoManager
 
     init(canvas: Binding<Canvas>, drawingData: Binding<Data>, sculptObjects: Binding<[SculptObject]>) {
@@ -28,7 +30,8 @@ struct DrawingScreen: View {
         }
         .overlay(alignment: .top) { savedMessageOverlay }
         .fullScreenCover(isPresented: $vm.showSculptScreen, onDismiss: projectSurfaceStrokes) {
-            SculptScreen(strokes: vm.selectedStrokes, sculptObjects: $sculptObjects)
+            SculptScreen(strokes: vm.selectedStrokes, sculptObjects: $sculptObjects,
+                         autoProjectStrokes: $autoProjectStrokes)
         }
         .toolbar { navBarItems }
         .onAppear { loadDrawingData() }
@@ -221,16 +224,15 @@ struct DrawingScreen: View {
     }
 
     private func projectSurfaceStrokes() {
+        guard autoProjectStrokes else { return }
         var newPKStrokes: [PKStroke] = []
         for obj in sculptObjects {
-            for surfaceStroke in obj.surfaceStrokes where surfaceStroke.points.count > 1 {
+            for surfaceStroke in obj.surfaceStrokes
+                where surfaceStroke.points.count > 1 && !projectedStrokeIDs.contains(surfaceStroke.id) {
                 let stroke2D = surfaceStroke.projectTo2D()
                 vm.addStroke(stroke2D)
                 newPKStrokes.append(StrokeConverter.toPKStroke(stroke2D))
-            }
-            // Clear projected strokes from the sculpt object to avoid duplicating on next dismiss
-            if let idx = sculptObjects.firstIndex(where: { $0.id == obj.id }) {
-                sculptObjects[idx].surfaceStrokes.removeAll()
+                projectedStrokeIDs.insert(surfaceStroke.id)
             }
         }
         if !newPKStrokes.isEmpty {
