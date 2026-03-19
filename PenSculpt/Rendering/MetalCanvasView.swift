@@ -102,6 +102,7 @@ struct MetalCanvasView: UIViewRepresentable {
                                                  action: #selector(Coordinator.handlePan(_:)))
         panGesture.minimumNumberOfTouches = 2
         panGesture.maximumNumberOfTouches = 2
+        panGesture.delegate = context.coordinator
         view.addGestureRecognizer(panGesture)
 
         let tapGesture = UITapGestureRecognizer(target: context.coordinator,
@@ -110,7 +111,13 @@ struct MetalCanvasView: UIViewRepresentable {
 
         let pinchGesture = UIPinchGestureRecognizer(target: context.coordinator,
                                                      action: #selector(Coordinator.handlePinch(_:)))
+        pinchGesture.delegate = context.coordinator
         view.addGestureRecognizer(pinchGesture)
+
+        let rotationGesture = UIRotationGestureRecognizer(target: context.coordinator,
+                                                           action: #selector(Coordinator.handleRotation(_:)))
+        rotationGesture.delegate = context.coordinator
+        view.addGestureRecognizer(rotationGesture)
 
         let singlePan = UIPanGestureRecognizer(target: context.coordinator,
                                                 action: #selector(Coordinator.handleSinglePan(_:)))
@@ -145,7 +152,7 @@ struct MetalCanvasView: UIViewRepresentable {
         Coordinator()
     }
 
-    class Coordinator: NSObject {
+    class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var renderer: SculptRenderer?
         var isRotateMode = false
         var isDeformMode = false
@@ -183,6 +190,30 @@ struct MetalCanvasView: UIViewRepresentable {
                 renderer.zoom(by: Float(gesture.scale))
                 gesture.scale = 1
             }
+        }
+
+        @objc func handleRotation(_ gesture: UIRotationGestureRecognizer) {
+            guard let renderer = renderer else { return }
+            if gesture.state == .changed {
+                renderer.rotateZ(by: Float(gesture.rotation))
+                gesture.rotation = 0
+            }
+        }
+
+        func gestureRecognizer(_ gestureRecognizer: UIGestureRecognizer,
+                               shouldRecognizeSimultaneouslyWith other: UIGestureRecognizer) -> Bool {
+            let twoFingerTypes: [UIGestureRecognizer.Type] = [
+                UIPinchGestureRecognizer.self,
+                UIRotationGestureRecognizer.self
+            ]
+            let isTwoFingerPan = { (g: UIGestureRecognizer) -> Bool in
+                guard let pan = g as? UIPanGestureRecognizer else { return false }
+                return pan.minimumNumberOfTouches == 2
+            }
+            let isMultiTouch = { (g: UIGestureRecognizer) -> Bool in
+                twoFingerTypes.contains(where: { type(of: g) == $0 }) || isTwoFingerPan(g)
+            }
+            return isMultiTouch(gestureRecognizer) && isMultiTouch(other)
         }
 
         private func applyRotation(_ gesture: UIPanGestureRecognizer) {

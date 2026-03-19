@@ -219,6 +219,11 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         rotation = (qx * qy * rotation).normalized
     }
 
+    func rotateZ(by angle: Float) {
+        let qz = simd_quatf(angle: angle, axis: SIMD3(0, 0, 1))
+        rotation = (qz * rotation).normalized
+    }
+
     private func combinedProjection(viewSize: CGSize) -> simd_float4x4 {
         let r = combinedRadius
         let aspect = Float(viewSize.width) / Float(viewSize.height)
