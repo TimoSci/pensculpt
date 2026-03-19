@@ -12,6 +12,16 @@ struct MeshRenderUniforms {
 }
 
 class SculptRenderer: NSObject, MTKViewDelegate {
+    /// Compiled pipeline and depth-stencil states, cached across renderer instances
+    /// to avoid re-compiling Metal shaders on every sculpt-view open.
+    private struct CachedStates {
+        let meshPipeline: MTLRenderPipelineState
+        let surfaceStrokePipeline: MTLRenderPipelineState
+        let meshDepthState: MTLDepthStencilState
+        let surfaceStrokeDepthState: MTLDepthStencilState
+    }
+    private static var cachedStates: CachedStates?
+
     let device: MTLDevice
     let commandQueue: MTLCommandQueue
     let meshPipeline: MTLRenderPipelineState
@@ -24,6 +34,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             let currentIDs = Set(sculptObjects.map(\.id))
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             bvhCache = bvhCache.filter { currentIDs.contains($0.key) }
+            prebuildBuffers()
             prebuildBVHs()
         }
     }
@@ -64,6 +75,15 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         self.device = device
         guard let queue = device.makeCommandQueue() else { return nil }
         self.commandQueue = queue
+
+        if let cached = Self.cachedStates {
+            self.meshPipeline = cached.meshPipeline
+            self.surfaceStrokePipeline = cached.surfaceStrokePipeline
+            self.meshDepthState = cached.meshDepthState
+            self.surfaceStrokeDepthState = cached.surfaceStrokeDepthState
+            super.init()
+            return
+        }
 
         guard let library = device.makeDefaultLibrary() else { return nil }
 
@@ -122,6 +142,13 @@ class SculptRenderer: NSObject, MTKViewDelegate {
               let sds = device.makeDepthStencilState(descriptor: strokeDepthDesc) else { return nil }
         self.meshDepthState = mds
         self.surfaceStrokeDepthState = sds
+
+        Self.cachedStates = CachedStates(
+            meshPipeline: mp,
+            surfaceStrokePipeline: ssp,
+            meshDepthState: mds,
+            surfaceStrokeDepthState: sds
+        )
 
         super.init()
     }
@@ -183,28 +210,9 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     }
 
     private func getOrCreateBuffers(for obj: SculptObject) -> MeshBuffers? {
-        if let cached = bufferCache[obj.id] { return cached }
-
-        let mesh = obj.mesh
-        var vertexData: [Float] = []
-        vertexData.reserveCapacity(mesh.vertices.count * 6)
-        for v in mesh.vertices {
-            vertexData.append(contentsOf: [v.position.x, v.position.y, v.position.z])
-            vertexData.append(contentsOf: [v.normal.x, v.normal.y, v.normal.z])
-        }
-
-        var indexData: [UInt32] = []
-        indexData.reserveCapacity(mesh.faces.count * 3)
-        for f in mesh.faces {
-            indexData.append(contentsOf: [f.indices.x, f.indices.y, f.indices.z])
-        }
-
-        guard let vb = makeBuffer(vertexData),
-              let ib = makeBuffer(indexData) else { return nil }
-
-        let buffers = MeshBuffers(vertex: vb, index: ib, indexCount: indexData.count)
-        bufferCache[obj.id] = buffers
-        return buffers
+        // Return cached buffers or nil; prebuildBuffers() handles async construction
+        // so the render loop skips a frame instead of blocking the main thread.
+        bufferCache[obj.id]
     }
 
     func zoom(by scale: Float) {
@@ -350,7 +358,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let target = SIMD3<Float>(target4.x, target4.y, target4.z) / target4.w
         let direction = normalize(target - origin)
 
-        let bvh = getOrCreateBVH(for: activeID, mesh: obj.mesh)
+        guard let bvh = bvhCache[activeID] else { return nil }
         guard let result = bvh.raycast(origin: origin, direction: direction) else { return nil }
         let hitPoint = origin + result.t * direction + direction * config.surfaceStrokeOffset
         return (hitPoint, result.t)
@@ -364,11 +372,10 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         bvhCache[objectID] = bvh
     }
 
-    private func getOrCreateBVH(for objectID: UUID, mesh: Mesh) -> MeshBVH {
-        if let cached = bvhCache[objectID] { return cached }
-        let bvh = MeshBVH(mesh: mesh)
-        bvhCache[objectID] = bvh
-        return bvh
+    private func getOrCreateBVH(for objectID: UUID, mesh: Mesh) -> MeshBVH? {
+        // Return cached BVH or nil; prebuildBVHs() handles async construction
+        // so callers skip the current frame instead of blocking the main thread.
+        bvhCache[objectID]
     }
 
     private func prebuildBVHs() {
@@ -386,13 +393,45 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         }
     }
 
+    private func prebuildBuffers() {
+        let device = self.device
+        for obj in sculptObjects where !obj.mesh.isEmpty && bufferCache[obj.id] == nil {
+            let id = obj.id
+            let mesh = obj.mesh
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                var vertexData: [Float] = []
+                vertexData.reserveCapacity(mesh.vertices.count * 6)
+                for v in mesh.vertices {
+                    vertexData.append(contentsOf: [v.position.x, v.position.y, v.position.z])
+                    vertexData.append(contentsOf: [v.normal.x, v.normal.y, v.normal.z])
+                }
+                var indexData: [UInt32] = []
+                indexData.reserveCapacity(mesh.faces.count * 3)
+                for f in mesh.faces {
+                    indexData.append(contentsOf: [f.indices.x, f.indices.y, f.indices.z])
+                }
+                guard let vb = device.makeBuffer(bytes: vertexData,
+                                                  length: vertexData.count * MemoryLayout<Float>.stride,
+                                                  options: .storageModeShared),
+                      let ib = device.makeBuffer(bytes: indexData,
+                                                  length: indexData.count * MemoryLayout<UInt32>.stride,
+                                                  options: .storageModeShared) else { return }
+                let buffers = MeshBuffers(vertex: vb, index: ib, indexCount: indexData.count)
+                DispatchQueue.main.async {
+                    if self?.bufferCache[id] == nil {
+                        self?.bufferCache[id] = buffers
+                    }
+                }
+            }
+        }
+    }
+
     func replaceMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
         guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
         sculptObjects[idx].mesh = mesh
         if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
         bufferCache.removeValue(forKey: objectID)
-        // Build BVH immediately so it's ready before the user's first touch
-        bvhCache[objectID] = MeshBVH(mesh: mesh)
+        bvhCache.removeValue(forKey: objectID)
     }
 
     func morphMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
@@ -475,8 +514,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let target = SIMD3<Float>(target4.x, target4.y, target4.z) / target4.w
         let direction = normalize(target - origin)
 
-        let bvh = getOrCreateBVH(for: activeID, mesh: mesh)
-        guard let result = bvh.raycast(origin: origin, direction: direction) else { return }
+        guard let bvh = getOrCreateBVH(for: activeID, mesh: mesh),
+              let result = bvh.raycast(origin: origin, direction: direction) else { return }
         let center = origin + result.t * direction
 
         // Displace vertices within brush radius using Gaussian falloff
@@ -561,8 +600,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let target = SIMD3<Float>(target4.x, target4.y, target4.z) / target4.w
         let direction = normalize(target - origin)
 
-        let bvh = getOrCreateBVH(for: activeID, mesh: mesh)
-        guard let result = bvh.raycast(origin: origin, direction: direction) else { return }
+        guard let bvh = getOrCreateBVH(for: activeID, mesh: mesh),
+              let result = bvh.raycast(origin: origin, direction: direction) else { return }
         let center = origin + result.t * direction
 
         // Build adjacency: for each vertex, collect its neighbor indices
