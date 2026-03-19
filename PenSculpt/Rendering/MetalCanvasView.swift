@@ -171,6 +171,12 @@ struct MetalCanvasView: UIViewRepresentable {
         }
 
         @objc func handleSinglePan(_ gesture: UIPanGestureRecognizer) {
+            // Flush stale coalesced samples from prior gestures (taps, two-finger)
+            // so they don't get misinterpreted as stroke points.
+            if gesture.state == .began,
+               let forceView = gesture.view as? ForceMTKView {
+                forceView.coalescedSamples.removeAll()
+            }
             if isRotateMode {
                 applyRotation(gesture)
             } else if isDeformMode {
