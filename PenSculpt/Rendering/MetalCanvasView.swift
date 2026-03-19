@@ -282,6 +282,13 @@ struct MetalCanvasView: UIViewRepresentable {
                                                         threshold: brushSize * 2)
                         }
                     }
+                } else if gesture.state == .ended || gesture.state == .cancelled {
+                    forceView.coalescedSamples.removeAll()
+                    if let activeID = renderer.activeObjectID,
+                       let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
+                        let obj = renderer.sculptObjects[idx]
+                        onMeshDeformed?(activeID, obj.mesh, obj.surfaceStrokes)
+                    }
                 }
                 return
             }
