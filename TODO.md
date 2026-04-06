@@ -44,7 +44,7 @@ Status legend:
 - [x] MetalCanvasView (MTKView, orthographic camera) — O[ ] S[ ]
 - [x] Mesh rendering (diffuse lighting, wireframe debug mode) — O[x] S[ ]
 - [x] Stroke rendering (triangle strips, pressure-based width) — O[ ] S[ ]
-- [ ] Stroke style toggle (screen-space vs surface-space) — O[ ] S[ ]
+- [x] Stroke style toggle (screen-space vs surface-space) — O[ ] S[ ]
 - [x] Metal shaders (vertex + fragment) — O[ ] S[ ]
 
 ### Sculpt Interaction
@@ -59,7 +59,7 @@ Status legend:
 - [x] Mode switching (Draw → Select → Sculpt) — O[ ] S[x]
 - [x] Multi-object interaction (active/dimmed) — O[ ] S[ ]
 - [x] Document persistence for SculptObjects — O[ ] S[ ]
-- [ ] Sculpt mode guide — O[ ] S[ ]
+- [x] Sculpt mode guide — O[ ] S[ ]
 
 ## Future Stages
 - [x] Project surface strokes back to 2D canvas — O[ ] S[ ]
