@@ -6,6 +6,7 @@ struct CanvasView: UIViewRepresentable {
     var selectedTool: DrawingTool
     var strokeWidth: CGFloat
     var strokeOpacity: CGFloat
+    var activeColor: CodableColor
     var onStrokeCompleted: ((PKStroke) -> Void)?
     var onStrokeErased: ((_ removedIndices: [Int]) -> Void)?
     var isInteractive: Bool = true
@@ -47,8 +48,8 @@ struct CanvasView: UIViewRepresentable {
     private func pkTool(for tool: DrawingTool) -> any PKTool {
         switch tool {
         case .pen:
-            let color = UIColor.black.withAlphaComponent(strokeOpacity)
-            return PKInkingTool(.pen, color: color, width: strokeWidth)
+            let uiColor = activeColor.uiColor(opacityMultiplier: strokeOpacity)
+            return PKInkingTool(.pen, color: uiColor, width: strokeWidth)
         case .eraser:
             return PKEraserTool(.vector)
         case .pixelEraser:

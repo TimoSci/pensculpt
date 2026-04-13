@@ -133,6 +133,7 @@ struct DrawingScreen: View {
             selectedTool: vm.selectedTool,
             strokeWidth: vm.strokeWidth,
             strokeOpacity: vm.strokeOpacity,
+            activeColor: vm.canvas.activeColor,
             onStrokeCompleted: { addStrokeWithUndo(StrokeConverter.convert($0)) },
             onStrokeErased: { handleErase($0) },
             isInteractive: vm.appMode == .draw,
