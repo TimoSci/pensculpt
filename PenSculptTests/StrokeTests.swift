@@ -48,6 +48,17 @@ final class StrokeTests: XCTestCase {
         XCTAssertEqual(decoded.color, .black)
     }
 
+    func testCodableColorUIColorAppliesOpacityMultiplier() {
+        let color = CodableColor(red: 0.25, green: 0.5, blue: 0.75, alpha: 0.8)
+        let ui = color.uiColor(opacityMultiplier: 0.5)
+        var r: CGFloat = 0, g: CGFloat = 0, b: CGFloat = 0, a: CGFloat = 0
+        ui.getRed(&r, green: &g, blue: &b, alpha: &a)
+        XCTAssertEqual(r, 0.25, accuracy: 0.001)
+        XCTAssertEqual(g, 0.5, accuracy: 0.001)
+        XCTAssertEqual(b, 0.75, accuracy: 0.001)
+        XCTAssertEqual(a, 0.4, accuracy: 0.001)
+    }
+
     func testBoundingBoxPreservedAfterCodable() throws {
         let points = [
             StrokePoint(location: CGPoint(x: 10, y: 20), pressure: 1, tilt: 0, azimuth: 0, timestamp: 0),

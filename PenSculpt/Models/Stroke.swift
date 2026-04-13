@@ -50,3 +50,13 @@ struct Stroke: Identifiable, Codable, Equatable, Sendable {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 }
+
+#if canImport(UIKit)
+import UIKit
+
+extension CodableColor {
+    func uiColor(opacityMultiplier: CGFloat = 1) -> UIColor {
+        UIColor(red: red, green: green, blue: blue, alpha: alpha * opacityMultiplier)
+    }
+}
+#endif
