@@ -175,4 +175,32 @@ final class DrawingViewModelTests: XCTestCase {
         vm.clearStrokes()
         XCTAssertTrue(vm.canvas.strokes.isEmpty)
     }
+
+    // MARK: - Color
+
+    func testSetActiveColorPresetDoesNotTouchRecents() {
+        let vm = makeVM()
+        let red = CodableColor(red: 1, green: 0, blue: 0, alpha: 1)
+        vm.setActiveColor(red, addToRecents: false)
+        XCTAssertEqual(vm.canvas.activeColor, red)
+        XCTAssertTrue(vm.canvas.recentColors.isEmpty)
+    }
+
+    func testSetActiveColorCustomPushesRecents() {
+        let vm = makeVM()
+        let teal = CodableColor(red: 0, green: 0.5, blue: 0.5, alpha: 1)
+        vm.setActiveColor(teal, addToRecents: true)
+        XCTAssertEqual(vm.canvas.activeColor, teal)
+        XCTAssertEqual(vm.canvas.recentColors, [teal])
+    }
+
+    func testSetActiveColorCustomDedupesRecents() {
+        let vm = makeVM()
+        let a = CodableColor(red: 1, green: 0, blue: 0, alpha: 1)
+        let b = CodableColor(red: 0, green: 1, blue: 0, alpha: 1)
+        vm.setActiveColor(a, addToRecents: true)
+        vm.setActiveColor(b, addToRecents: true)
+        vm.setActiveColor(a, addToRecents: true)
+        XCTAssertEqual(vm.canvas.recentColors, [a, b])
+    }
 }

@@ -83,4 +83,13 @@ class DrawingViewModel {
     func clearStrokes() {
         canvas.clearStrokes()
     }
+
+    // MARK: - Color
+
+    func setActiveColor(_ color: CodableColor, addToRecents: Bool) {
+        canvas.activeColor = color
+        if addToRecents {
+            canvas.pushRecentColor(color)
+        }
+    }
 }
