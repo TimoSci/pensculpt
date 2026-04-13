@@ -71,4 +71,41 @@ final class CanvasTests: XCTestCase {
         XCTAssertEqual(decoded.strokes.count, 1)
         XCTAssertEqual(decoded.size, canvas.size)
     }
+
+    func testDefaultActiveColorIsBlack() {
+        let canvas = Canvas()
+        XCTAssertEqual(canvas.activeColor, .black)
+        XCTAssertTrue(canvas.recentColors.isEmpty)
+    }
+
+    func testPushRecentColorPrependsAndDedupes() {
+        var canvas = Canvas()
+        let red = CodableColor(red: 1, green: 0, blue: 0, alpha: 1)
+        let blue = CodableColor(red: 0, green: 0, blue: 1, alpha: 1)
+        canvas.pushRecentColor(red)
+        canvas.pushRecentColor(blue)
+        canvas.pushRecentColor(red)
+        XCTAssertEqual(canvas.recentColors, [red, blue])
+    }
+
+    func testPushRecentColorCapsAtSix() {
+        var canvas = Canvas()
+        for i in 0..<8 {
+            let c = CodableColor(red: CGFloat(i) / 10, green: 0, blue: 0, alpha: 1)
+            canvas.pushRecentColor(c)
+        }
+        XCTAssertEqual(canvas.recentColors.count, 6)
+        XCTAssertEqual(canvas.recentColors.first,
+                       CodableColor(red: 0.7, green: 0, blue: 0, alpha: 1))
+    }
+
+    func testCodableRoundTripsColorState() throws {
+        var canvas = Canvas()
+        canvas.activeColor = CodableColor(red: 0.2, green: 0.4, blue: 0.6, alpha: 1)
+        canvas.pushRecentColor(CodableColor(red: 1, green: 0, blue: 0, alpha: 1))
+        let data = try JSONEncoder().encode(canvas)
+        let decoded = try JSONDecoder().decode(Canvas.self, from: data)
+        XCTAssertEqual(decoded.activeColor, canvas.activeColor)
+        XCTAssertEqual(decoded.recentColors, canvas.recentColors)
+    }
 }
