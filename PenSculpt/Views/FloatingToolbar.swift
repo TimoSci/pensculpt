@@ -4,23 +4,41 @@ struct FloatingToolbar: View {
     @Binding var selectedTool: DrawingTool
     @Binding var strokeWidth: CGFloat
     @Binding var strokeOpacity: CGFloat
+    let activeColor: CodableColor
+    let recentColors: [CodableColor]
+    var onSelectPresetColor: (CodableColor) -> Void
+    var onSelectCustomColor: (CodableColor) -> Void
     var onUndo: () -> Void
     var onRedo: () -> Void
     var onClear: () -> Void
+
+    @State private var showColorPopover = false
 
     var body: some View {
         VStack(spacing: 8) {
             BrushControls(brushSize: $strokeWidth, brushOpacity: $strokeOpacity)
                 .padding(.horizontal, 16)
 
-            // Tools row
             HStack(spacing: 12) {
-                Button(action: onUndo) {
-                    Image(systemName: "arrow.uturn.backward")
+                Button { showColorPopover = true } label: {
+                    Circle()
+                        .fill(Color(activeColor))
+                        .frame(width: 28, height: 28)
+                        .overlay(Circle().stroke(Color.primary.opacity(0.4), lineWidth: 1))
                 }
-                Button(action: onRedo) {
-                    Image(systemName: "arrow.uturn.forward")
+                .popover(isPresented: $showColorPopover) {
+                    ColorPickerPopover(
+                        activeColor: activeColor,
+                        recentColors: recentColors,
+                        onSelectPreset: onSelectPresetColor,
+                        onSelectCustom: onSelectCustomColor
+                    )
                 }
+
+                Divider().frame(height: 24)
+
+                Button(action: onUndo) { Image(systemName: "arrow.uturn.backward") }
+                Button(action: onRedo) { Image(systemName: "arrow.uturn.forward") }
 
                 Divider().frame(height: 24)
 
@@ -35,9 +53,7 @@ struct FloatingToolbar: View {
 
                 Divider().frame(height: 24)
 
-                Button(action: onClear) {
-                    Image(systemName: "trash")
-                }
+                Button(action: onClear) { Image(systemName: "trash") }
             }
         }
         .padding(.horizontal, 16)

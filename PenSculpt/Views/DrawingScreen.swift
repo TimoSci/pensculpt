@@ -152,6 +152,10 @@ struct DrawingScreen: View {
                 selectedTool: $vm.selectedTool,
                 strokeWidth: $vm.strokeWidth,
                 strokeOpacity: $vm.strokeOpacity,
+                activeColor: vm.canvas.activeColor,
+                recentColors: vm.canvas.recentColors,
+                onSelectPresetColor: { setActiveColorWithUndo($0, addToRecents: false) },
+                onSelectCustomColor: { setActiveColorWithUndo($0, addToRecents: true) },
                 onUndo: { undoManager?.undo() },
                 onRedo: { undoManager?.redo() },
                 onClear: { clearWithUndo() }
@@ -210,6 +214,16 @@ struct DrawingScreen: View {
         undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
             vm.removeStroke(id: stroke.id)
             pkDrawing = PKDrawing(strokes: pkDrawing.strokes.dropLast())
+        }
+    }
+
+    private func setActiveColorWithUndo(_ color: CodableColor, addToRecents: Bool) {
+        let previousActive = vm.canvas.activeColor
+        let previousRecents = vm.canvas.recentColors
+        vm.setActiveColor(color, addToRecents: addToRecents)
+        undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+            vm.canvas.activeColor = previousActive
+            vm.canvas.recentColors = previousRecents
         }
     }
 
