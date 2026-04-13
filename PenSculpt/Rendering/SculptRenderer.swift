@@ -29,11 +29,15 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     let meshDepthState: MTLDepthStencilState
     let surfaceStrokeDepthState: MTLDepthStencilState
 
+    private var lastObjectIDs: Set<UUID> = []
     var sculptObjects: [SculptObject] = [] {
         didSet {
             let currentIDs = Set(sculptObjects.map(\.id))
+            guard currentIDs != lastObjectIDs else { return }
+            lastObjectIDs = currentIDs
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             bvhCache = bvhCache.filter { currentIDs.contains($0.key) }
+            strokeNormalsCache.removeAll()
             prebuildBuffers()
             prebuildBVHs()
         }
@@ -49,6 +53,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var currentStrokeWidths: [Float] = []
     var brushOpacity: Float = 1
     var lastHitT: Float = 0
+    var surfaceSpaceStrokes: Bool = false
 
     private struct MeshBuffers {
         let vertex: MTLBuffer
@@ -263,6 +268,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     // MARK: - Surface stroke rendering
 
+    private var strokeNormalsCache: [UUID: [SIMD3<Float>]] = [:]
+
     private func drawSurfaceStrokes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(surfaceStrokePipeline)
         encoder.setDepthStencilState(surfaceStrokeDepthState)
@@ -274,8 +281,20 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         for obj in sculptObjects where obj.id == activeObjectID {
             for stroke in obj.surfaceStrokes {
+                let normals: [SIMD3<Float>]?
+                if surfaceSpaceStrokes {
+                    if let cached = strokeNormalsCache[stroke.id] {
+                        normals = cached
+                    } else {
+                        let computed = nearestNormals(for: stroke.points, vertices: obj.mesh.vertices)
+                        strokeNormalsCache[stroke.id] = computed
+                        normals = computed
+                    }
+                } else {
+                    normals = nil
+                }
                 let color = SIMD4<Float>(0.2, 0.2, 0.8, stroke.opacity)
-                drawStrokeStrip(stroke.points, widths: stroke.widths, color: color, encoder: encoder)
+                drawStrokeStrip(stroke.points, widths: stroke.widths, normals: normals, color: color, encoder: encoder)
             }
         }
 
@@ -288,10 +307,25 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         }
     }
 
-    private func drawStrokeStrip(_ points: [SIMD3<Float>], widths: [Float], color: SIMD4<Float>,
-                                  encoder: MTLRenderCommandEncoder) {
+    private func nearestNormals(for points: [SIMD3<Float>], vertices: [MeshVertex]) -> [SIMD3<Float>] {
+        points.map { p in
+            var bestDist: Float = .infinity
+            var bestNormal = SIMD3<Float>(0, 0, 1)
+            for v in vertices {
+                let d = simd_length_squared(v.position - p)
+                if d < bestDist {
+                    bestDist = d
+                    bestNormal = v.normal
+                }
+            }
+            return bestNormal
+        }
+    }
+
+    private func drawStrokeStrip(_ points: [SIMD3<Float>], widths: [Float], normals: [SIMD3<Float>]? = nil,
+                                  color: SIMD4<Float>, encoder: MTLRenderCommandEncoder) {
         guard points.count > 1 else { return }
-        var stripVerts = buildTriangleStrip(points: points, widths: widths)
+        var stripVerts = buildTriangleStrip(points: points, widths: widths, normals: normals)
         var colors = [SIMD4<Float>](repeating: color, count: stripVerts.count)
 
         guard let posBuffer = makeBuffer(&stripVerts),
@@ -302,7 +336,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: stripVerts.count)
     }
 
-    private func buildTriangleStrip(points: [SIMD3<Float>], widths: [Float]) -> [SIMD3<Float>] {
+    private func buildTriangleStrip(points: [SIMD3<Float>], widths: [Float], normals: [SIMD3<Float>]? = nil) -> [SIMD3<Float>] {
         let viewDir = simd_act(simd_inverse(rotation), SIMD3<Float>(0, 0, -1))
         var vertices: [SIMD3<Float>] = []
         vertices.reserveCapacity(points.count * 2)
@@ -329,7 +363,14 @@ class SculptRenderer: NSObject, MTKViewDelegate {
                 }
             }
 
-            let hw = (i < widths.count ? widths[i] : 3) / 2
+            var hw = (i < widths.count ? widths[i] : 3) / 2
+
+            // Surface-space: modulate width by how much the surface faces the camera
+            if surfaceSpaceStrokes, let normals, i < normals.count {
+                let facing = abs(dot(normalize(normals[i]), viewDir))
+                hw *= max(facing, 0.1) // clamp to 10% to avoid fully invisible strokes
+            }
+
             vertices.append(points[i] - lastRight * hw)
             vertices.append(points[i] + lastRight * hw)
         }
@@ -432,6 +473,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
         bufferCache.removeValue(forKey: objectID)
         bvhCache.removeValue(forKey: objectID)
+        strokeNormalsCache.removeAll()
     }
 
     func morphMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
@@ -535,7 +577,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         if modified {
             sculptObjects[idx].mesh.vertices = vertices
-            bufferCache.removeValue(forKey: sculptObjects[idx].id)
+            rebuildBufferSync(for: sculptObjects[idx])
         }
 
         // Also displace surface stroke points so they move with the mesh
@@ -633,8 +675,32 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         if modified {
             sculptObjects[idx].mesh.vertices = vertices
-            bufferCache.removeValue(forKey: activeID)
+            rebuildBufferSync(for: sculptObjects[idx])
         }
+    }
+
+    /// Rebuilds the Metal buffer for an object synchronously on the main thread.
+    /// Used during deformation to avoid the mesh disappearing between async rebuilds.
+    private func rebuildBufferSync(for obj: SculptObject) {
+        let mesh = obj.mesh
+        var vertexData: [Float] = []
+        vertexData.reserveCapacity(mesh.vertices.count * 6)
+        for v in mesh.vertices {
+            vertexData.append(contentsOf: [v.position.x, v.position.y, v.position.z])
+            vertexData.append(contentsOf: [v.normal.x, v.normal.y, v.normal.z])
+        }
+        var indexData: [UInt32] = []
+        indexData.reserveCapacity(mesh.faces.count * 3)
+        for f in mesh.faces {
+            indexData.append(contentsOf: [f.indices.x, f.indices.y, f.indices.z])
+        }
+        guard let vb = device.makeBuffer(bytes: vertexData,
+                                          length: vertexData.count * MemoryLayout<Float>.stride,
+                                          options: .storageModeShared),
+              let ib = device.makeBuffer(bytes: indexData,
+                                          length: indexData.count * MemoryLayout<UInt32>.stride,
+                                          options: .storageModeShared) else { return }
+        bufferCache[obj.id] = MeshBuffers(vertex: vb, index: ib, indexCount: indexData.count)
     }
 
     // MARK: - Helpers

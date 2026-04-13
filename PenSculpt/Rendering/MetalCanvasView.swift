@@ -62,6 +62,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var isDeformMode: Bool = false
     var isSmoothMode: Bool = false
     var isEraseStrokeMode: Bool = false
+    var surfaceSpaceStrokes: Bool = false
     var brushSize: Float = 8
     var brushOpacity: Float = 1
     var onObjectTapped: (() -> Void)?
@@ -135,6 +136,7 @@ struct MetalCanvasView: UIViewRepresentable {
         }
         context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
+        context.coordinator.renderer?.surfaceSpaceStrokes = surfaceSpaceStrokes
         context.coordinator.isRotateMode = isRotateMode
         context.coordinator.isDeformMode = isDeformMode
         context.coordinator.isSmoothMode = isSmoothMode

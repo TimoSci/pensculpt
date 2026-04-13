@@ -10,6 +10,7 @@ struct SculptScreen: View {
     @State private var isDeformMode = false
     @State private var isSmoothMode = false
     @State private var isEraseStrokeMode = false
+    @State private var surfaceSpaceStrokes = false
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
     @State private var savedDrawOpacity: CGFloat = 1
@@ -29,6 +30,7 @@ struct SculptScreen: View {
             isDeformMode: isDeformMode,
             isSmoothMode: isSmoothMode,
             isEraseStrokeMode: isEraseStrokeMode,
+            surfaceSpaceStrokes: surfaceSpaceStrokes,
             brushSize: Float(brushSize),
             brushOpacity: Float(brushOpacity),
             onObjectTapped: cycleActiveObject,
@@ -108,11 +110,24 @@ struct SculptScreen: View {
             }
         }
         .overlay(alignment: .bottom) {
-            BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity, isDeformMode: isDeformMode)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.bottom, 20)
+            HStack(spacing: 12) {
+                BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity, isDeformMode: isDeformMode)
+
+                Divider().frame(height: 24)
+
+                Button {
+                    surfaceSpaceStrokes.toggle()
+                } label: {
+                    Image(systemName: surfaceSpaceStrokes ? "cube.fill" : "square.fill")
+                        .font(.caption)
+                        .foregroundStyle(surfaceSpaceStrokes ? .blue : .secondary)
+                }
+                .help(surfaceSpaceStrokes ? "Surface-space strokes" : "Screen-space strokes")
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .padding(.bottom, 20)
         }
         .overlay(alignment: .bottomLeading) {
             Image(systemName: isRotateMode ? "rotate.3d.fill" : "rotate.3d")
