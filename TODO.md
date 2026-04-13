@@ -63,7 +63,7 @@ Status legend:
 
 ## Future Stages
 - [x] Project surface strokes back to 2D canvas — O[ ] S[ ]
-- [ ] Color picker and color strokes — O[ ] S[ ]
+- [x] Color picker and color strokes — O[ ] S[ ]
 - [ ] Grow selection (tap + hold duration) — O[ ] S[ ]
 - [ ] Export (image, OBJ/USDZ, share sheet) — O[ ] S[ ]
 - [ ] Perspective camera toggle — O[ ] S[ ]

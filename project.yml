@@ -17,6 +17,8 @@ targets:
     settings:
       INFOPLIST_FILE: PenSculpt/Resources/Info.plist
       PRODUCT_BUNDLE_IDENTIFIER: com.pensculpt.app
+      DEVELOPMENT_TEAM: 926MRS7WCP
+      CODE_SIGN_IDENTITY: "iPhone Developer"
     scheme:
       testTargets:
         - PenSculptTests

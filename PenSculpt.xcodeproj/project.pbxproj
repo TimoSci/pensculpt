@@ -297,6 +297,9 @@
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
 				TargetAttributes = {
+					8A52743755A99EC7E2B610A5 = {
+						DevelopmentTeam = 926MRS7WCP;
+					};
 				};
 			};
 			buildConfigurationList = 5BF500C6125EDAA8073D93F9 /* Build configuration list for PBXProject "PenSculpt" */;
@@ -395,6 +398,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 926MRS7WCP;
 				INFOPLIST_FILE = PenSculpt/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -443,6 +447,7 @@
 			buildSettings = {
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				CODE_SIGN_IDENTITY = "iPhone Developer";
+				DEVELOPMENT_TEAM = 926MRS7WCP;
 				INFOPLIST_FILE = PenSculpt/Resources/Info.plist;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
