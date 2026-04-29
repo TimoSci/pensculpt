@@ -11,6 +11,7 @@ struct FloatingToolbar: View {
     var onUndo: () -> Void
     var onRedo: () -> Void
     var onClear: () -> Void
+    var onExport: () -> Void
 
     @State private var showColorPopover = false
 
@@ -54,6 +55,7 @@ struct FloatingToolbar: View {
                 Divider().frame(height: 24)
 
                 Button(action: onClear) { Image(systemName: "trash") }
+                Button(action: onExport) { Image(systemName: "square.and.arrow.up") }
             }
         }
         .padding(.horizontal, 16)

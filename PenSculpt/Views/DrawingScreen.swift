@@ -158,7 +158,8 @@ struct DrawingScreen: View {
                 onSelectCustomColor: { setActiveColorWithUndo($0, addToRecents: true) },
                 onUndo: { undoManager?.undo() },
                 onRedo: { undoManager?.redo() },
-                onClear: { clearWithUndo() }
+                onClear: { clearWithUndo() },
+                onExport: { /* wired in next task */ }
             )
             .padding(.bottom, 60)
             .transition(.move(edge: .bottom).combined(with: .opacity))
