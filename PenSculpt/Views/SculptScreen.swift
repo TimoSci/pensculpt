@@ -6,6 +6,10 @@ struct SculptScreen: View {
     @Binding var sculptObjects: [SculptObject]
     @Binding var autoProjectStrokes: Bool
     var config: SculptConfig = .default
+    var activeColor: CodableColor
+    var recentColors: [CodableColor]
+    var onSelectPresetColor: (CodableColor) -> Void
+    var onSelectCustomColor: (CodableColor) -> Void
     @State private var activeObjectID: UUID?
     @State private var isRotateMode = false
     @State private var isDeformMode = false
@@ -26,6 +30,7 @@ struct SculptScreen: View {
     @State private var showFormatDialog = false
     @State private var pendingMeshFormat: MeshFormat?
     @State private var showScopeDialog = false
+    @State private var showColorPopover = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -40,6 +45,7 @@ struct SculptScreen: View {
             surfaceSpaceStrokes: surfaceSpaceStrokes,
             brushSize: Float(brushSize),
             brushOpacity: Float(brushOpacity),
+            activeColor: activeColor,
             onObjectTapped: cycleActiveObject,
             onSurfaceStrokeCompleted: handleSurfaceStroke,
             onMeshDeformed: handleMeshDeformed,
@@ -128,6 +134,23 @@ struct SculptScreen: View {
         }
         .overlay(alignment: .bottom) {
             HStack(spacing: 12) {
+                Button { showColorPopover = true } label: {
+                    Circle()
+                        .fill(Color(activeColor))
+                        .frame(width: 28, height: 28)
+                        .overlay(Circle().stroke(Color.primary.opacity(0.4), lineWidth: 1))
+                }
+                .popover(isPresented: $showColorPopover) {
+                    ColorPickerPopover(
+                        activeColor: activeColor,
+                        recentColors: recentColors,
+                        onSelectPreset: onSelectPresetColor,
+                        onSelectCustom: onSelectCustomColor
+                    )
+                }
+
+                Divider().frame(height: 24)
+
                 BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity, isDeformMode: isDeformMode)
 
                 Divider().frame(height: 24)
