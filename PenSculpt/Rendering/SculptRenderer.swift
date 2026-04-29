@@ -54,6 +54,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var brushOpacity: Float = 1
     var lastHitT: Float = 0
     var surfaceSpaceStrokes: Bool = false
+    var currentStrokeColor: CodableColor = .black
 
     private struct MeshBuffers {
         let vertex: MTLBuffer
@@ -293,7 +294,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
                 } else {
                     normals = nil
                 }
-                let color = SIMD4<Float>(0.2, 0.2, 0.8, stroke.opacity)
+                let color = stroke.color.simd4(opacity: stroke.opacity)
                 drawStrokeStrip(stroke.points, widths: stroke.widths, normals: normals, color: color, encoder: encoder)
             }
         }
@@ -303,7 +304,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
                 ? [Float](repeating: config.surfaceStrokeWidth, count: currentStrokePoints.count)
                 : currentStrokeWidths
             drawStrokeStrip(currentStrokePoints, widths: widths,
-                            color: SIMD4<Float>(0.2, 0.2, 0.8, brushOpacity * 0.6), encoder: encoder)
+                            color: currentStrokeColor.simd4(opacity: brushOpacity * 0.6), encoder: encoder)
         }
     }
 
