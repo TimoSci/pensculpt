@@ -11,6 +11,8 @@ struct DrawingScreen: View {
     @State private var viewBridge = ViewBridge()
     @State private var projectedStrokeIDs: Set<UUID> = []
     @State private var autoProjectStrokes = true
+    @State private var shareURL: ShareableURL?
+    @State private var exportError: ExportError?
     @Environment(\.undoManager) private var undoManager
 
     init(canvas: Binding<Canvas>, drawingData: Binding<Data>, sculptObjects: Binding<[SculptObject]>) {
@@ -34,6 +36,21 @@ struct DrawingScreen: View {
                          autoProjectStrokes: $autoProjectStrokes)
         }
         .toolbar { navBarItems }
+        .sheet(item: $shareURL) { wrapper in
+            ShareSheet(items: [wrapper.url])
+        }
+        .alert(
+            "Falha ao exportar",
+            isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            ),
+            presenting: exportError
+        ) { _ in
+            Button("OK", role: .cancel) { exportError = nil }
+        } message: { err in
+            Text(err.errorDescription ?? "")
+        }
         .onAppear { loadDrawingData() }
         .onChange(of: vm.canvas) { _, _ in
             guard vm.autosaveEnabled else { return }
@@ -159,7 +176,7 @@ struct DrawingScreen: View {
                 onUndo: { undoManager?.undo() },
                 onRedo: { undoManager?.redo() },
                 onClear: { clearWithUndo() },
-                onExport: { /* wired in next task */ }
+                onExport: { performImageExport() }
             )
             .padding(.bottom, 60)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -205,6 +222,23 @@ struct DrawingScreen: View {
         Task {
             try? await Task.sleep(for: .seconds(1.5))
             withAnimation { vm.showSavedMessage = false }
+        }
+    }
+
+    // MARK: - Export
+
+    private func performImageExport() {
+        guard let canvasView = viewBridge.canvasView else {
+            exportError = .renderFailed
+            return
+        }
+        do {
+            let url = try ImageRenderer.renderPNG(from: canvasView)
+            shareURL = ShareableURL(url: url)
+        } catch let err as ExportError {
+            exportError = err
+        } catch {
+            exportError = .renderFailed
         }
     }
 
