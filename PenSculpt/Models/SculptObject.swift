@@ -70,7 +70,8 @@ extension SurfaceStroke {
         }
 
         guard newPoints.count > 1 else { return nil }
-        return SurfaceStroke(id: id, points: newPoints, widths: newWidths)
+        return SurfaceStroke(id: id, points: newPoints, widths: newWidths,
+                             opacity: opacity, color: color)
     }
 
     private static func castOntoMesh(from origin: SIMD3<Float>, direction: SIMD3<Float>,

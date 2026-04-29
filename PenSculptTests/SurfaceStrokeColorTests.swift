@@ -77,4 +77,30 @@ final class SurfaceStrokeColorTests: XCTestCase {
         let projected = stroke.projectTo2D()
         XCTAssertEqual(projected.color.alpha, 0.25, accuracy: 0.001)  // 0.5 * 0.5
     }
+
+    func testReprojectedPreservesColorAndOpacity() {
+        // Build a tiny mesh (a single triangle on the z=0 plane large enough to catch all points).
+        let v0 = MeshVertex(position: SIMD3<Float>(-100, -100, 0), normal: SIMD3<Float>(0, 0, 1))
+        let v1 = MeshVertex(position: SIMD3<Float>( 100, -100, 0), normal: SIMD3<Float>(0, 0, 1))
+        let v2 = MeshVertex(position: SIMD3<Float>(   0,  100, 0), normal: SIMD3<Float>(0, 0, 1))
+        let face = MeshFace(indices: SIMD3<UInt32>(0, 1, 2))
+        let mesh = Mesh(vertices: [v0, v1, v2], faces: [face])
+
+        let purple = CodableColor(red: 0.5, green: 0, blue: 0.5, alpha: 1)
+        let stroke = SurfaceStroke(
+            points: [SIMD3<Float>(0, 0, 5), SIMD3<Float>(10, 0, 5)],  // above the plane, z > 0
+            widths: [3, 3],
+            opacity: 0.7,
+            color: purple
+        )
+
+        let reprojected = stroke.reprojected(
+            onto: mesh,
+            rayDir: SIMD3<Float>(0, 0, -1),  // cast straight down onto the plane
+            offset: 0
+        )
+        XCTAssertNotNil(reprojected)
+        XCTAssertEqual(reprojected?.color, purple)
+        XCTAssertEqual(reprojected?.opacity ?? 0, 0.7, accuracy: 0.001)
+    }
 }
