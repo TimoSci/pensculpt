@@ -41,4 +41,14 @@ final class ImageRendererTests: XCTestCase {
         XCTAssertTrue(alphaBearing.contains(cg.alphaInfo),
                       "Expected alpha-bearing PNG, got alphaInfo=\(cg.alphaInfo.rawValue)")
     }
+
+    func testRenderPNGThrowsRenderFailedForZeroSizeCanvas() {
+        let canvas = PKCanvasView(frame: .zero)
+        XCTAssertThrowsError(try ImageRenderer.renderPNG(from: canvas)) { error in
+            guard case ExportError.renderFailed = error else {
+                XCTFail("Expected .renderFailed, got \(error)")
+                return
+            }
+        }
+    }
 }
