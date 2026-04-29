@@ -33,7 +33,11 @@ struct DrawingScreen: View {
         .overlay(alignment: .top) { savedMessageOverlay }
         .fullScreenCover(isPresented: $vm.showSculptScreen, onDismiss: projectSurfaceStrokes) {
             SculptScreen(strokes: vm.selectedStrokes, sculptObjects: $sculptObjects,
-                         autoProjectStrokes: $autoProjectStrokes)
+                         autoProjectStrokes: $autoProjectStrokes,
+                         activeColor: vm.canvas.activeColor,
+                         recentColors: vm.canvas.recentColors,
+                         onSelectPresetColor: { setActiveColorWithUndo($0, addToRecents: false) },
+                         onSelectCustomColor: { setActiveColorWithUndo($0, addToRecents: true) })
         }
         .toolbar { navBarItems }
         .sheet(item: $shareURL) { wrapper in
