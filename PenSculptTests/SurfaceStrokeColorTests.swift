@@ -29,10 +29,8 @@ final class SurfaceStrokeColorTests: XCTestCase {
         }
         """.data(using: .utf8)!
 
+        let historicBlue = CodableColor(red: 0.2, green: 0.2, blue: 0.8, alpha: 1)
         let decoded = try JSONDecoder().decode(SurfaceStroke.self, from: legacyJSON)
-        XCTAssertEqual(decoded.color.red, 0.2, accuracy: 0.001)
-        XCTAssertEqual(decoded.color.green, 0.2, accuracy: 0.001)
-        XCTAssertEqual(decoded.color.blue, 0.8, accuracy: 0.001)
-        XCTAssertEqual(decoded.color.alpha, 1.0, accuracy: 0.001)
+        XCTAssertEqual(decoded.color, historicBlue)
     }
 }
