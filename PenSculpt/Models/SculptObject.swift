@@ -6,12 +6,15 @@ struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
     var points: [SIMD3<Float>]
     var widths: [Float]
     var opacity: Float
+    var color: CodableColor
 
-    init(id: UUID = UUID(), points: [SIMD3<Float>] = [], widths: [Float] = [], opacity: Float = 1) {
+    init(id: UUID = UUID(), points: [SIMD3<Float>] = [], widths: [Float] = [],
+         opacity: Float = 1, color: CodableColor = .black) {
         self.id = id
         self.points = points
         self.widths = widths
         self.opacity = opacity
+        self.color = color
     }
 
     init(from decoder: Decoder) throws {
@@ -21,6 +24,8 @@ struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
         widths = try container.decodeIfPresent([Float].self, forKey: .widths)
             ?? Array(repeating: 3.0, count: points.count)
         opacity = try container.decodeIfPresent(Float.self, forKey: .opacity) ?? 1
+        color = try container.decodeIfPresent(CodableColor.self, forKey: .color)
+            ?? CodableColor(red: 0.2, green: 0.2, blue: 0.8, alpha: 1)
     }
 }
 
