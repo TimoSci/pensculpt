@@ -2,20 +2,21 @@
 
 ## Goal
 
-Let the user export their work to outside apps and storage. Two artifact families are supported: a **PNG image** of the current view (2D canvas or 3D sculpt snapshot) and a **3D mesh** in OBJ or USDZ. Delivery is the iOS share sheet, so AirDrop, Messages, "Save to Files", and third-party apps are all reachable through one flow.
+Let the user export their work to outside apps and storage. Two artifact families are supported: a **PNG image** of the current view (2D canvas or 3D sculpt snapshot) and a **3D mesh** in OBJ. Delivery is the iOS share sheet, so AirDrop, Messages, "Save to Files", and third-party apps are all reachable through one flow.
 
 ## Scope
 
 **In scope**
 - PNG export of the 2D `PKCanvasView` from the Drawing screen.
 - PNG snapshot of the 3D `MTKView` (sculpt scene as currently rendered) from the Sculpt screen.
-- OBJ and USDZ export of `SculptObject` meshes (geometry only) via `ModelIO`.
+- OBJ export of `SculptObject` meshes (geometry only) via `ModelIO`.
 - Per-screen export entry point in the `FloatingToolbar` ("share" SF Symbol).
 - A scope picker in Sculpt mode when the document has more than one `SculptObject`: "Active object" vs "Whole scene".
 - Files written to `FileManager.default.temporaryDirectory`, handed to a SwiftUI `ShareLink(item: url)` (iOS 16+) which natively wraps `UIActivityViewController` and supports file URLs.
 
 **Out of scope (explicit follow-ups)**
-- Baking `SurfaceStroke`s into the exported mesh (vertex colors or extra geometry). The exported OBJ/USDZ in v1 is bare mesh; surface drawings are visible only in the PNG snapshot.
+- USDZ export. `MDLAsset.export(to:)` on iOS rejects the `.usdz` extension ("Unknown extension"), unlike on macOS. Implementing USDZ requires writing `.usdc` via ModelIO and packaging into a Pixar-compliant uncompressed-zip USDZ archive — non-trivial and deferred to a dedicated follow-up.
+- Baking `SurfaceStroke`s into the exported mesh (vertex colors or extra geometry). The exported OBJ in v1 is bare mesh; surface drawings are visible only in the PNG snapshot.
 - JPEG output. PNG covers transparency and lossless quality; JPEG can be added if a real need emerges.
 - A unified "Export" menu that adapts to the current mode. The agreed design is per-screen entry points.
 - User-controlled resolution. Export uses native screen scale.
@@ -27,7 +28,7 @@ New directory `PenSculpt/Export/`:
 
 - `ExportFormat.swift` — small enums describing what's being exported.
 - `ImageRenderer.swift` — produces a PNG file URL from a `PKCanvasView` or an `MTKView`.
-- `MeshExporter.swift` — produces an OBJ or USDZ file URL from an array of `SculptObject` using `ModelIO`.
+- `MeshExporter.swift` — produces an OBJ file URL from an array of `SculptObject` using `ModelIO`.
 - `ExportError.swift` — typed errors propagated to the UI.
 
 All four are stateless: `enum`s and free / `static` functions, mirroring how other utilities in the project are organized (`StrokeConverter`, `ContourExtractor`, `ShapeInflater`, etc.).
@@ -35,9 +36,11 @@ All four are stateless: `enum`s and free / `static` functions, mirroring how oth
 ### `ExportFormat`
 
 ```swift
-enum MeshFormat { case obj, usdz }
+enum MeshFormat { case obj }
 enum SculptScope { case activeOnly, all }
 ```
+
+`MeshFormat` is a single-case enum today to leave room for `.usdz` (and others like `.stl`, `.ply`) without breaking call sites that switch on it.
 
 The view layer composes these as needed when calling the renderers and exporters; there is no single "ExportRequest" sum type — keeping the call sites explicit.
 
@@ -72,6 +75,8 @@ If `drawHierarchy` produces poor quality on real hardware (banding, missed frame
 
 `MeshExporter.export(_ objects: [SculptObject], format: MeshFormat) throws -> URL`
 
+Today `format` only carries `.obj` but the plumbing accepts a format parameter so adding `.usdz` (or `.stl`/`.ply`) later is a one-line ModelIO change at the call site.
+
 1. Pre-check: if `objects` is empty or every object's `mesh.isEmpty`, throw `ExportError.emptyContent`.
 2. `let device = MTLCreateSystemDefaultDevice()` — required because `MTKMeshBufferAllocator` needs a device. If `nil`, throw `ExportError.modelIOFailed(...)`.
 3. `let allocator = MTKMeshBufferAllocator(device: device)`.
@@ -83,11 +88,10 @@ If `drawHierarchy` produces poor quality on real hardware (banding, missed frame
    - Build `MDLSubmesh(indexBuffer:indexCount:indexType:.uint32, geometryType:.triangles, material:nil)`.
    - Build `MDLMesh(vertexBuffer:vertexCount:descriptor:submeshes:[submesh])`. Set its `name` to `"object-\(object.id.uuidString)"` so OBJ groups have a stable name.
    - Append to the asset.
-6. `asset.export(to: tempURL)` where the URL extension is `.obj` or `.usdz`. ModelIO infers format from extension and writes the file.
+6. `asset.export(to: tempURL)` where the URL extension is `.obj`. ModelIO infers format from extension and writes the file.
 
 Behavior per format:
 - **OBJ** with multiple objects writes a single text file with `g <name>` markers. ModelIO may emit a sidecar `.mtl` next to the `.obj` referencing a default material; the share sheet only carries the URL we hand it (the `.obj`), so the `.mtl` is not shared. Receivers see geometry only, which is acceptable for v1 (no materials are authored).
-- **USDZ** is a zip of `.usdc` plus assets, supports multiple meshes natively. One file, one share.
 
 The caller (the SculptScreen UI) is responsible for filtering the array based on `SculptScope` before invoking `MeshExporter`. `MeshExporter` itself takes a plain `[SculptObject]`.
 
@@ -112,10 +116,9 @@ Because `ShareLink` requires the URL at construction time, the cleanest pattern 
 
 Tap flow:
 
-1. Show a `confirmationDialog` titled "Export" with three actions:
+1. Show a `confirmationDialog` titled "Export" with two actions:
    - **Image (PNG)** — call `ImageRenderer.renderPNG(from: metalView)` and set `shareURL`.
    - **3D Mesh (OBJ)** — set pending mesh format `.obj`, open scope picker (or skip).
-   - **3D Mesh (USDZ)** — same with `.usdz`.
 
 2. After format picked, if `sculptObjects.count > 1` show a second `confirmationDialog` with **Active object** / **Whole scene**. If `count == 1`, skip directly to step 3.
 
@@ -180,11 +183,10 @@ Unit tests in `PenSculptTests/Export/`:
 - `MeshExporterTests`
   - Build a synthetic cube `SculptObject` (8 vertices, 12 triangles).
   - Export OBJ → parse the text, assert 8 lines starting with `v ` and 12 starting with `f `.
-  - Export USDZ → assert file exists, has size > 0, magic bytes are `PK` (zip).
 
 Manual verification on iPad:
 - Drawing screen: draw, tap share, confirm "Save to Files" produces a valid PNG.
-- Sculpt screen with one object: tap share → image, OBJ, USDZ all work; OBJ opens in a desktop viewer; USDZ opens in AR Quick Look.
+- Sculpt screen with one object: tap share → image and OBJ both work; OBJ opens in a desktop viewer (Blender / Preview).
 - Sculpt screen with multiple objects: scope picker appears; "Active" exports just the highlighted one; "Whole scene" exports all.
 - Empty canvas / empty sculpt scene: alert appears, no file written.
 
