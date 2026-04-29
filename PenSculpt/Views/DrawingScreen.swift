@@ -44,7 +44,7 @@ struct DrawingScreen: View {
             ShareSheet(items: [wrapper.url])
         }
         .alert(
-            "Falha ao exportar",
+            "Export failed",
             isPresented: Binding(
                 get: { exportError != nil },
                 set: { if !$0 { exportError = nil } }

@@ -39,7 +39,7 @@ struct ColorPickerPopover: View {
             }
 
             if !recentColors.isEmpty {
-                Text("Recentes")
+                Text("Recent")
                     .font(.caption).foregroundStyle(.secondary)
                 HStack(spacing: 10) {
                     ForEach(recentColors, id: \.self) { color in
@@ -55,7 +55,7 @@ struct ColorPickerPopover: View {
 
             Divider()
 
-            ColorPicker("Personalizar…", selection: $customColor, supportsOpacity: true)
+            ColorPicker("Custom…", selection: $customColor, supportsOpacity: true)
                 .onChange(of: customColor) { _, newValue in
                     onSelectCustom(CodableColor(newValue))
                 }

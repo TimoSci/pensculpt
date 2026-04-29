@@ -9,13 +9,13 @@ enum ExportError: LocalizedError {
     var errorDescription: String? {
         switch self {
         case .emptyContent:
-            return "Nada para exportar."
+            return "Nothing to export."
         case .renderFailed:
-            return "Não foi possível gerar a imagem."
+            return "Couldn't render the image."
         case .modelIOFailed(let err):
-            return "Falha ao exportar a malha 3D: \(err.localizedDescription)"
+            return "Failed to export 3D mesh: \(err.localizedDescription)"
         case .writeFailed(let err):
-            return "Falha ao salvar o arquivo: \(err.localizedDescription)"
+            return "Failed to save file: \(err.localizedDescription)"
         }
     }
 }

@@ -242,21 +242,21 @@ struct SculptScreen: View {
                 inferNewObject()
             }
         }
-        .confirmationDialog("Exportar", isPresented: $showFormatDialog, titleVisibility: .visible) {
-            Button("Imagem (PNG)") { performImageExport() }
-            Button("Malha 3D (OBJ)") { startMeshExport(format: .obj) }
-            Button("Cancelar", role: .cancel) {}
+        .confirmationDialog("Export", isPresented: $showFormatDialog, titleVisibility: .visible) {
+            Button("Image (PNG)") { performImageExport() }
+            Button("3D Mesh (OBJ)") { startMeshExport(format: .obj) }
+            Button("Cancel", role: .cancel) {}
         }
-        .confirmationDialog("Exportar qual?", isPresented: $showScopeDialog, titleVisibility: .visible) {
-            Button("Objeto ativo") { performMeshExport(scope: .activeOnly) }
-            Button("Cena inteira") { performMeshExport(scope: .all) }
-            Button("Cancelar", role: .cancel) { pendingMeshFormat = nil }
+        .confirmationDialog("Export which?", isPresented: $showScopeDialog, titleVisibility: .visible) {
+            Button("Active object") { performMeshExport(scope: .activeOnly) }
+            Button("Whole scene") { performMeshExport(scope: .all) }
+            Button("Cancel", role: .cancel) { pendingMeshFormat = nil }
         }
         .sheet(item: $shareURL) { wrapper in
             ShareSheet(items: [wrapper.url])
         }
         .alert(
-            "Falha ao exportar",
+            "Export failed",
             isPresented: Binding(
                 get: { exportError != nil },
                 set: { if !$0 { exportError = nil } }
