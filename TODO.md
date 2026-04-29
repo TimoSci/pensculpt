@@ -65,6 +65,6 @@ Status legend:
 - [x] Project surface strokes back to 2D canvas — O[ ] S[ ]
 - [x] Color picker and color strokes — O[ ] S[ ]
 - [ ] Grow selection (tap + hold duration) — O[ ] S[ ]
-- [ ] Export (image, OBJ/USDZ, share sheet) — O[ ] S[ ]
+- [x] Export (image, OBJ, share sheet) — O[ ] S[ ]   <!-- USDZ deferred; see spec out-of-scope -->
 - [ ] Perspective camera toggle — O[ ] S[ ]
 - [ ] Advanced inference pipeline (SkeletonExtractor, Segmenter, PrimitiveFitter, MeshAssembler, StrokeMapper) — O[ ] S[ ]
