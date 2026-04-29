@@ -51,6 +51,14 @@ struct Stroke: Identifiable, Codable, Equatable, Sendable {
     }
 }
 
+import simd
+
+extension CodableColor {
+    func simd4(opacity: Float = 1) -> SIMD4<Float> {
+        SIMD4(Float(red), Float(green), Float(blue), Float(alpha) * opacity)
+    }
+}
+
 #if canImport(UIKit)
 import UIKit
 

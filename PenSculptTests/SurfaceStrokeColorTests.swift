@@ -33,4 +33,19 @@ final class SurfaceStrokeColorTests: XCTestCase {
         let decoded = try JSONDecoder().decode(SurfaceStroke.self, from: legacyJSON)
         XCTAssertEqual(decoded.color, historicBlue)
     }
+
+    func testSimd4HelperConvertsAndAppliesOpacity() {
+        let color = CodableColor(red: 0.25, green: 0.5, blue: 0.75, alpha: 0.8)
+        let v = color.simd4(opacity: 0.5)
+        XCTAssertEqual(v.x, 0.25, accuracy: 0.001)
+        XCTAssertEqual(v.y, 0.5, accuracy: 0.001)
+        XCTAssertEqual(v.z, 0.75, accuracy: 0.001)
+        XCTAssertEqual(v.w, 0.4, accuracy: 0.001)  // 0.8 * 0.5
+    }
+
+    func testSimd4HelperDefaultOpacityIsIdentity() {
+        let color = CodableColor(red: 0.1, green: 0.2, blue: 0.3, alpha: 1)
+        let v = color.simd4()
+        XCTAssertEqual(v.w, 1.0, accuracy: 0.001)
+    }
 }
