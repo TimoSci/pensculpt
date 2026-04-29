@@ -64,6 +64,7 @@ Status legend:
 ## Future Stages
 - [x] Project surface strokes back to 2D canvas — O[ ] S[ ]
 - [x] Color picker and color strokes — O[ ] S[ ]
+- [x] Color in sculpt mode (per-stroke surface color shared with 2D activeColor) — O[ ] S[ ]
 - [ ] Grow selection (tap + hold duration) — O[ ] S[ ]
 - [x] Export (image, OBJ, share sheet) — O[ ] S[ ]   <!-- USDZ deferred; see spec out-of-scope -->
 - [ ] Perspective camera toggle — O[ ] S[ ]
