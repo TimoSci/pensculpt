@@ -42,8 +42,13 @@ extension SurfaceStroke {
                 timestamp: TimeInterval(i) * 0.01
             )
         }
-        let color = CodableColor(red: 0.2, green: 0.2, blue: 0.8, alpha: CGFloat(opacity))
-        return Stroke(points: strokePoints, color: color)
+        let projColor = CodableColor(
+            red: color.red,
+            green: color.green,
+            blue: color.blue,
+            alpha: color.alpha * CGFloat(opacity)
+        )
+        return Stroke(points: strokePoints, color: projColor)
     }
 
     /// Re-projects stroke points onto a new mesh by casting rays along `rayDir`.

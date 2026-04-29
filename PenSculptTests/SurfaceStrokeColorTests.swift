@@ -51,4 +51,30 @@ final class SurfaceStrokeColorTests: XCTestCase {
         XCTAssertEqual(v.z, 0.3, accuracy: 0.001)
         XCTAssertEqual(v.w, 1.0, accuracy: 0.001)
     }
+
+    func testProjectTo2DUsesStrokeColor() {
+        let green = CodableColor(red: 0, green: 1, blue: 0, alpha: 1)
+        let stroke = SurfaceStroke(
+            points: [SIMD3<Float>(10, 20, 0), SIMD3<Float>(30, 40, 0)],
+            widths: [3, 3],
+            opacity: 1,
+            color: green
+        )
+        let projected = stroke.projectTo2D()
+        XCTAssertEqual(projected.color.red, 0, accuracy: 0.001)
+        XCTAssertEqual(projected.color.green, 1, accuracy: 0.001)
+        XCTAssertEqual(projected.color.blue, 0, accuracy: 0.001)
+    }
+
+    func testProjectTo2DAppliesOpacityToAlpha() {
+        let translucentRed = CodableColor(red: 1, green: 0, blue: 0, alpha: 0.5)
+        let stroke = SurfaceStroke(
+            points: [SIMD3<Float>(0, 0, 0), SIMD3<Float>(1, 1, 0)],
+            widths: [3, 3],
+            opacity: 0.5,
+            color: translucentRed
+        )
+        let projected = stroke.projectTo2D()
+        XCTAssertEqual(projected.color.alpha, 0.25, accuracy: 0.001)  // 0.5 * 0.5
+    }
 }
