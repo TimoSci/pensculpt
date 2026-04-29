@@ -78,7 +78,7 @@ final class SurfaceStrokeColorTests: XCTestCase {
         XCTAssertEqual(projected.color.alpha, 0.25, accuracy: 0.001)  // 0.5 * 0.5
     }
 
-    func testReprojectedPreservesColorAndOpacity() {
+    func testReprojectedPreservesColorAndOpacity() throws {
         // Build a tiny mesh (a single triangle on the z=0 plane large enough to catch all points).
         let v0 = MeshVertex(position: SIMD3<Float>(-100, -100, 0), normal: SIMD3<Float>(0, 0, 1))
         let v1 = MeshVertex(position: SIMD3<Float>( 100, -100, 0), normal: SIMD3<Float>(0, 0, 1))
@@ -94,13 +94,12 @@ final class SurfaceStrokeColorTests: XCTestCase {
             color: purple
         )
 
-        let reprojected = stroke.reprojected(
+        let reprojected = try XCTUnwrap(stroke.reprojected(
             onto: mesh,
             rayDir: SIMD3<Float>(0, 0, -1),  // cast straight down onto the plane
             offset: 0
-        )
-        XCTAssertNotNil(reprojected)
-        XCTAssertEqual(reprojected?.color, purple)
-        XCTAssertEqual(reprojected?.opacity ?? 0, 0.7, accuracy: 0.001)
+        ))
+        XCTAssertEqual(reprojected.color, purple)
+        XCTAssertEqual(reprojected.opacity, 0.7, accuracy: 0.001)
     }
 }
