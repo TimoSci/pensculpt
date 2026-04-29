@@ -472,9 +472,9 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
         sculptObjects[idx].mesh = mesh
         if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
-        bufferCache.removeValue(forKey: objectID)
         bvhCache.removeValue(forKey: objectID)
         strokeNormalsCache.removeAll()
+        rebuildBufferSync(for: sculptObjects[idx])
     }
 
     func morphMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
@@ -514,13 +514,13 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             vertices[i].normal = normalize(mix(morph.fromVertices[i].normal, morph.toVertices[i].normal, t: smooth))
         }
         sculptObjects[idx].mesh.vertices = vertices
-        bufferCache.removeValue(forKey: morph.objectID)
+        rebuildBufferSync(for: sculptObjects[idx])
 
         if t >= 1.0 {
             sculptObjects[idx].mesh = morph.toMesh
             if let strokes = morph.toStrokes { sculptObjects[idx].surfaceStrokes = strokes }
-            bufferCache.removeValue(forKey: morph.objectID)
             bvhCache.removeValue(forKey: morph.objectID)
+            rebuildBufferSync(for: sculptObjects[idx])
             activeMorph = nil
         }
     }
