@@ -70,6 +70,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var onMeshDeformed: ((UUID, Mesh, [SurfaceStroke]) -> Void)?
     var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
     var onRendererReady: ((@escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, MeshBVH) -> Void) -> Void)?
+    var onViewReady: ((MTKView) -> Void)?
 
     func makeUIView(context: Context) -> ForceMTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -127,6 +128,7 @@ struct MetalCanvasView: UIViewRepresentable {
         singlePan.cancelsTouchesInView = false
         view.addGestureRecognizer(singlePan)
 
+        onViewReady?(view)
         return view
     }
 
