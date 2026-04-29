@@ -65,6 +65,7 @@ struct MetalCanvasView: UIViewRepresentable {
     var surfaceSpaceStrokes: Bool = false
     var brushSize: Float = 8
     var brushOpacity: Float = 1
+    var activeColor: CodableColor = .black
     var onObjectTapped: (() -> Void)?
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
     var onMeshDeformed: ((UUID, Mesh, [SurfaceStroke]) -> Void)?
@@ -146,6 +147,8 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.brushSize = brushSize
         context.coordinator.brushOpacity = brushOpacity
         context.coordinator.renderer?.brushOpacity = brushOpacity
+        context.coordinator.renderer?.currentStrokeColor = activeColor
+        context.coordinator.activeColor = activeColor
         context.coordinator.onObjectTapped = onObjectTapped
         context.coordinator.onSurfaceStrokeCompleted = onSurfaceStrokeCompleted
         context.coordinator.onMeshDeformed = onMeshDeformed
@@ -158,6 +161,7 @@ struct MetalCanvasView: UIViewRepresentable {
 
     class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var renderer: SculptRenderer?
+        var activeColor: CodableColor = .black
         var isRotateMode = false
         var isDeformMode = false
         var isSmoothMode = false
@@ -314,7 +318,8 @@ struct MetalCanvasView: UIViewRepresentable {
                 if renderer.currentStrokePoints.count > 1 {
                     let stroke = SurfaceStroke(points: renderer.currentStrokePoints,
                                                 widths: renderer.currentStrokeWidths,
-                                                opacity: renderer.brushOpacity)
+                                                opacity: renderer.brushOpacity,
+                                                color: activeColor)
                     if let activeID = renderer.activeObjectID,
                        let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
                         renderer.sculptObjects[idx].surfaceStrokes.append(stroke)
