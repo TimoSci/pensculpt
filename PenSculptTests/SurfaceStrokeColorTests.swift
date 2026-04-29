@@ -46,6 +46,9 @@ final class SurfaceStrokeColorTests: XCTestCase {
     func testSimd4HelperDefaultOpacityIsIdentity() {
         let color = CodableColor(red: 0.1, green: 0.2, blue: 0.3, alpha: 1)
         let v = color.simd4()
+        XCTAssertEqual(v.x, 0.1, accuracy: 0.001)
+        XCTAssertEqual(v.y, 0.2, accuracy: 0.001)
+        XCTAssertEqual(v.z, 0.3, accuracy: 0.001)
         XCTAssertEqual(v.w, 1.0, accuracy: 0.001)
     }
 }
