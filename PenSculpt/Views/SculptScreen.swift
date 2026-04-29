@@ -1,4 +1,5 @@
 import SwiftUI
+import MetalKit
 
 struct SculptScreen: View {
     var strokes: [Stroke]
@@ -19,6 +20,12 @@ struct SculptScreen: View {
     @State private var rendererMorphMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
     @State private var rendererCacheBVH: ((UUID, MeshBVH) -> Void)?
     @State private var isReInferring = false
+    @State private var metalView: MTKView?
+    @State private var shareURL: ShareableURL?
+    @State private var exportError: ExportError?
+    @State private var showFormatDialog = false
+    @State private var pendingMeshFormat: MeshFormat?
+    @State private var showScopeDialog = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -37,7 +44,8 @@ struct SculptScreen: View {
             onSurfaceStrokeCompleted: handleSurfaceStroke,
             onMeshDeformed: handleMeshDeformed,
             onDeformCursor: { deformCursor = $0 },
-            onRendererReady: { replace, morph, cacheBVH in Task { @MainActor in rendererReplaceMesh = replace; rendererMorphMesh = morph; rendererCacheBVH = cacheBVH } }
+            onRendererReady: { replace, morph, cacheBVH in Task { @MainActor in rendererReplaceMesh = replace; rendererMorphMesh = morph; rendererCacheBVH = cacheBVH } },
+            onViewReady: { view in Task { @MainActor in metalView = view } }
         )
         .ignoresSafeArea()
         .overlay {
@@ -95,6 +103,15 @@ struct SculptScreen: View {
                         .font(.title)
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(autoProjectStrokes ? .blue : .secondary)
+                }
+
+                Button {
+                    showFormatDialog = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
                 }
             }
             .padding()
@@ -201,6 +218,31 @@ struct SculptScreen: View {
                 // No match — create new
                 inferNewObject()
             }
+        }
+        .confirmationDialog("Exportar", isPresented: $showFormatDialog, titleVisibility: .visible) {
+            Button("Imagem (PNG)") { performImageExport() }
+            Button("Malha 3D (OBJ)") { startMeshExport(format: .obj) }
+            Button("Cancelar", role: .cancel) {}
+        }
+        .confirmationDialog("Exportar qual?", isPresented: $showScopeDialog, titleVisibility: .visible) {
+            Button("Objeto ativo") { performMeshExport(scope: .activeOnly) }
+            Button("Cena inteira") { performMeshExport(scope: .all) }
+            Button("Cancelar", role: .cancel) { pendingMeshFormat = nil }
+        }
+        .sheet(item: $shareURL) { wrapper in
+            ShareSheet(items: [wrapper.url])
+        }
+        .alert(
+            "Falha ao exportar",
+            isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            ),
+            presenting: exportError
+        ) { _ in
+            Button("OK", role: .cancel) { exportError = nil }
+        } message: { err in
+            Text(err.errorDescription ?? "")
         }
     }
 
@@ -330,5 +372,57 @@ struct SculptScreen: View {
     private static func reprojectStrokes(_ strokes: [SurfaceStroke], onto mesh: Mesh, config: SculptConfig) -> [SurfaceStroke] {
         let rayDir = SIMD3<Float>(0, 0, -1)
         return strokes.compactMap { $0.reprojected(onto: mesh, rayDir: rayDir, offset: config.surfaceStrokeOffset, maxTJump: config.surfaceStrokeMaxTJump) }
+    }
+
+    // MARK: - Export
+
+    private func performImageExport() {
+        guard let metalView = metalView else {
+            exportError = .renderFailed
+            return
+        }
+        do {
+            let url = try ImageRenderer.renderPNG(from: metalView)
+            shareURL = ShareableURL(url: url)
+        } catch let err as ExportError {
+            exportError = err
+        } catch {
+            exportError = .renderFailed
+        }
+    }
+
+    private func startMeshExport(format: MeshFormat) {
+        pendingMeshFormat = format
+        if sculptObjects.count <= 1 {
+            performMeshExport(scope: .all)
+        } else {
+            showScopeDialog = true
+        }
+    }
+
+    private func performMeshExport(scope: SculptScope) {
+        guard let format = pendingMeshFormat else { return }
+        defer { pendingMeshFormat = nil }
+
+        let objectsToExport: [SculptObject]
+        switch scope {
+        case .activeOnly:
+            if let active = sculptObjects.first(where: { $0.id == activeObjectID }) {
+                objectsToExport = [active]
+            } else {
+                objectsToExport = []
+            }
+        case .all:
+            objectsToExport = sculptObjects
+        }
+
+        do {
+            let url = try MeshExporter.export(objectsToExport, format: format)
+            shareURL = ShareableURL(url: url)
+        } catch let err as ExportError {
+            exportError = err
+        } catch {
+            exportError = .modelIOFailed(error)
+        }
     }
 }
