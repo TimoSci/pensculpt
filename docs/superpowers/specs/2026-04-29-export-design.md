@@ -95,37 +95,48 @@ The caller (the SculptScreen UI) is responsible for filtering the array based on
 
 ### DrawingScreen
 
-Add a "share" button (`SF Symbol "square.and.arrow.up"`) to `FloatingToolbar`, placed near the existing tool row. Tap:
+Add a "share" button (`SF Symbol "square.and.arrow.up"`) to `FloatingToolbar`, after the trash button. The button takes a closure `onExport: () -> Void` like the existing toolbar callbacks.
 
-1. Call `ImageRenderer.renderPNG(from: canvasView)`.
-2. On success, set `@State var shareURL: URL?`; the toolbar's `ShareLink(item: url)` is gated behind that state and the share sheet appears.
-3. On failure, set `@State var exportError: ExportError?` and present an alert.
+Flow on tap:
 
-The active `PKCanvasView` reference must be reachable from `DrawingScreen`. Today `CanvasView` is a `UIViewRepresentable`; expose the underlying `PKCanvasView` to the parent via a `Coordinator` callback or a `@Binding<PKCanvasView?>` initialized once `makeUIView` runs. Implementation will pick whichever is least intrusive.
+1. `DrawingScreen` reads the live `PKCanvasView` from the existing `ViewBridge` (`viewBridge.canvasView`, already populated by `CanvasView.makeUIView`).
+2. Calls `ImageRenderer.renderPNG(from: canvasView)`.
+3. On success, sets `@State var shareURL: URL?` on `DrawingScreen`. The view shows a hidden `ShareLink(item: url)` whose presentation is driven by setting that state (e.g. via a `.sheet` wrapping `ActivityView` or by a programmatically-triggered `ShareLink`).
+4. On failure, sets `@State var exportError: ExportError?` and shows an alert.
+
+Because `ShareLink` requires the URL at construction time, the cleanest pattern is: render synchronously, store the URL in state, and present the share sheet via a `UIViewControllerRepresentable` wrapping `UIActivityViewController` triggered by an `.sheet(item: $shareURL)` pattern (with `URL` made `Identifiable`). This gives unconditional sheet behavior without `ShareLink`'s static-URL constraint.
 
 ### SculptScreen
 
-Add the same "share" button to `FloatingToolbar` (the project's shared toolbar; sculpt-mode-specific items are toggled via the existing `AppMode` flag). Tap opens a SwiftUI `confirmationDialog` with these choices:
+`SculptScreen` does not use `FloatingToolbar`; it composes its own toolbars via `.overlay`. Add a share button to the existing top-leading overlay (the one with close/re-infer/auto-project buttons), as a new SF Symbol button (`square.and.arrow.up`).
 
-1. **Image (PNG)** — calls `ImageRenderer.renderPNG(from: metalView)`.
-2. **3D Mesh (OBJ)** — opens scope picker, then `MeshExporter.export(_, format: .obj)`.
-3. **3D Mesh (USDZ)** — opens scope picker, then `MeshExporter.export(_, format: .usdz)`.
+Tap flow:
 
-The scope picker is a second step shown only when `sculptObjects.count > 1`:
-- **Active object** — `[activeObject].compactMap { $0 }`.
-- **Whole scene** — `sculptObjects`.
+1. Show a `confirmationDialog` titled "Export" with three actions:
+   - **Image (PNG)** — call `ImageRenderer.renderPNG(from: metalView)` and set `shareURL`.
+   - **3D Mesh (OBJ)** — set pending mesh format `.obj`, open scope picker (or skip).
+   - **3D Mesh (USDZ)** — same with `.usdz`.
 
-If there's a single object, skip the scope picker and use it directly.
+2. After format picked, if `sculptObjects.count > 1` show a second `confirmationDialog` with **Active object** / **Whole scene**. If `count == 1`, skip directly to step 3.
 
-The chosen URL is then handed to a `ShareLink` / `UIActivityViewController`.
+3. Filter objects (`[active]` or `sculptObjects`), call `MeshExporter.export(_, format:)`, set `shareURL`.
 
-Concretely, the SculptScreen state machine becomes:
+4. `.sheet(item: $shareURL)` presents the share sheet (`UIActivityViewController` wrapped in `UIViewControllerRepresentable`).
 
+Live `MTKView` reference: extend `MetalCanvasView` with an optional `onViewReady: (MTKView) -> Void` callback fired in `makeUIView`. `SculptScreen` stores the reference in `@State var metalView: MTKView?` and passes it to the renderer when needed. This mirrors how `CanvasView` exposes `PKCanvasView` via `ViewBridge`.
+
+Concretely, `SculptScreen` adds these `@State` properties:
+
+```swift
+@State private var shareURL: ShareableURL?     // ShareableURL wraps URL: Identifiable
+@State private var exportError: ExportError?
+@State private var metalView: MTKView?
+@State private var showFormatDialog = false
+@State private var pendingMeshFormat: MeshFormat?
+@State private var showScopeDialog = false
 ```
-exportSheetState: .closed | .formatPicker | .scopePicker(MeshFormat) | .ready(URL)
-```
 
-Switching states drives which `.sheet` / `.confirmationDialog` is shown.
+`ShareableURL` is a tiny wrapper (`struct ShareableURL: Identifiable { let id = UUID(); let url: URL }`) so it works with `.sheet(item:)`.
 
 ## Data Flow
 
