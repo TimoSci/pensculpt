@@ -519,7 +519,6 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         if t >= 1.0 {
             sculptObjects[idx].mesh = morph.toMesh
             if let strokes = morph.toStrokes { sculptObjects[idx].surfaceStrokes = strokes }
-            bvhCache.removeValue(forKey: morph.objectID)
             rebuildBufferSync(for: sculptObjects[idx])
             activeMorph = nil
         }
