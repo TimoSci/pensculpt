@@ -74,6 +74,7 @@ struct SculptScreen: View {
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(.secondary)
                 }
+                .tooltip(.sculptClose)
 
                 Button(action: reInfer) {
                     if isReInferring {
@@ -86,6 +87,7 @@ struct SculptScreen: View {
                     }
                 }
                 .disabled(isReInferring)
+                .tooltip(.sculptReinfer)
 
                 Button(action: reInferMorph) {
                     if isReInferring {
@@ -101,6 +103,7 @@ struct SculptScreen: View {
                     }
                 }
                 .disabled(isReInferring)
+                .tooltip(.sculptReinferMorph)
 
                 Button {
                     autoProjectStrokes.toggle()
@@ -110,6 +113,7 @@ struct SculptScreen: View {
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(autoProjectStrokes ? .blue : .secondary)
                 }
+                .tooltip(.sculptAutoProject)
 
                 Button {
                     showFormatDialog = true
@@ -119,6 +123,9 @@ struct SculptScreen: View {
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(.secondary)
                 }
+                .tooltip(.sculptExport)
+
+                TooltipsToggleButton()
             }
             .padding()
         }
@@ -140,6 +147,7 @@ struct SculptScreen: View {
                         .frame(width: 28, height: 28)
                         .overlay(Circle().stroke(Color.primary.opacity(0.4), lineWidth: 1))
                 }
+                .tooltip(.sculptColorSwatch)
                 .popover(isPresented: $showColorPopover) {
                     ColorPickerPopover(
                         activeColor: activeColor,
@@ -162,7 +170,7 @@ struct SculptScreen: View {
                         .font(.caption)
                         .foregroundStyle(surfaceSpaceStrokes ? .blue : .secondary)
                 }
-                .help(surfaceSpaceStrokes ? "Surface-space strokes" : "Screen-space strokes")
+                .tooltip(.sculptSurfaceSpace)
             }
             .padding(.horizontal, 16)
             .padding(.vertical, 10)
@@ -180,6 +188,7 @@ struct SculptScreen: View {
                         .onChanged { _ in isRotateMode = true }
                         .onEnded { _ in isRotateMode = false }
                 )
+                .tooltip(.sculptRotate)
                 .padding(20)
         }
         .overlay(alignment: .bottomTrailing) {
@@ -198,6 +207,7 @@ struct SculptScreen: View {
                         .frame(width: 50, height: 50)
                         .background(.ultraThinMaterial, in: Circle())
                 }
+                .tooltip(.sculptEraser)
 
                 Button {
                     if isDeformMode {
@@ -217,6 +227,7 @@ struct SculptScreen: View {
                         .frame(width: 60, height: 60)
                         .background(.ultraThinMaterial, in: Circle())
                 }
+                .tooltip(.sculptDeform)
             }
             .padding(20)
         }
