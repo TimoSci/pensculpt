@@ -122,6 +122,8 @@ struct DrawingScreen: View {
     private var navBarItems: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             HStack(spacing: 12) {
+                TooltipsToggleButton()
+
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { vm.toggleMode() }
                 } label: {
@@ -129,6 +131,7 @@ struct DrawingScreen: View {
                         .font(.title3)
                         .foregroundStyle(.blue)
                 }
+                .tooltip(.modeToggle)
 
                 Button {
                     withAnimation { vm.autosaveEnabled.toggle() }
@@ -139,11 +142,13 @@ struct DrawingScreen: View {
                         .font(.body)
                         .foregroundStyle(vm.autosaveEnabled ? .primary : .secondary)
                 }
+                .tooltip(.autosaveToggle)
 
                 Button { saveToDocument() } label: {
                     Image(systemName: "square.and.arrow.down")
                         .font(.body)
                 }
+                .tooltip(.save)
             }
         }
     }
@@ -194,6 +199,7 @@ struct DrawingScreen: View {
                 .padding(12)
                 .background(.ultraThinMaterial, in: Circle())
         }
+        .tooltip(.toolbarCollapse)
         .padding(.bottom, 16)
     }
 

@@ -27,6 +27,7 @@ struct FloatingToolbar: View {
                         .frame(width: 28, height: 28)
                         .overlay(Circle().stroke(Color.primary.opacity(0.4), lineWidth: 1))
                 }
+                .tooltip(.colorSwatch)
                 .popover(isPresented: $showColorPopover) {
                     ColorPickerPopover(
                         activeColor: activeColor,
@@ -39,7 +40,9 @@ struct FloatingToolbar: View {
                 Divider().frame(height: 24)
 
                 Button(action: onUndo) { Image(systemName: "arrow.uturn.backward") }
+                    .tooltip(.undo)
                 Button(action: onRedo) { Image(systemName: "arrow.uturn.forward") }
+                    .tooltip(.redo)
 
                 Divider().frame(height: 24)
 
@@ -50,16 +53,27 @@ struct FloatingToolbar: View {
                         Image(systemName: tool.iconName)
                             .foregroundStyle(selectedTool == tool ? .primary : .secondary)
                     }
+                    .tooltip(tooltipID(for: tool))
                 }
 
                 Divider().frame(height: 24)
 
                 Button(action: onClear) { Image(systemName: "trash") }
+                    .tooltip(.clear)
                 Button(action: onExport) { Image(systemName: "square.and.arrow.up") }
+                    .tooltip(.exportImage)
             }
         }
         .padding(.horizontal, 16)
         .padding(.vertical, 10)
         .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 20))
+    }
+
+    private func tooltipID(for tool: DrawingTool) -> TooltipID {
+        switch tool {
+        case .pen: return .toolPen
+        case .eraser: return .toolEraser
+        case .pixelEraser: return .toolPixelEraser
+        }
     }
 }
