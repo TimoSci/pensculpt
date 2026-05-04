@@ -48,23 +48,22 @@ struct TooltipModifier: ViewModifier {
             hoverTask?.cancel()
             hoverTask = Task { @MainActor in
                 try? await Task.sleep(for: .milliseconds(400))
-                guard !Task.isCancelled else { return }
-                withAnimation(.easeOut(duration: 0.15)) { isShowing = true }
+                guard !Task.isCancelled, tooltipsEnabled else { return }
+                isShowing = true
             }
         case .ended:
             hoverTask?.cancel()
-            hoverTask = nil
-            withAnimation(.easeOut(duration: 0.1)) { isShowing = false }
+            isShowing = false
         }
     }
 
     private func showFromLongPress() {
         longPressDismissTask?.cancel()
-        withAnimation(.easeOut(duration: 0.15)) { isShowing = true }
+        isShowing = true
         longPressDismissTask = Task { @MainActor in
             try? await Task.sleep(for: .seconds(2))
             guard !Task.isCancelled else { return }
-            withAnimation(.easeOut(duration: 0.1)) { isShowing = false }
+            isShowing = false
         }
     }
 }
