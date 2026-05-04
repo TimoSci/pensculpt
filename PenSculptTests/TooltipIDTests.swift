@@ -16,10 +16,10 @@ final class TooltipIDTests: XCTestCase {
         }
     }
 
-    func testDescriptionsWhenPresentAreNonEmpty() {
+    func testSubtitlesWhenPresentAreNonEmpty() {
         for id in TooltipID.allCases {
-            if let desc = id.content.description {
-                XCTAssertFalse(desc.isEmpty, "TooltipID.\(id) description is empty string (use nil instead)")
+            if let subtitle = id.content.subtitle {
+                XCTAssertFalse(subtitle.isEmpty, "TooltipID.\(id) subtitle is empty string (use nil instead)")
             }
         }
     }
