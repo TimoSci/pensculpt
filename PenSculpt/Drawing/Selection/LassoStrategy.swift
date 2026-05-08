@@ -1,6 +1,7 @@
 import Foundation
 
-enum LassoSelection {
+enum LassoStrategy: SelectionStrategy {
+    typealias Input = [CGPoint]  // polygon
 
     /// Ray-casting point-in-polygon test.
     static func contains(_ point: CGPoint, in polygon: [CGPoint]) -> Bool {
@@ -27,10 +28,8 @@ enum LassoSelection {
         threshold: CGFloat = 0.5
     ) -> Bool {
         guard !stroke.points.isEmpty else { return false }
-        // Quick reject: if bounding boxes don't overlap, skip
         let lassoBounds = boundingBox(of: polygon)
         guard stroke.boundingBox.intersects(lassoBounds) else { return false }
-
         let insideCount = stroke.points.filter { contains($0.location, in: polygon) }.count
         return CGFloat(insideCount) / CGFloat(stroke.points.count) >= threshold
     }
@@ -54,10 +53,8 @@ enum LassoSelection {
         guard let first = points.first else { return .zero }
         var minX = first.x, minY = first.y, maxX = first.x, maxY = first.y
         for p in points.dropFirst() {
-            minX = min(minX, p.x)
-            minY = min(minY, p.y)
-            maxX = max(maxX, p.x)
-            maxY = max(maxY, p.y)
+            minX = min(minX, p.x); minY = min(minY, p.y)
+            maxX = max(maxX, p.x); maxY = max(maxY, p.y)
         }
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }

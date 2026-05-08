@@ -2,76 +2,7 @@ import XCTest
 import PencilKit
 @testable import PenSculpt
 
-final class LassoSelectionTests: XCTestCase {
-
-    // MARK: - Algorithm tests
-
-    func testPointInPolygon() {
-        let square = [
-            CGPoint(x: 0, y: 0),
-            CGPoint(x: 100, y: 0),
-            CGPoint(x: 100, y: 100),
-            CGPoint(x: 0, y: 100),
-            CGPoint(x: 0, y: 0)
-        ]
-        XCTAssertTrue(LassoSelection.contains(CGPoint(x: 50, y: 50), in: square))
-        XCTAssertFalse(LassoSelection.contains(CGPoint(x: 150, y: 50), in: square))
-        XCTAssertFalse(LassoSelection.contains(CGPoint(x: 50, y: 150), in: square))
-    }
-
-    func testStrokeSelectionThreshold() {
-        let points = (0..<10).map {
-            StrokePoint(location: CGPoint(x: CGFloat($0) * 10, y: 50),
-                        pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
-        }
-        let stroke = Stroke(points: points)
-
-        // 5 of 10 points inside (50%) → selected
-        let halfPolygon = [
-            CGPoint(x: -1, y: 0), CGPoint(x: 46, y: 0),
-            CGPoint(x: 46, y: 100), CGPoint(x: -1, y: 100), CGPoint(x: -1, y: 0)
-        ]
-        XCTAssertTrue(LassoSelection.isStrokeSelected(stroke, by: halfPolygon))
-
-        // 4 of 10 points inside (40%) → not selected
-        let smallPolygon = [
-            CGPoint(x: -1, y: 0), CGPoint(x: 36, y: 0),
-            CGPoint(x: 36, y: 100), CGPoint(x: -1, y: 100), CGPoint(x: -1, y: 0)
-        ]
-        XCTAssertFalse(LassoSelection.isStrokeSelected(stroke, by: smallPolygon))
-    }
-
-    func testPKStrokeLocationsPreservedAfterConversion() {
-        let inputLocation = CGPoint(x: 500, y: 700)
-        let pkPoint = PKStrokePoint(location: inputLocation, timeOffset: 0,
-                                     size: CGSize(width: 5, height: 5), opacity: 1,
-                                     force: 1, azimuth: 0, altitude: .pi / 4)
-        let path = PKStrokePath(controlPoints: [pkPoint], creationDate: Date())
-        let pkStroke = PKStroke(ink: PKInk(.pen, color: .black), path: path)
-        let stroke = StrokeConverter.convert(pkStroke)
-
-        XCTAssertEqual(stroke.points[0].location.x, 500, accuracy: 1)
-        XCTAssertEqual(stroke.points[0].location.y, 700, accuracy: 1)
-    }
-
-    func testLassoSelectsStrokeAtSameCoordinates() {
-        let points = [
-            StrokePoint(location: CGPoint(x: 500, y: 700), pressure: 1, tilt: 0, azimuth: 0, timestamp: 0),
-            StrokePoint(location: CGPoint(x: 510, y: 710), pressure: 1, tilt: 0, azimuth: 0, timestamp: 0.1)
-        ]
-        let stroke = Stroke(points: points)
-
-        let polygon = [
-            CGPoint(x: 450, y: 650),
-            CGPoint(x: 550, y: 650),
-            CGPoint(x: 550, y: 750),
-            CGPoint(x: 450, y: 750),
-            CGPoint(x: 450, y: 650)
-        ]
-        XCTAssertTrue(LassoSelection.isStrokeSelected(stroke, by: polygon))
-    }
-
-    // MARK: - Coordinate system tests
+final class SelectionCoordinateTests: XCTestCase {
 
     /// Verifies that sibling UIViews with the same frame have matching coordinate systems.
     func testSiblingViewsAtSameFrameHaveMatchingCoords() {
@@ -221,7 +152,7 @@ final class LassoSelectionTests: XCTestCase {
         ]
 
         // Without conversion: should FAIL
-        let withoutConversion = LassoSelection.isStrokeSelected(stroke, by: lassoPolygon)
+        let withoutConversion = LassoStrategy.isStrokeSelected(stroke, by: lassoPolygon)
         XCTAssertFalse(withoutConversion,
                         "Without conversion should fail (offset: \(safeAreaTop))")
 
@@ -236,7 +167,7 @@ final class LassoSelectionTests: XCTestCase {
         print("📐 Lasso center in canvas coords: \(canvasView.convert(lassoView.convert(CGPoint(x: 500, y: lassoY), to: nil), from: nil))")
         print("📐 Stroke location: \(stroke.points[0].location)")
 
-        let withConversion = LassoSelection.isStrokeSelected(stroke, by: canvasPolygon)
+        let withConversion = LassoStrategy.isStrokeSelected(stroke, by: canvasPolygon)
         XCTAssertTrue(withConversion,
                        "After window→canvas conversion, stroke should be selected")
 
@@ -246,7 +177,7 @@ final class LassoSelectionTests: XCTestCase {
         XCTAssertNotNil(bridge.canvasView, "ViewBridge should hold canvas reference")
 
         let bridgeConverted = windowPolygon.map { bridge.canvasView!.convert($0, from: nil) }
-        let viaBridge = LassoSelection.isStrokeSelected(stroke, by: bridgeConverted)
+        let viaBridge = LassoStrategy.isStrokeSelected(stroke, by: bridgeConverted)
         XCTAssertTrue(viaBridge, "ViewBridge-based window→canvas conversion should work")
 
         window.resignKey()

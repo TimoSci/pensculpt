@@ -64,7 +64,7 @@ class DrawingViewModel {
     // MARK: - Selection
 
     func handleLassoCompleted(polygon: [CGPoint]) {
-        selectedStrokeIDs = LassoSelection.selectedStrokeIDs(
+        selectedStrokeIDs = LassoStrategy.selectedStrokeIDs(
             strokes: canvas.strokes,
             polygon: polygon
         )
