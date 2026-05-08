@@ -61,7 +61,9 @@ final class GrowSession {
         currentRadius += appliedDeltaR
         admitWithinRadius()
         recomputeNextCandidate()
-        isPaused = densityFactor < 0.5
+        // Anything below full speed is "paused" for the user — the visualization
+        // halo signals the slowdown, not a specific factor.
+        isPaused = densityFactor < 1.0
 
         return GrowFrame(
             radius: currentRadius,

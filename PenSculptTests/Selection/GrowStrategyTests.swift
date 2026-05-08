@@ -91,12 +91,27 @@ final class GrowStrategyTests: XCTestCase {
             canvas: canvas(cluster + [isolated])
         )
         // After cluster inclusion, density factor should drop below 1.0 within a few ticks.
-        var sawPause = false
+        let dt: TimeInterval = 1.0 / 60.0
+        let nominalDeltaR = GrowStrategy.baseGrowthSpeed * CGFloat(dt)
+        var pausedFrame: (radius: CGFloat, prevRadius: CGFloat)?
+        var prev = session.currentRadius
         for _ in 0..<10 {
-            let frame = session.tick(deltaTime: 1.0 / 60.0)
-            if frame.isPaused { sawPause = true; break }
+            let frame = session.tick(deltaTime: dt)
+            if frame.isPaused {
+                pausedFrame = (frame.radius, prev)
+                break
+            }
+            prev = frame.radius
         }
-        XCTAssertTrue(sawPause, "Expected pause when the only remaining candidate is far away")
+        guard let captured = pausedFrame else {
+            return XCTFail("Expected pause when the only remaining candidate is far away")
+        }
+        // Verify the radius actually grew by less than full speed during the paused tick —
+        // not just that the boolean flipped. With densityPauseFactor=0.1 we expect ~10%
+        // of nominal step; allow some slack but require well below the full step.
+        let observedDeltaR = captured.radius - captured.prevRadius
+        XCTAssertLessThan(observedDeltaR, nominalDeltaR * 0.5,
+                          "Paused tick should grow noticeably less than nominal (\(nominalDeltaR)); got \(observedDeltaR)")
     }
 
     // MARK: finalize
@@ -111,13 +126,20 @@ final class GrowStrategyTests: XCTestCase {
         XCTAssertEqual(session.finalize(), [id])
     }
 
-    func testFinalizeIsIdempotent() {
-        let id = UUID()
-        let seed = stroke(at: [CGPoint(x: 0, y: 0)], id: id)
-        let session = GrowStrategy.start(
-            origin: .stroke(strokeID: id, anchor: .zero),
-            canvas: canvas([seed])
-        )
-        XCTAssertEqual(session.finalize(), session.finalize())
+    func testFinalizeMatchesIncludedAfterTicks() {
+        // Origin point at zero with one stroke at distance 30 — reachable in <1s
+        // at baseGrowthSpeed=50.
+        let target = stroke(at: [CGPoint(x: 30, y: 0)])
+        let session = GrowStrategy.start(origin: .point(.zero), canvas: canvas([target]))
+        for _ in 0..<60 {
+            _ = session.tick(deltaTime: 1.0 / 60.0)
+        }
+        let finalized = session.finalize()
+        XCTAssertEqual(finalized, session.includedStrokeIDs,
+                       "finalize() must be a snapshot of includedStrokeIDs after ticks")
+        XCTAssertTrue(finalized.contains(target.id))
+        // Calling finalize again must not mutate the session.
+        let secondCall = session.finalize()
+        XCTAssertEqual(finalized, secondCall)
     }
 }
