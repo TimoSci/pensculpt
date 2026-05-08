@@ -8,7 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		0347FE4C0A5E659D35D99CB3 /* SculptRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A9BD3149A93DB238426BA43 /* SculptRenderer.swift */; };
-		13EA7E78BF44AA908208A224 /* LassoOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7E0B2D1E69576B9767F889 /* LassoOverlay.swift */; };
+		13EA7E78BF44AA908208A224 /* SelectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7E0B2D1E69576B9767F889 /* SelectionOverlay.swift */; };
 		13FB513D2030412AF3F6E039 /* CanvasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */; };
 		16963C708BA78A1E8242E74F /* MeshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA01BA6F67DEA8951302764 /* MeshTests.swift */; };
 		1F06F508B357184A0D298B76 /* Stroke.swift in Sources */ = {isa = PBXBuildFile; fileRef = C103499A3841733723268595 /* Stroke.swift */; };
@@ -42,7 +42,7 @@
 		80697A0323E3AB19984EA81A /* DrawingTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AAA71198A27EC375244E79A /* DrawingTool.swift */; };
 		81BCDDE5A91629858020D77B /* PenSculptDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */; };
 		8365F3CC60F25456FEC92D2B /* SculptObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B4E42709F9D46EB97ED41 /* SculptObject.swift */; };
-		86FBDB006345F8C3872FA979 /* LassoViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512872FBAE76F812C290FB13 /* LassoViewTests.swift */; };
+		86FBDB006345F8C3872FA979 /* SelectionOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512872FBAE76F812C290FB13 /* SelectionOverlayTests.swift */; };
 		96B3776F3CC43CF73AA6D40E /* TooltipID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548CDDBADA7E18E7360F9CB6 /* TooltipID.swift */; };
 		9D2AC5F87CB67F6AB01B8093 /* ExportError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC51095CE67FE0A32677293 /* ExportError.swift */; };
 		9FAD0066BD0C703E5F233BC1 /* MeshExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B3C658F7FBD9C764D030A0 /* MeshExporter.swift */; };
@@ -101,7 +101,7 @@
 		4596ECB829377F19FA0FECD7 /* ContourExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContourExtractor.swift; sourceTree = "<group>"; };
 		4A9B45B1894E87008809A866 /* StrokeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeConverter.swift; sourceTree = "<group>"; };
 		4AAA71198A27EC375244E79A /* DrawingTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingTool.swift; sourceTree = "<group>"; };
-		512872FBAE76F812C290FB13 /* LassoViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoViewTests.swift; sourceTree = "<group>"; };
+		512872FBAE76F812C290FB13 /* SelectionOverlayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionOverlayTests.swift; sourceTree = "<group>"; };
 		548CDDBADA7E18E7360F9CB6 /* TooltipID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipID.swift; sourceTree = "<group>"; };
 		5AE4C922D541BA8953F39249 /* PenSculptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptTests.swift; sourceTree = "<group>"; };
 		5CC51095CE67FE0A32677293 /* ExportError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportError.swift; sourceTree = "<group>"; };
@@ -119,7 +119,7 @@
 		680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DensityProbeTests.swift; sourceTree = "<group>"; };
 		643DCF3593F6ECBB3D96022F /* GrowStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowStrategy.swift; sourceTree = "<group>"; };
 		291BCA1565ADC59F5A2A4176 /* GrowStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowStrategyTests.swift; sourceTree = "<group>"; };
-		7A7E0B2D1E69576B9767F889 /* LassoOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoOverlay.swift; sourceTree = "<group>"; };
+		7A7E0B2D1E69576B9767F889 /* SelectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionOverlay.swift; sourceTree = "<group>"; };
 		7F091E30DDBF84C12FB97CCC /* ExportFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportFormat.swift; sourceTree = "<group>"; };
 		813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeConverterTests.swift; sourceTree = "<group>"; };
 		82600F3015BC14804942380E /* Canvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Canvas.swift; sourceTree = "<group>"; };
@@ -167,7 +167,7 @@
 				2DA657CBC6F4383A5FB2C38A /* DrawingViewModel.swift */,
 				FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */,
 				D16794D9CA4E582D5552785A /* GrowthVisualization.swift */,
-				7A7E0B2D1E69576B9767F889 /* LassoOverlay.swift */,
+				7A7E0B2D1E69576B9767F889 /* SelectionOverlay.swift */,
 				A9A3A784F078DB1D1BC21234 /* SculptScreen.swift */,
 				A7F303B02A43E5A69689623C /* SelectionHighlight.swift */,
 				AE373514047A6311A38CF07B /* Tooltips */,
@@ -314,7 +314,7 @@
 				2784E41280E22EE54A1D6507 /* CanvasViewTests.swift */,
 				B7D2183DA7353D9752EE7472 /* DrawingViewModelTests.swift */,
 				6DBFB9D1C740A5A34B847CB8 /* InferencePipelineTests.swift */,
-				512872FBAE76F812C290FB13 /* LassoViewTests.swift */,
+				512872FBAE76F812C290FB13 /* SelectionOverlayTests.swift */,
 				EAA01BA6F67DEA8951302764 /* MeshTests.swift */,
 				AB850AA0D0B98D937FA1D8CF /* MetalCanvasViewTests.swift */,
 				DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */,
@@ -440,7 +440,7 @@
 				366B5500BE99069AA6F882E8 /* DensityProbeTests.swift in Sources */,
 				FA55848C651587047C4D7C1B /* GrowStrategyTests.swift in Sources */,
 				85E82E1CF1922545F2F23A36 /* SelectionCoordinateTests.swift in Sources */,
-				86FBDB006345F8C3872FA979 /* LassoViewTests.swift in Sources */,
+				86FBDB006345F8C3872FA979 /* SelectionOverlayTests.swift in Sources */,
 				4BB8E4A8B9AC000F106EAE27 /* MeshExporterTests.swift in Sources */,
 				16963C708BA78A1E8242E74F /* MeshTests.swift in Sources */,
 				DF626D4AAC989B114A0E217C /* MetalCanvasViewTests.swift in Sources */,
@@ -475,7 +475,7 @@
 				5BDFCB18B1EBBAE92EABD1F7 /* ExportFormat.swift in Sources */,
 				2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */,
 				46424204E8CE00AE8FC4F3A8 /* ImageRenderer.swift in Sources */,
-				13EA7E78BF44AA908208A224 /* LassoOverlay.swift in Sources */,
+				13EA7E78BF44AA908208A224 /* SelectionOverlay.swift in Sources */,
 				8980148C9276EC7212B6C128 /* SelectionStrategy.swift in Sources */,
 				8784D95C2FCFA333015F395B /* LassoStrategy.swift in Sources */,
 				C0A66B869F0E763DF897936F /* GrowOrigin.swift in Sources */,
