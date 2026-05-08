@@ -231,4 +231,57 @@ final class DrawingViewModelTests: XCTestCase {
         XCTAssertNil(vm.growthFrame)
         XCTAssertEqual(vm.selectedStrokeIDs, [id])
     }
+
+    func testGrowGestureStartReflectsAdmittedStrokesImmediately() {
+        // The user must see what they're capturing during the hold — the
+        // initial admission should be mirrored into selectedStrokeIDs so the
+        // SelectionHighlight layer paints the seed stroke right away.
+        let vm = makeVM()
+        let id = UUID()
+        let s = Stroke(id: id, points: [
+            StrokePoint(location: .zero, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ])
+        vm.canvas.strokes = [s]
+        vm.handleGrowGestureStarted(origin: .stroke(strokeID: id, anchor: .zero))
+        XCTAssertEqual(vm.selectedStrokeIDs, [id])
+    }
+
+    func testGrowGestureCancelRevertsSelection() {
+        // Pre-existing selection is restored when the gesture is cancelled.
+        let vm = makeVM()
+        let priorID = UUID()
+        let prior = Stroke(id: priorID, points: [
+            StrokePoint(location: CGPoint(x: 1000, y: 1000), pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ])
+        let growID = UUID()
+        let target = Stroke(id: growID, points: [
+            StrokePoint(location: .zero, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ])
+        vm.canvas.strokes = [prior, target]
+        vm.selectedStrokeIDs = [priorID]
+
+        vm.handleGrowGestureStarted(origin: .stroke(strokeID: growID, anchor: .zero))
+        XCTAssertEqual(vm.selectedStrokeIDs, [growID], "during hold, selection mirrors grow")
+
+        vm.handleGrowGestureCancelled()
+        XCTAssertNil(vm.growSession)
+        XCTAssertNil(vm.growthFrame)
+        XCTAssertEqual(vm.selectedStrokeIDs, [priorID], "cancel must revert to the pre-grow selection")
+    }
+
+    func testToggleModeCancelsActiveGrow() {
+        let vm = makeVM()
+        let id = UUID()
+        let s = Stroke(id: id, points: [
+            StrokePoint(location: .zero, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ])
+        vm.canvas.strokes = [s]
+        vm.appMode = .select
+        vm.handleGrowGestureStarted(origin: .stroke(strokeID: id, anchor: .zero))
+        // toggleMode out of .select while a grow is in flight should discard it
+        vm.toggleMode()
+        XCTAssertEqual(vm.appMode, .draw)
+        XCTAssertNil(vm.growSession)
+        XCTAssertNil(vm.growthFrame)
+    }
 }

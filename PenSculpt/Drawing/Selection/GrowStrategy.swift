@@ -55,6 +55,18 @@ final class GrowSession {
     /// strokes inside the new radius, recomputes the next candidate and pause state.
     @discardableResult
     func tick(deltaTime: TimeInterval) -> GrowFrame {
+        // No candidates means either an empty canvas or every stroke admitted —
+        // freeze the radius (and CPU) instead of growing the sphere indefinitely.
+        guard !candidateStrokes.isEmpty else {
+            isPaused = false
+            return GrowFrame(
+                radius: currentRadius,
+                center: origin.anchor,
+                includedStrokeIDs: includedStrokeIDs,
+                nextCandidateID: nil,
+                isPaused: false
+            )
+        }
         let nominalDeltaR = GrowStrategy.baseGrowthSpeed * CGFloat(deltaTime)
         let densityFactor = computeDensityFactor(nominalDeltaR: nominalDeltaR)
         let appliedDeltaR = nominalDeltaR * densityFactor

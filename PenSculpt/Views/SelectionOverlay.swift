@@ -8,6 +8,7 @@ struct SelectionOverlay: UIViewRepresentable {
     var onLassoCompleted: ([CGPoint]) -> Void
     var onGrowGestureStarted: (GrowOrigin) -> Void
     var onGrowGestureEnded: () -> Void
+    var onGrowGestureCancelled: () -> Void
 
     static let longPressMinimumDuration: CFTimeInterval = 0.15
     static let longPressAllowableMovement: CGFloat = 5.0
@@ -22,6 +23,7 @@ struct SelectionOverlay: UIViewRepresentable {
         view.onLassoCompleted = { context.coordinator.parent.onLassoCompleted($0) }
         view.onGrowGestureStarted = { context.coordinator.parent.onGrowGestureStarted($0) }
         view.onGrowGestureEnded = { context.coordinator.parent.onGrowGestureEnded() }
+        view.onGrowGestureCancelled = { context.coordinator.parent.onGrowGestureCancelled() }
         view.installRecognizers()
         return view
     }
@@ -53,6 +55,7 @@ final class SelectionView: UIView {
     var onLassoCompleted: (([CGPoint]) -> Void)?
     var onGrowGestureStarted: ((GrowOrigin) -> Void)?
     var onGrowGestureEnded: (() -> Void)?
+    var onGrowGestureCancelled: (() -> Void)?
 
     private var panRecognizer: UIPanGestureRecognizer?
     private var longPressRecognizer: UILongPressGestureRecognizer?
@@ -133,6 +136,10 @@ final class SelectionView: UIView {
         onGrowGestureEnded?()
     }
 
+    func cancelGrow() {
+        onGrowGestureCancelled?()
+    }
+
     static func hitStroke(at point: CGPoint, in strokes: [Stroke], tolerance: CGFloat) -> Stroke? {
         var best: (Stroke, CGFloat)?
         for s in strokes {
@@ -176,8 +183,12 @@ final class SelectionView: UIView {
             let display = gr.location(in: self)
             let target = targetView.map { gr.view!.convert(display, to: $0) } ?? display
             beginGrow(at: target, strokes: allStrokes)
-        case .ended, .cancelled, .failed:
+        case .ended:
             endGrow()
+        case .cancelled, .failed:
+            // System-level interruption (backgrounding, multitouch, mode change)
+            // discards the partial selection rather than committing it.
+            cancelGrow()
         default:
             break
         }

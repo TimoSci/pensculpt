@@ -84,7 +84,7 @@ struct DrawingScreen: View {
 
     @ViewBuilder
     private var growthVisualizationLayer: some View {
-        if let frame = vm.growthFrame {
+        if vm.appMode == .select, let frame = vm.growthFrame {
             GrowthVisualization(frame: frame, allStrokes: vm.canvas.strokes, viewBridge: viewBridge)
                 .ignoresSafeArea()
         }
@@ -99,7 +99,8 @@ struct DrawingScreen: View {
                 viewBridge: viewBridge,
                 onLassoCompleted: { vm.handleLassoCompleted(polygon: $0) },
                 onGrowGestureStarted: { vm.handleGrowGestureStarted(origin: $0) },
-                onGrowGestureEnded: { vm.handleGrowGestureEnded() }
+                onGrowGestureEnded: { vm.handleGrowGestureEnded() },
+                onGrowGestureCancelled: { vm.handleGrowGestureCancelled() }
             )
             .ignoresSafeArea()
         }

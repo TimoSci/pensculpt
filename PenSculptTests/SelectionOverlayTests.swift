@@ -61,4 +61,16 @@ final class SelectionOverlayTests: XCTestCase {
         v.endGrow()
         XCTAssertTrue(ended)
     }
+
+    func testGrowCancelFiresCancelCallbackNotEnd() {
+        let v = SelectionView()
+        var ended = false
+        var cancelled = false
+        v.onGrowGestureEnded = { ended = true }
+        v.onGrowGestureCancelled = { cancelled = true }
+        v.beginGrow(at: .zero, strokes: [])
+        v.cancelGrow()
+        XCTAssertFalse(ended, "cancel must NOT fire the end callback")
+        XCTAssertTrue(cancelled)
+    }
 }

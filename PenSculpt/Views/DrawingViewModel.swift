@@ -22,6 +22,9 @@ class DrawingViewModel {
     var growthFrame: GrowFrame?
     private var displayLink: CADisplayLink?
     private var lastTickTimestamp: CFTimeInterval = 0
+    /// Snapshot of `selectedStrokeIDs` at the moment a grow gesture started, so
+    /// a cancellation (system interruption, mode toggle) can revert exactly.
+    private var selectionBeforeGrow: Set<UUID>?
 
     /// Tracks the last eraser type for pencil double-tap toggle.
     private(set) var lastEraserType: DrawingTool = .eraser
@@ -53,6 +56,8 @@ class DrawingViewModel {
         if appMode == .draw {
             appMode = .select
         } else {
+            // Toggling out of select while a grow gesture is active discards it.
+            if growSession != nil { handleGrowGestureCancelled() }
             appMode = .draw
             lassoPoints = []
             selectedStrokeIDs = []
@@ -81,8 +86,12 @@ class DrawingViewModel {
 
     func handleGrowGestureStarted(origin: GrowOrigin) {
         cancelLasso()
+        selectionBeforeGrow = selectedStrokeIDs
         let session = GrowStrategy.start(origin: origin, canvas: canvas)
         growSession = session
+        // Reflect the initial admission in the highlight layer so the user
+        // immediately sees what's being captured.
+        selectedStrokeIDs = session.includedStrokeIDs
         growthFrame = GrowFrame(
             radius: session.currentRadius,
             center: origin.anchor,
@@ -96,10 +105,25 @@ class DrawingViewModel {
     func handleGrowGestureEnded() {
         stopDisplayLink()
         if let session = growSession {
+            // Already mirrored in selectedStrokeIDs by ticks; finalize is just
+            // the canonical snapshot so we always commit the same set.
             selectedStrokeIDs = session.finalize()
         }
         growSession = nil
         growthFrame = nil
+        selectionBeforeGrow = nil
+    }
+
+    /// Discards the active grow gesture and reverts the selection to what it
+    /// was before the hold began (system cancellation, mode toggle, etc.).
+    func handleGrowGestureCancelled() {
+        stopDisplayLink()
+        if let prior = selectionBeforeGrow {
+            selectedStrokeIDs = prior
+        }
+        growSession = nil
+        growthFrame = nil
+        selectionBeforeGrow = nil
     }
 
     private func startDisplayLink() {
@@ -123,6 +147,9 @@ class DrawingViewModel {
         guard let session = growSession else { return }
         let frame = session.tick(deltaTime: dt)
         growthFrame = frame
+        // Mirror the running session into the published selection so the
+        // highlight layer paints captured strokes as they get admitted.
+        selectedStrokeIDs = frame.includedStrokeIDs
     }
 
     private func cancelLasso() {
