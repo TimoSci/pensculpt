@@ -55,6 +55,7 @@
 		366B5500BE99069AA6F882E8 /* DensityProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */; };
 		42B3545E30FB00E5CAA8E0EE /* GrowStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 643DCF3593F6ECBB3D96022F /* GrowStrategy.swift */; };
 		FA55848C651587047C4D7C1B /* GrowStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 291BCA1565ADC59F5A2A4176 /* GrowStrategyTests.swift */; };
+		07638515AAD8ECB8ABB85DAC /* GrowthVisualization.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16794D9CA4E582D5552785A /* GrowthVisualization.swift */; };
 		A7CB08EBF505CA481153743E /* SelectionHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7F303B02A43E5A69689623C /* SelectionHighlight.swift */; };
 		AE6DD59F89FB1586FEB88CAA /* TooltipIDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CC03BE544F4F42A83D4FE8 /* TooltipIDTests.swift */; };
 		B5A4C83261EE3A1AD40B5ACF /* SculptConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8D346B753BC55596B1529C /* SculptConfig.swift */; };
@@ -132,6 +133,7 @@
 		9A9BD3149A93DB238426BA43 /* SculptRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRenderer.swift; sourceTree = "<group>"; };
 		9CCD06DBCB1FE6874F66FDD0 /* PipelineDiagnosticTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineDiagnosticTests.swift; sourceTree = "<group>"; };
 		A7F303B02A43E5A69689623C /* SelectionHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionHighlight.swift; sourceTree = "<group>"; };
+		D16794D9CA4E582D5552785A /* GrowthVisualization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowthVisualization.swift; sourceTree = "<group>"; };
 		A9A3A784F078DB1D1BC21234 /* SculptScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptScreen.swift; sourceTree = "<group>"; };
 		AB850AA0D0B98D937FA1D8CF /* MetalCanvasViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalCanvasViewTests.swift; sourceTree = "<group>"; };
 		B496DFF4D0F3327DF0063CDF /* ImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRendererTests.swift; sourceTree = "<group>"; };
@@ -164,6 +166,7 @@
 				864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */,
 				2DA657CBC6F4383A5FB2C38A /* DrawingViewModel.swift */,
 				FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */,
+				D16794D9CA4E582D5552785A /* GrowthVisualization.swift */,
 				7A7E0B2D1E69576B9767F889 /* LassoOverlay.swift */,
 				A9A3A784F078DB1D1BC21234 /* SculptScreen.swift */,
 				A7F303B02A43E5A69689623C /* SelectionHighlight.swift */,
@@ -488,6 +491,7 @@
 				8365F3CC60F25456FEC92D2B /* SculptObject.swift in Sources */,
 				0347FE4C0A5E659D35D99CB3 /* SculptRenderer.swift in Sources */,
 				B928BFE7A02DD3F36544CBF3 /* SculptScreen.swift in Sources */,
+				07638515AAD8ECB8ABB85DAC /* GrowthVisualization.swift in Sources */,
 				A7CB08EBF505CA481153743E /* SelectionHighlight.swift in Sources */,
 				5015977B84755D267A17FE0A /* Shaders.metal in Sources */,
 				5BC7DE43FB96E61022768DA9 /* ShapeInflater.swift in Sources */,
