@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import QuartzCore
 
 @Observable
 class DrawingViewModel {
@@ -13,6 +14,14 @@ class DrawingViewModel {
     var lassoPoints: [CGPoint] = []
     var selectedStrokeIDs: Set<UUID> = []
     var showSculptScreen = false
+
+    // Grow-selection lifecycle state. `growSession` is non-nil while the user
+    // is holding; `growthFrame` is the latest tick snapshot driving the
+    // visualization overlay. Both are reset on gesture end.
+    var growSession: GrowSession?
+    var growthFrame: GrowFrame?
+    private var displayLink: CADisplayLink?
+    private var lastTickTimestamp: CFTimeInterval = 0
 
     /// Tracks the last eraser type for pencil double-tap toggle.
     private(set) var lastEraserType: DrawingTool = .eraser
@@ -70,6 +79,56 @@ class DrawingViewModel {
         )
     }
 
+    func handleGrowGestureStarted(origin: GrowOrigin) {
+        cancelLasso()
+        let session = GrowStrategy.start(origin: origin, canvas: canvas)
+        growSession = session
+        growthFrame = GrowFrame(
+            radius: session.currentRadius,
+            center: origin.anchor,
+            includedStrokeIDs: session.includedStrokeIDs,
+            nextCandidateID: session.nextCandidateID,
+            isPaused: session.isPaused
+        )
+        startDisplayLink()
+    }
+
+    func handleGrowGestureEnded() {
+        stopDisplayLink()
+        if let session = growSession {
+            selectedStrokeIDs = session.finalize()
+        }
+        growSession = nil
+        growthFrame = nil
+    }
+
+    private func startDisplayLink() {
+        stopDisplayLink()
+        let link = CADisplayLink(target: DisplayLinkProxy(viewModel: self),
+                                 selector: #selector(DisplayLinkProxy.tick(_:)))
+        link.add(to: .main, forMode: .common)
+        displayLink = link
+        lastTickTimestamp = CACurrentMediaTime()
+    }
+
+    private func stopDisplayLink() {
+        displayLink?.invalidate()
+        displayLink = nil
+    }
+
+    fileprivate func displayLinkTick(_ link: CADisplayLink) {
+        let now = link.timestamp
+        let dt = max(0, now - lastTickTimestamp)
+        lastTickTimestamp = now
+        guard let session = growSession else { return }
+        let frame = session.tick(deltaTime: dt)
+        growthFrame = frame
+    }
+
+    private func cancelLasso() {
+        lassoPoints = []
+    }
+
     // MARK: - Stroke mutations
 
     func addStroke(_ stroke: Stroke) {
@@ -92,4 +151,12 @@ class DrawingViewModel {
             canvas.pushRecentColor(color)
         }
     }
+}
+
+/// CADisplayLink retains its target. Using a weak-ref proxy avoids a retain
+/// cycle that would keep the view model alive for the lifetime of the link.
+private final class DisplayLinkProxy {
+    weak var viewModel: DrawingViewModel?
+    init(viewModel: DrawingViewModel) { self.viewModel = viewModel }
+    @objc func tick(_ link: CADisplayLink) { viewModel?.displayLinkTick(link) }
 }

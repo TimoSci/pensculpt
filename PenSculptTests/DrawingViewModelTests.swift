@@ -203,4 +203,32 @@ final class DrawingViewModelTests: XCTestCase {
         vm.setActiveColor(a, addToRecents: true)
         XCTAssertEqual(vm.canvas.recentColors, [a, b])
     }
+
+    // MARK: - Grow selection lifecycle
+
+    func testGrowGestureStartCreatesSession() {
+        let vm = makeVM()
+        let id = UUID()
+        let s = Stroke(id: id, points: [
+            StrokePoint(location: .zero, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ])
+        vm.canvas.strokes = [s]
+        vm.handleGrowGestureStarted(origin: .stroke(strokeID: id, anchor: .zero))
+        XCTAssertNotNil(vm.growSession)
+        XCTAssertNotNil(vm.growthFrame)
+    }
+
+    func testGrowGestureEndCommitsSelection() {
+        let vm = makeVM()
+        let id = UUID()
+        let s = Stroke(id: id, points: [
+            StrokePoint(location: .zero, pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
+        ])
+        vm.canvas.strokes = [s]
+        vm.handleGrowGestureStarted(origin: .stroke(strokeID: id, anchor: .zero))
+        vm.handleGrowGestureEnded()
+        XCTAssertNil(vm.growSession)
+        XCTAssertNil(vm.growthFrame)
+        XCTAssertEqual(vm.selectedStrokeIDs, [id])
+    }
 }
