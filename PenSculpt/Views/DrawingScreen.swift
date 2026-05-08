@@ -26,6 +26,7 @@ struct DrawingScreen: View {
         ZStack(alignment: .bottom) {
             canvasLayer
             selectionHighlightLayer
+            growthVisualizationLayer
             selectModeOverlay
             if vm.appMode == .draw { drawModeControls }
             if vm.appMode == .select && vm.hasSelection { sculptButton }
@@ -82,6 +83,14 @@ struct DrawingScreen: View {
     }
 
     @ViewBuilder
+    private var growthVisualizationLayer: some View {
+        if let frame = vm.growthFrame {
+            GrowthVisualization(frame: frame, allStrokes: vm.canvas.strokes, viewBridge: viewBridge)
+                .ignoresSafeArea()
+        }
+    }
+
+    @ViewBuilder
     private var selectModeOverlay: some View {
         if vm.appMode == .select {
             SelectionOverlay(
@@ -89,8 +98,8 @@ struct DrawingScreen: View {
                 allStrokes: vm.canvas.strokes,
                 viewBridge: viewBridge,
                 onLassoCompleted: { vm.handleLassoCompleted(polygon: $0) },
-                onGrowGestureStarted: { _ in },
-                onGrowGestureEnded: { }
+                onGrowGestureStarted: { vm.handleGrowGestureStarted(origin: $0) },
+                onGrowGestureEnded: { vm.handleGrowGestureEnded() }
             )
             .ignoresSafeArea()
         }
