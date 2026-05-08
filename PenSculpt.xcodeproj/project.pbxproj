@@ -51,6 +51,8 @@
 		8784D95C2FCFA333015F395B /* LassoStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263640C623F25872406340E5 /* LassoStrategy.swift */; };
 		C0A66B869F0E763DF897936F /* GrowOrigin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E97EB03D787E446104616815 /* GrowOrigin.swift */; };
 		7DA75C1D57C315BC254959B4 /* GrowOriginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 560B33C26DDAFF954471A72E /* GrowOriginTests.swift */; };
+		F7C61365FD02A1398754B5C5 /* DensityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A504162222F4DD7368BE86 /* DensityProbe.swift */; };
+		366B5500BE99069AA6F882E8 /* DensityProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */; };
 		A7CB08EBF505CA481153743E /* SelectionHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7F303B02A43E5A69689623C /* SelectionHighlight.swift */; };
 		AE6DD59F89FB1586FEB88CAA /* TooltipIDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CC03BE544F4F42A83D4FE8 /* TooltipIDTests.swift */; };
 		B5A4C83261EE3A1AD40B5ACF /* SculptConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8D346B753BC55596B1529C /* SculptConfig.swift */; };
@@ -110,6 +112,8 @@
 		263640C623F25872406340E5 /* LassoStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoStrategy.swift; sourceTree = "<group>"; };
 		E97EB03D787E446104616815 /* GrowOrigin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowOrigin.swift; sourceTree = "<group>"; };
 		560B33C26DDAFF954471A72E /* GrowOriginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowOriginTests.swift; sourceTree = "<group>"; };
+		08A504162222F4DD7368BE86 /* DensityProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DensityProbe.swift; sourceTree = "<group>"; };
+		680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DensityProbeTests.swift; sourceTree = "<group>"; };
 		7A7E0B2D1E69576B9767F889 /* LassoOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoOverlay.swift; sourceTree = "<group>"; };
 		7F091E30DDBF84C12FB97CCC /* ExportFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportFormat.swift; sourceTree = "<group>"; };
 		813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeConverterTests.swift; sourceTree = "<group>"; };
@@ -191,6 +195,7 @@
 				3F6A275E3175E7D493C06FBA /* SelectionStrategy.swift */,
 				263640C623F25872406340E5 /* LassoStrategy.swift */,
 				E97EB03D787E446104616815 /* GrowOrigin.swift */,
+				08A504162222F4DD7368BE86 /* DensityProbe.swift */,
 			);
 			path = Selection;
 			sourceTree = "<group>";
@@ -326,6 +331,7 @@
 			children = (
 				0111AD42887B664A71CE3591 /* LassoStrategyTests.swift */,
 				560B33C26DDAFF954471A72E /* GrowOriginTests.swift */,
+				680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */,
 			);
 			path = Selection;
 			sourceTree = "<group>";
@@ -422,6 +428,7 @@
 				6C115DA4E37B116CD8268A24 /* InferencePipelineTests.swift in Sources */,
 				16EC0BE7D58ED5FAFB99515C /* LassoStrategyTests.swift in Sources */,
 				7DA75C1D57C315BC254959B4 /* GrowOriginTests.swift in Sources */,
+				366B5500BE99069AA6F882E8 /* DensityProbeTests.swift in Sources */,
 				85E82E1CF1922545F2F23A36 /* SelectionCoordinateTests.swift in Sources */,
 				86FBDB006345F8C3872FA979 /* LassoViewTests.swift in Sources */,
 				4BB8E4A8B9AC000F106EAE27 /* MeshExporterTests.swift in Sources */,
@@ -462,6 +469,7 @@
 				8980148C9276EC7212B6C128 /* SelectionStrategy.swift in Sources */,
 				8784D95C2FCFA333015F395B /* LassoStrategy.swift in Sources */,
 				C0A66B869F0E763DF897936F /* GrowOrigin.swift in Sources */,
+				F7C61365FD02A1398754B5C5 /* DensityProbe.swift in Sources */,
 				607A73B18E0D441CD67F41AC /* Mesh.swift in Sources */,
 				698D39B7AEB6A15106067A09 /* MeshBVH.swift in Sources */,
 				9FAD0066BD0C703E5F233BC1 /* MeshExporter.swift in Sources */,
