@@ -8,7 +8,7 @@ struct CanvasView: UIViewRepresentable {
     var strokeOpacity: CGFloat
     var activeColor: CodableColor
     var onStrokeCompleted: ((PKStroke) -> Void)?
-    var onStrokeErased: ((_ removedIndices: [Int]) -> Void)?
+    var onStrokeErased: ((_ removedIndices: [Int], _ removedPKStrokes: [PKStroke]) -> Void)?
     var isInteractive: Bool = true
     var viewBridge: ViewBridge?
 
@@ -36,8 +36,13 @@ struct CanvasView: UIViewRepresentable {
         canvasView.isUserInteractionEnabled = isInteractive
         canvasView.tool = pkTool(for: selectedTool)
         if canvasView.drawing != drawing {
-            canvasView.drawing = drawing
+            // Reset tracking BEFORE setting drawing — the setter may fire
+            // `canvasViewDrawingDidChange` synchronously, and we need
+            // `previousStrokeCount` to already reflect the new state so
+            // it doesn't spuriously dispatch `onStrokeCompleted` /
+            // `onStrokeErased` for our own external updates.
             context.coordinator.resetTracking(to: drawing)
+            canvasView.drawing = drawing
         }
     }
 
@@ -87,16 +92,29 @@ struct CanvasView: UIViewRepresentable {
         func canvasViewDrawingDidChange(_ canvasView: PKCanvasView) {
             let currentDrawing = canvasView.drawing
             let currentCount = currentDrawing.strokes.count
+            let branch: String
+            if currentCount > previousStrokeCount { branch = "ADD" }
+            else if currentCount < previousStrokeCount { branch = "REMOVE" }
+            else { branch = "NOOP" }
+            print("[CV-DDC] prev=\(previousStrokeCount) curr=\(currentCount) branch=\(branch)")
 
-            if currentCount > previousStrokeCount,
-               let lastStroke = currentDrawing.strokes.last {
-                parent.onStrokeCompleted?(lastStroke)
+            if currentCount > previousStrokeCount {
+                // Find strokes that exist in current but not in previous.
+                // PKCanvasView's auto-undo restores erased strokes to their
+                // original index, so the "new" stroke may not be at `last`.
+                let previousBounds = previousDrawing.strokes.map { $0.renderBounds }
+                for stroke in currentDrawing.strokes {
+                    if !previousBounds.contains(stroke.renderBounds) {
+                        parent.onStrokeCompleted?(stroke)
+                    }
+                }
             } else if currentCount < previousStrokeCount {
                 let removedIndices = CanvasView.removedStrokeIndices(
                     previous: previousDrawing.strokes,
                     current: currentDrawing.strokes
                 )
-                parent.onStrokeErased?(removedIndices)
+                let removedPKStrokes = removedIndices.map { previousDrawing.strokes[$0] }
+                parent.onStrokeErased?(removedIndices, removedPKStrokes)
             }
 
             parent.drawing = currentDrawing

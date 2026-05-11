@@ -98,7 +98,25 @@ struct DrawingScreen: View {
                 allStrokes: vm.canvas.strokes,
                 viewBridge: viewBridge,
                 onLassoCompleted: { vm.handleLassoCompleted(polygon: $0) },
-                onGrowGestureStarted: { vm.handleGrowGestureStarted(origin: $0) },
+                onGrowGestureStarted: { origin in
+                    // DIAG: compare canvas.strokes (algorithm input) vs pkDrawing.strokes
+                    // (visual render) — any mismatch in count or content means the
+                    // grow algorithm is missing strokes the user can see, or vice versa.
+                    let canvasCount = vm.canvas.strokes.count
+                    let pkCount = pkDrawing.strokes.count
+                    print("[GROW-SYNC] canvas.strokes=\(canvasCount) pkDrawing.strokes=\(pkCount) match=\(canvasCount == pkCount)")
+                    for (i, pks) in pkDrawing.strokes.enumerated() {
+                        let renderB = pks.renderBounds
+                        let canvasB: String
+                        if i < vm.canvas.strokes.count {
+                            canvasB = "\(vm.canvas.strokes[i].boundingBox)"
+                        } else {
+                            canvasB = "MISSING"
+                        }
+                        print("[GROW-SYNC] [\(i)] pkRender=\(renderB) vs canvasBBox=\(canvasB)")
+                    }
+                    vm.handleGrowGestureStarted(origin: origin)
+                },
                 onGrowGestureEnded: { vm.handleGrowGestureEnded() },
                 onGrowGestureCancelled: { vm.handleGrowGestureCancelled() }
             )
@@ -174,7 +192,7 @@ struct DrawingScreen: View {
             strokeOpacity: vm.strokeOpacity,
             activeColor: vm.canvas.activeColor,
             onStrokeCompleted: { addStrokeWithUndo(StrokeConverter.convert($0)) },
-            onStrokeErased: { handleErase($0) },
+            onStrokeErased: { handleErase($0, $1) },
             isInteractive: vm.appMode == .draw,
             viewBridge: viewBridge
         )
@@ -268,8 +286,10 @@ struct DrawingScreen: View {
     // MARK: - Undo-aware actions
 
     private func addStrokeWithUndo(_ stroke: Stroke) {
+        print("[ADD-STROKE] id=\(stroke.id.uuidString.prefix(8)) source=onStrokeCompleted canvas.count(before)=\(vm.canvas.strokes.count)")
         vm.addStroke(stroke)
         undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+            print("[UNDO-ADD] removing id=\(stroke.id.uuidString.prefix(8))")
             vm.removeStroke(id: stroke.id)
             pkDrawing = PKDrawing(strokes: pkDrawing.strokes.dropLast())
         }
@@ -285,15 +305,18 @@ struct DrawingScreen: View {
         }
     }
 
-    private func handleErase(_ removedIndices: [Int]) {
-        for index in removedIndices.reversed() {
+    private func handleErase(_ removedIndices: [Int], _ removedPKStrokes: [PKStroke]) {
+        print("[ERASE] removing indices=\(removedIndices) canvas.count(before)=\(vm.canvas.strokes.count)")
+        for ix in (0..<removedIndices.count).reversed() {
+            let index = removedIndices[ix]
             guard index < vm.canvas.strokes.count else { continue }
             let stroke = vm.canvas.strokes[index]
             vm.removeStroke(id: stroke.id)
-            undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
-                vm.addStroke(stroke)
-            }
         }
+        // No custom undo: PKCanvasView's own undo restores the PKDrawing
+        // (firing canvasViewDrawingDidChange → onStrokeCompleted → addStrokeWithUndo),
+        // which re-adds the stroke into canvas.strokes. Registering our own undo
+        // here would cause a double-add and a permanent fantasma.
     }
 
     private func projectSurfaceStrokes() {

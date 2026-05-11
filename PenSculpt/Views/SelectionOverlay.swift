@@ -11,7 +11,9 @@ struct SelectionOverlay: UIViewRepresentable {
     var onGrowGestureCancelled: () -> Void
 
     static let longPressMinimumDuration: CFTimeInterval = 0.15
-    static let longPressAllowableMovement: CGFloat = 5.0
+    // Pencil contact wobbles more when tilted; 5pt cancels the LP for natural
+    // hand jitter, so allow up to 15pt before treating the gesture as a pan.
+    static let longPressAllowableMovement: CGFloat = 15.0
     static let strokeHitTolerance: CGFloat = 8.0
 
     func makeCoordinator() -> Coordinator { Coordinator(self) }
@@ -73,10 +75,6 @@ final class SelectionView: UIView {
         lp.allowableMovement = SelectionOverlay.longPressAllowableMovement
         addGestureRecognizer(lp)
         longPressRecognizer = lp
-
-        // Pan must fail before long-press fires — i.e. if movement starts immediately,
-        // we treat as lasso, not grow.
-        lp.require(toFail: pan)
     }
 
     // MARK: - Lasso path (testable)
@@ -167,6 +165,10 @@ final class SelectionView: UIView {
         let p = points(for: location, in: self)
         switch gr.state {
         case .began:
+            // DIAG: log lasso start coords + scrollview state.
+            if let sv = targetView as? UIScrollView {
+                print("[GESTURE-DIAG] LASSO-BEGIN display=(\(Int(p.display.x)),\(Int(p.display.y))) target=(\(Int(p.target.x)),\(Int(p.target.y))) contentOffset=\(sv.contentOffset) zoom=\(sv.zoomScale)")
+            }
             beginStroke(displayPoint: p.display, targetPoint: p.target)
         case .changed:
             continueStroke(displayPoint: p.display, targetPoint: p.target)
@@ -182,6 +184,12 @@ final class SelectionView: UIView {
         case .began:
             let display = gr.location(in: self)
             let target = targetView.map { gr.view!.convert(display, to: $0) } ?? display
+            // DIAG: log gesture coords + scrollview state.
+            if let sv = targetView as? UIScrollView {
+                print("[GESTURE-DIAG] LONG-PRESS display=(\(Int(display.x)),\(Int(display.y))) target=(\(Int(target.x)),\(Int(target.y))) contentOffset=\(sv.contentOffset) zoom=\(sv.zoomScale) contentSize=\(sv.contentSize) bounds=\(sv.bounds)")
+            } else {
+                print("[GESTURE-DIAG] LONG-PRESS display=(\(Int(display.x)),\(Int(display.y))) target=(\(Int(target.x)),\(Int(target.y))) [targetView not a UIScrollView]")
+            }
             beginGrow(at: target, strokes: allStrokes)
         case .ended:
             endGrow()

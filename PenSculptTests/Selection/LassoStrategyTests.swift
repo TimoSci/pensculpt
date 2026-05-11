@@ -14,24 +14,33 @@ final class LassoStrategyTests: XCTestCase {
         XCTAssertFalse(LassoStrategy.contains(CGPoint(x: 50, y: 150), in: square))
     }
 
-    func testStrokeSelectionThreshold() {
+    func testStrokeSelectedWhenAnyPointIsInside() {
         let points = (0..<10).map {
             StrokePoint(location: CGPoint(x: CGFloat($0) * 10, y: 50),
                         pressure: 1, tilt: 0, azimuth: 0, timestamp: 0)
         }
         let stroke = Stroke(points: points)
 
+        // Polygon catches half the stroke — admitted.
         let halfPolygon = [
             CGPoint(x: -1, y: 0), CGPoint(x: 46, y: 0),
             CGPoint(x: 46, y: 100), CGPoint(x: -1, y: 100), CGPoint(x: -1, y: 0)
         ]
         XCTAssertTrue(LassoStrategy.isStrokeSelected(stroke, by: halfPolygon))
 
-        let smallPolygon = [
-            CGPoint(x: -1, y: 0), CGPoint(x: 36, y: 0),
-            CGPoint(x: 36, y: 100), CGPoint(x: -1, y: 100), CGPoint(x: -1, y: 0)
+        // Polygon catches just the first point — still admitted (any-point rule).
+        let slimPolygon = [
+            CGPoint(x: -1, y: 0), CGPoint(x: 5, y: 0),
+            CGPoint(x: 5, y: 100), CGPoint(x: -1, y: 100), CGPoint(x: -1, y: 0)
         ]
-        XCTAssertFalse(LassoStrategy.isStrokeSelected(stroke, by: smallPolygon))
+        XCTAssertTrue(LassoStrategy.isStrokeSelected(stroke, by: slimPolygon))
+
+        // Polygon entirely off the stroke — not admitted.
+        let missPolygon = [
+            CGPoint(x: 200, y: 0), CGPoint(x: 300, y: 0),
+            CGPoint(x: 300, y: 100), CGPoint(x: 200, y: 100), CGPoint(x: 200, y: 0)
+        ]
+        XCTAssertFalse(LassoStrategy.isStrokeSelected(stroke, by: missPolygon))
     }
 
     func testPKStrokeLocationsPreservedAfterConversion() {

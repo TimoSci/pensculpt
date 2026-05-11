@@ -8,9 +8,10 @@
 
 /* Begin PBXBuildFile section */
 		0347FE4C0A5E659D35D99CB3 /* SculptRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9A9BD3149A93DB238426BA43 /* SculptRenderer.swift */; };
-		13EA7E78BF44AA908208A224 /* SelectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7E0B2D1E69576B9767F889 /* SelectionOverlay.swift */; };
 		13FB513D2030412AF3F6E039 /* CanvasTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */; };
 		16963C708BA78A1E8242E74F /* MeshTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EAA01BA6F67DEA8951302764 /* MeshTests.swift */; };
+		1E265D3AF6AA0BBA672A8B66 /* SelectionCoordinateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4180FF810D014CA3E921AB22 /* SelectionCoordinateTests.swift */; };
+		1E37188DD595561C3B7DA145 /* GrowthVisualization.swift in Sources */ = {isa = PBXBuildFile; fileRef = FCC4E066AF7656BC1B989176 /* GrowthVisualization.swift */; };
 		1F06F508B357184A0D298B76 /* Stroke.swift in Sources */ = {isa = PBXBuildFile; fileRef = C103499A3841733723268595 /* Stroke.swift */; };
 		2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */ = {isa = PBXBuildFile; fileRef = FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */; };
 		2D7A7148DCDE1276F3BD3E35 /* SculptRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F5DDE04C4BC411F753A4200E /* SculptRendererTests.swift */; };
@@ -18,16 +19,19 @@
 		302312306BB23F6D712057DD /* SculptReopenTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = F45481EB403A5B9251F8CF76 /* SculptReopenTests.swift */; };
 		34C45F8BA01561E56E72392B /* MetalCanvasView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3CEB8C5E99B887166FC1FE5C /* MetalCanvasView.swift */; };
 		3ACA72B0A900E98DAF41AFE4 /* DrawingScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = 864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */; };
+		3C4B432BA8DD0F5F1B315B34 /* GrowStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 43594CE59144D895DB45AB13 /* GrowStrategyTests.swift */; };
+		3C523DB2BCC8395528617B5D /* LassoStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = BD17B968E4317111967E126F /* LassoStrategyTests.swift */; };
 		46424204E8CE00AE8FC4F3A8 /* ImageRenderer.swift in Sources */ = {isa = PBXBuildFile; fileRef = C5F3F1853DE69550DA2F11C0 /* ImageRenderer.swift */; };
 		477ADC079D56B3B0B214B198 /* AppMode.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8F1623E98B6462D9F16D94B5 /* AppMode.swift */; };
+		4A94E160E107EBE2F70CCDE1 /* DensityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = F916927F54CEFECA60D39986 /* DensityProbe.swift */; };
 		4BB8E4A8B9AC000F106EAE27 /* MeshExporterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 27B56913C25F428FDA876E54 /* MeshExporterTests.swift */; };
 		4D0B4DC4211C4E54C951C877 /* TooltipModifier.swift in Sources */ = {isa = PBXBuildFile; fileRef = 658F0693DC5651C5A613BF7B /* TooltipModifier.swift */; };
 		4E8542AAB4F6049A6F22B174 /* StrokePoint.swift in Sources */ = {isa = PBXBuildFile; fileRef = 892DC21C224D81E91EC19AF6 /* StrokePoint.swift */; };
 		5015977B84755D267A17FE0A /* Shaders.metal in Sources */ = {isa = PBXBuildFile; fileRef = D784B2CBE2E2D6AC9508A333 /* Shaders.metal */; };
-		16EC0BE7D58ED5FAFB99515C /* LassoStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0111AD42887B664A71CE3591 /* LassoStrategyTests.swift */; };
-		85E82E1CF1922545F2F23A36 /* SelectionCoordinateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E66113E2B3A8E316D9394D3A /* SelectionCoordinateTests.swift */; };
+		52739BBB57A0BCE7FD825BF4 /* GrowOriginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D83D3F519BED81E8A05E7B4D /* GrowOriginTests.swift */; };
 		5BC7DE43FB96E61022768DA9 /* ShapeInflater.swift in Sources */ = {isa = PBXBuildFile; fileRef = 750BAF8BDCCAE7D56FF80F57 /* ShapeInflater.swift */; };
 		5BDFCB18B1EBBAE92EABD1F7 /* ExportFormat.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7F091E30DDBF84C12FB97CCC /* ExportFormat.swift */; };
+		5F12958EDC831A3FC24A979E /* SelectionStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19811EA1C070BA041B780B48 /* SelectionStrategy.swift */; };
 		5FA3E0CC9696AAE77E3E8C95 /* PenSculptDocument.swift in Sources */ = {isa = PBXBuildFile; fileRef = C82A215B7BBBB015740CC253 /* PenSculptDocument.swift */; };
 		607A73B18E0D441CD67F41AC /* Mesh.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7371B21ED3CD469AD6EF122B /* Mesh.swift */; };
 		620DF5FFBEBB74AE891E2932 /* StrokeConverter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4A9B45B1894E87008809A866 /* StrokeConverter.swift */; };
@@ -38,39 +42,35 @@
 		6C115DA4E37B116CD8268A24 /* InferencePipelineTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6DBFB9D1C740A5A34B847CB8 /* InferencePipelineTests.swift */; };
 		702EF8F9BAE5CD219566DECE /* ColorPickerPopover.swift in Sources */ = {isa = PBXBuildFile; fileRef = 00BCA78E6D0D77196B3E62A1 /* ColorPickerPopover.swift */; };
 		78BED971E7B366D934A0A725 /* PipelineVisualTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 6FF16522D54EBC36E2125515 /* PipelineVisualTests.swift */; };
+		7CBCADA64E15D8F982D9361F /* LassoStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4221C6759A037DB19F9D17AC /* LassoStrategy.swift */; };
 		7E8452DD256CEFA004BEE546 /* PenSculptTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5AE4C922D541BA8953F39249 /* PenSculptTests.swift */; };
 		80697A0323E3AB19984EA81A /* DrawingTool.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4AAA71198A27EC375244E79A /* DrawingTool.swift */; };
 		81BCDDE5A91629858020D77B /* PenSculptDocumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */; };
+		827C96AE97D2AFBC9B180EF9 /* GrowOrigin.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0E5062C7B207756C484497F8 /* GrowOrigin.swift */; };
 		8365F3CC60F25456FEC92D2B /* SculptObject.swift in Sources */ = {isa = PBXBuildFile; fileRef = C46B4E42709F9D46EB97ED41 /* SculptObject.swift */; };
-		86FBDB006345F8C3872FA979 /* SelectionOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 512872FBAE76F812C290FB13 /* SelectionOverlayTests.swift */; };
+		916DB9531CB4CE19FDCF0736 /* GrowStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0699BDD5E6FBC520BB3200CA /* GrowStrategy.swift */; };
 		96B3776F3CC43CF73AA6D40E /* TooltipID.swift in Sources */ = {isa = PBXBuildFile; fileRef = 548CDDBADA7E18E7360F9CB6 /* TooltipID.swift */; };
 		9D2AC5F87CB67F6AB01B8093 /* ExportError.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5CC51095CE67FE0A32677293 /* ExportError.swift */; };
 		9FAD0066BD0C703E5F233BC1 /* MeshExporter.swift in Sources */ = {isa = PBXBuildFile; fileRef = 16B3C658F7FBD9C764D030A0 /* MeshExporter.swift */; };
 		A1B13952B16B6F047B7386A0 /* StrokeConverterTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */; };
-		8980148C9276EC7212B6C128 /* SelectionStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3F6A275E3175E7D493C06FBA /* SelectionStrategy.swift */; };
-		8784D95C2FCFA333015F395B /* LassoStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 263640C623F25872406340E5 /* LassoStrategy.swift */; };
-		C0A66B869F0E763DF897936F /* GrowOrigin.swift in Sources */ = {isa = PBXBuildFile; fileRef = E97EB03D787E446104616815 /* GrowOrigin.swift */; };
-		7DA75C1D57C315BC254959B4 /* GrowOriginTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 560B33C26DDAFF954471A72E /* GrowOriginTests.swift */; };
-		F7C61365FD02A1398754B5C5 /* DensityProbe.swift in Sources */ = {isa = PBXBuildFile; fileRef = 08A504162222F4DD7368BE86 /* DensityProbe.swift */; };
-		366B5500BE99069AA6F882E8 /* DensityProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */; };
-		42B3545E30FB00E5CAA8E0EE /* GrowStrategy.swift in Sources */ = {isa = PBXBuildFile; fileRef = 643DCF3593F6ECBB3D96022F /* GrowStrategy.swift */; };
-		FA55848C651587047C4D7C1B /* GrowStrategyTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 291BCA1565ADC59F5A2A4176 /* GrowStrategyTests.swift */; };
-		07638515AAD8ECB8ABB85DAC /* GrowthVisualization.swift in Sources */ = {isa = PBXBuildFile; fileRef = D16794D9CA4E582D5552785A /* GrowthVisualization.swift */; };
 		A7CB08EBF505CA481153743E /* SelectionHighlight.swift in Sources */ = {isa = PBXBuildFile; fileRef = A7F303B02A43E5A69689623C /* SelectionHighlight.swift */; };
 		AE6DD59F89FB1586FEB88CAA /* TooltipIDTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = D4CC03BE544F4F42A83D4FE8 /* TooltipIDTests.swift */; };
 		B5A4C83261EE3A1AD40B5ACF /* SculptConfig.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8D8D346B753BC55596B1529C /* SculptConfig.swift */; };
 		B928BFE7A02DD3F36544CBF3 /* SculptScreen.swift in Sources */ = {isa = PBXBuildFile; fileRef = A9A3A784F078DB1D1BC21234 /* SculptScreen.swift */; };
 		BF8DD08CC50937BB44B37C5B /* ImageRendererTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B496DFF4D0F3327DF0063CDF /* ImageRendererTests.swift */; };
 		C498947EDD9EB38BD583C4DD /* DrawingViewModelTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = B7D2183DA7353D9752EE7472 /* DrawingViewModelTests.swift */; };
+		C68538B5B1FCA28F58FFDFD6 /* SelectionOverlayTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8FE6B8609704348ACCF60A6A /* SelectionOverlayTests.swift */; };
 		C9460F69F7C49576D5EE7257 /* ContourExtractor.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4596ECB829377F19FA0FECD7 /* ContourExtractor.swift */; };
 		CF55A32967111120BF84535C /* Canvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 82600F3015BC14804942380E /* Canvas.swift */; };
 		D1A2CF4064BC618BE224A76E /* TooltipsToggleButton.swift in Sources */ = {isa = PBXBuildFile; fileRef = 3B52205E686C60AFA6646678 /* TooltipsToggleButton.swift */; };
+		D50FD8A27DC8697797C9323F /* SelectionOverlay.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8396FF66E8E8DDE033C82BD3 /* SelectionOverlay.swift */; };
 		D6BAACD0E7B80EE789C9F7DF /* BrushControls.swift in Sources */ = {isa = PBXBuildFile; fileRef = F7C8C724D5F3C85D7B266210 /* BrushControls.swift */; };
 		DB9CA80ED8D893B96D963395 /* PipelineDiagnosticTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9CCD06DBCB1FE6874F66FDD0 /* PipelineDiagnosticTests.swift */; };
 		DF626D4AAC989B114A0E217C /* MetalCanvasViewTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = AB850AA0D0B98D937FA1D8CF /* MetalCanvasViewTests.swift */; };
 		E02DD6005263EAD261542098 /* PenSculptApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9997687C31904A1949E3F1A2 /* PenSculptApp.swift */; };
 		E2311344FF0ADDA2788356A6 /* ShareSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = ED261A76711823D89549B332 /* ShareSheet.swift */; };
 		E28A0DCAB9BD5704D039DCDB /* DrawingViewModel.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2DA657CBC6F4383A5FB2C38A /* DrawingViewModel.swift */; };
+		E96A1F2836A663303B4F2B4E /* DensityProbeTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC894F473775BB45C50AB7DD /* DensityProbeTests.swift */; };
 		E9FFA706E2BF1E1551AFB93B /* ViewBridge.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2C39E08362145F7662200661 /* ViewBridge.swift */; };
 		F59BCF319DA5B1EF902EAA9A /* StrokePointTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8A309C2382E507DE74C02938 /* StrokePointTests.swift */; };
 /* End PBXBuildFile section */
@@ -87,21 +87,24 @@
 
 /* Begin PBXFileReference section */
 		00BCA78E6D0D77196B3E62A1 /* ColorPickerPopover.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ColorPickerPopover.swift; sourceTree = "<group>"; };
+		0699BDD5E6FBC520BB3200CA /* GrowStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowStrategy.swift; sourceTree = "<group>"; };
 		09CEEBEBD7ECCAD00A9693D0 /* PenSculptTests.xctest */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.cfbundle; path = PenSculptTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		0E5062C7B207756C484497F8 /* GrowOrigin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowOrigin.swift; sourceTree = "<group>"; };
 		16B3C658F7FBD9C764D030A0 /* MeshExporter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshExporter.swift; sourceTree = "<group>"; };
+		19811EA1C070BA041B780B48 /* SelectionStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionStrategy.swift; sourceTree = "<group>"; };
 		20F53120679F63904EB7A842 /* CanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasView.swift; sourceTree = "<group>"; };
 		2784E41280E22EE54A1D6507 /* CanvasViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasViewTests.swift; sourceTree = "<group>"; };
 		27B56913C25F428FDA876E54 /* MeshExporterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshExporterTests.swift; sourceTree = "<group>"; };
-		0111AD42887B664A71CE3591 /* LassoStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoStrategyTests.swift; sourceTree = "<group>"; };
-		E66113E2B3A8E316D9394D3A /* SelectionCoordinateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCoordinateTests.swift; sourceTree = "<group>"; };
 		2C39E08362145F7662200661 /* ViewBridge.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ViewBridge.swift; sourceTree = "<group>"; };
 		2DA657CBC6F4383A5FB2C38A /* DrawingViewModel.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModel.swift; sourceTree = "<group>"; };
 		3B52205E686C60AFA6646678 /* TooltipsToggleButton.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipsToggleButton.swift; sourceTree = "<group>"; };
 		3CEB8C5E99B887166FC1FE5C /* MetalCanvasView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalCanvasView.swift; sourceTree = "<group>"; };
+		4180FF810D014CA3E921AB22 /* SelectionCoordinateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionCoordinateTests.swift; sourceTree = "<group>"; };
+		4221C6759A037DB19F9D17AC /* LassoStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoStrategy.swift; sourceTree = "<group>"; };
+		43594CE59144D895DB45AB13 /* GrowStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowStrategyTests.swift; sourceTree = "<group>"; };
 		4596ECB829377F19FA0FECD7 /* ContourExtractor.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ContourExtractor.swift; sourceTree = "<group>"; };
 		4A9B45B1894E87008809A866 /* StrokeConverter.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeConverter.swift; sourceTree = "<group>"; };
 		4AAA71198A27EC375244E79A /* DrawingTool.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingTool.swift; sourceTree = "<group>"; };
-		512872FBAE76F812C290FB13 /* SelectionOverlayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionOverlayTests.swift; sourceTree = "<group>"; };
 		548CDDBADA7E18E7360F9CB6 /* TooltipID.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipID.swift; sourceTree = "<group>"; };
 		5AE4C922D541BA8953F39249 /* PenSculptTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptTests.swift; sourceTree = "<group>"; };
 		5CC51095CE67FE0A32677293 /* ExportError.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportError.swift; sourceTree = "<group>"; };
@@ -111,40 +114,35 @@
 		7261F4A02956799D70E38268 /* StrokeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeTests.swift; sourceTree = "<group>"; };
 		7371B21ED3CD469AD6EF122B /* Mesh.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Mesh.swift; sourceTree = "<group>"; };
 		750BAF8BDCCAE7D56FF80F57 /* ShapeInflater.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ShapeInflater.swift; sourceTree = "<group>"; };
-		3F6A275E3175E7D493C06FBA /* SelectionStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionStrategy.swift; sourceTree = "<group>"; };
-		263640C623F25872406340E5 /* LassoStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoStrategy.swift; sourceTree = "<group>"; };
-		E97EB03D787E446104616815 /* GrowOrigin.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowOrigin.swift; sourceTree = "<group>"; };
-		560B33C26DDAFF954471A72E /* GrowOriginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowOriginTests.swift; sourceTree = "<group>"; };
-		08A504162222F4DD7368BE86 /* DensityProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DensityProbe.swift; sourceTree = "<group>"; };
-		680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DensityProbeTests.swift; sourceTree = "<group>"; };
-		643DCF3593F6ECBB3D96022F /* GrowStrategy.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowStrategy.swift; sourceTree = "<group>"; };
-		291BCA1565ADC59F5A2A4176 /* GrowStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowStrategyTests.swift; sourceTree = "<group>"; };
-		7A7E0B2D1E69576B9767F889 /* SelectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionOverlay.swift; sourceTree = "<group>"; };
 		7F091E30DDBF84C12FB97CCC /* ExportFormat.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ExportFormat.swift; sourceTree = "<group>"; };
 		813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokeConverterTests.swift; sourceTree = "<group>"; };
 		82600F3015BC14804942380E /* Canvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Canvas.swift; sourceTree = "<group>"; };
+		8396FF66E8E8DDE033C82BD3 /* SelectionOverlay.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionOverlay.swift; sourceTree = "<group>"; };
 		864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingScreen.swift; sourceTree = "<group>"; };
 		892DC21C224D81E91EC19AF6 /* StrokePoint.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokePoint.swift; sourceTree = "<group>"; };
 		8A309C2382E507DE74C02938 /* StrokePointTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StrokePointTests.swift; sourceTree = "<group>"; };
 		8D8D346B753BC55596B1529C /* SculptConfig.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptConfig.swift; sourceTree = "<group>"; };
 		8F1623E98B6462D9F16D94B5 /* AppMode.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AppMode.swift; sourceTree = "<group>"; };
-		98A46D7C5EF099EB2F6B8492 /* PenSculpt.app */ = {isa = PBXFileReference; includeInIndex = 0; lastKnownFileType = wrapper.application; path = PenSculpt.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		8FE6B8609704348ACCF60A6A /* SelectionOverlayTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionOverlayTests.swift; sourceTree = "<group>"; };
+		98A46D7C5EF099EB2F6B8492 /* PenSculpt.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = PenSculpt.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		9997687C31904A1949E3F1A2 /* PenSculptApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptApp.swift; sourceTree = "<group>"; };
 		9A9BD3149A93DB238426BA43 /* SculptRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRenderer.swift; sourceTree = "<group>"; };
 		9CCD06DBCB1FE6874F66FDD0 /* PipelineDiagnosticTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PipelineDiagnosticTests.swift; sourceTree = "<group>"; };
 		A7F303B02A43E5A69689623C /* SelectionHighlight.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SelectionHighlight.swift; sourceTree = "<group>"; };
-		D16794D9CA4E582D5552785A /* GrowthVisualization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowthVisualization.swift; sourceTree = "<group>"; };
 		A9A3A784F078DB1D1BC21234 /* SculptScreen.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptScreen.swift; sourceTree = "<group>"; };
 		AB850AA0D0B98D937FA1D8CF /* MetalCanvasViewTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MetalCanvasViewTests.swift; sourceTree = "<group>"; };
 		B496DFF4D0F3327DF0063CDF /* ImageRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRendererTests.swift; sourceTree = "<group>"; };
 		B7D2183DA7353D9752EE7472 /* DrawingViewModelTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DrawingViewModelTests.swift; sourceTree = "<group>"; };
+		BD17B968E4317111967E126F /* LassoStrategyTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = LassoStrategyTests.swift; sourceTree = "<group>"; };
 		C103499A3841733723268595 /* Stroke.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Stroke.swift; sourceTree = "<group>"; };
 		C46B4E42709F9D46EB97ED41 /* SculptObject.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptObject.swift; sourceTree = "<group>"; };
 		C5F3F1853DE69550DA2F11C0 /* ImageRenderer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ImageRenderer.swift; sourceTree = "<group>"; };
 		C82A215B7BBBB015740CC253 /* PenSculptDocument.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptDocument.swift; sourceTree = "<group>"; };
+		CC894F473775BB45C50AB7DD /* DensityProbeTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DensityProbeTests.swift; sourceTree = "<group>"; };
 		CF1BF810BF7881D6960C582E /* MeshBVH.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MeshBVH.swift; sourceTree = "<group>"; };
 		D4CC03BE544F4F42A83D4FE8 /* TooltipIDTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TooltipIDTests.swift; sourceTree = "<group>"; };
 		D784B2CBE2E2D6AC9508A333 /* Shaders.metal */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.metal; path = Shaders.metal; sourceTree = "<group>"; };
+		D83D3F519BED81E8A05E7B4D /* GrowOriginTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowOriginTests.swift; sourceTree = "<group>"; };
 		DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PenSculptDocumentTests.swift; sourceTree = "<group>"; };
 		E0F934C76103B9066E2071CD /* SurfaceStrokeColorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SurfaceStrokeColorTests.swift; sourceTree = "<group>"; };
 		E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = CanvasTests.swift; sourceTree = "<group>"; };
@@ -154,7 +152,9 @@
 		F45481EB403A5B9251F8CF76 /* SculptReopenTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptReopenTests.swift; sourceTree = "<group>"; };
 		F5DDE04C4BC411F753A4200E /* SculptRendererTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SculptRendererTests.swift; sourceTree = "<group>"; };
 		F7C8C724D5F3C85D7B266210 /* BrushControls.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BrushControls.swift; sourceTree = "<group>"; };
+		F916927F54CEFECA60D39986 /* DensityProbe.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DensityProbe.swift; sourceTree = "<group>"; };
 		FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = FloatingToolbar.swift; sourceTree = "<group>"; };
+		FCC4E066AF7656BC1B989176 /* GrowthVisualization.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = GrowthVisualization.swift; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXGroup section */
@@ -166,10 +166,10 @@
 				864F74CCF32E8B0483123CC0 /* DrawingScreen.swift */,
 				2DA657CBC6F4383A5FB2C38A /* DrawingViewModel.swift */,
 				FA01AF044A0AAABECBF26AB1 /* FloatingToolbar.swift */,
-				D16794D9CA4E582D5552785A /* GrowthVisualization.swift */,
-				7A7E0B2D1E69576B9767F889 /* SelectionOverlay.swift */,
+				FCC4E066AF7656BC1B989176 /* GrowthVisualization.swift */,
 				A9A3A784F078DB1D1BC21234 /* SculptScreen.swift */,
 				A7F303B02A43E5A69689623C /* SelectionHighlight.swift */,
+				8396FF66E8E8DDE033C82BD3 /* SelectionOverlay.swift */,
 				AE373514047A6311A38CF07B /* Tooltips */,
 			);
 			path = Views;
@@ -183,29 +183,40 @@
 			path = Persistence;
 			sourceTree = "<group>";
 		};
+		1DE2026C735FF711A9ABA621 /* Selection */ = {
+			isa = PBXGroup;
+			children = (
+				F916927F54CEFECA60D39986 /* DensityProbe.swift */,
+				0E5062C7B207756C484497F8 /* GrowOrigin.swift */,
+				0699BDD5E6FBC520BB3200CA /* GrowStrategy.swift */,
+				4221C6759A037DB19F9D17AC /* LassoStrategy.swift */,
+				19811EA1C070BA041B780B48 /* SelectionStrategy.swift */,
+			);
+			path = Selection;
+			sourceTree = "<group>";
+		};
+		28F5A0132F0654B067617126 /* Selection */ = {
+			isa = PBXGroup;
+			children = (
+				CC894F473775BB45C50AB7DD /* DensityProbeTests.swift */,
+				D83D3F519BED81E8A05E7B4D /* GrowOriginTests.swift */,
+				43594CE59144D895DB45AB13 /* GrowStrategyTests.swift */,
+				BD17B968E4317111967E126F /* LassoStrategyTests.swift */,
+			);
+			path = Selection;
+			sourceTree = "<group>";
+		};
 		3A94AEBC4C7AE66C002C3592 /* Drawing */ = {
 			isa = PBXGroup;
 			children = (
-				42FE948373FEF5080EE8EC75 /* Selection */,
 				20F53120679F63904EB7A842 /* CanvasView.swift */,
 				4596ECB829377F19FA0FECD7 /* ContourExtractor.swift */,
 				750BAF8BDCCAE7D56FF80F57 /* ShapeInflater.swift */,
 				4A9B45B1894E87008809A866 /* StrokeConverter.swift */,
 				2C39E08362145F7662200661 /* ViewBridge.swift */,
+				1DE2026C735FF711A9ABA621 /* Selection */,
 			);
 			path = Drawing;
-			sourceTree = "<group>";
-		};
-		42FE948373FEF5080EE8EC75 /* Selection */ = {
-			isa = PBXGroup;
-			children = (
-				3F6A275E3175E7D493C06FBA /* SelectionStrategy.swift */,
-				263640C623F25872406340E5 /* LassoStrategy.swift */,
-				E97EB03D787E446104616815 /* GrowOrigin.swift */,
-				08A504162222F4DD7368BE86 /* DensityProbe.swift */,
-				643DCF3593F6ECBB3D96022F /* GrowStrategy.swift */,
-			);
-			path = Selection;
 			sourceTree = "<group>";
 		};
 		4A27AC2D1196C76C71AB4B78 /* PenSculpt */ = {
@@ -309,12 +320,10 @@
 		ED16466E36BE0F0468D9B0DE /* PenSculptTests */ = {
 			isa = PBXGroup;
 			children = (
-				9C244B3F3E465F1C54A3CF30 /* Selection */,
 				E7EF5FFBAD6BA4BDA5B94959 /* CanvasTests.swift */,
 				2784E41280E22EE54A1D6507 /* CanvasViewTests.swift */,
 				B7D2183DA7353D9752EE7472 /* DrawingViewModelTests.swift */,
 				6DBFB9D1C740A5A34B847CB8 /* InferencePipelineTests.swift */,
-				512872FBAE76F812C290FB13 /* SelectionOverlayTests.swift */,
 				EAA01BA6F67DEA8951302764 /* MeshTests.swift */,
 				AB850AA0D0B98D937FA1D8CF /* MetalCanvasViewTests.swift */,
 				DE71A5ED22F5E547EDEA2FD7 /* PenSculptDocumentTests.swift */,
@@ -323,26 +332,17 @@
 				6FF16522D54EBC36E2125515 /* PipelineVisualTests.swift */,
 				F5DDE04C4BC411F753A4200E /* SculptRendererTests.swift */,
 				F45481EB403A5B9251F8CF76 /* SculptReopenTests.swift */,
-				E66113E2B3A8E316D9394D3A /* SelectionCoordinateTests.swift */,
+				4180FF810D014CA3E921AB22 /* SelectionCoordinateTests.swift */,
+				8FE6B8609704348ACCF60A6A /* SelectionOverlayTests.swift */,
 				813766FA9ABE79F98BC8DB4B /* StrokeConverterTests.swift */,
 				8A309C2382E507DE74C02938 /* StrokePointTests.swift */,
 				7261F4A02956799D70E38268 /* StrokeTests.swift */,
 				E0F934C76103B9066E2071CD /* SurfaceStrokeColorTests.swift */,
 				D4CC03BE544F4F42A83D4FE8 /* TooltipIDTests.swift */,
 				655C8D8C77E3444ABF83A898 /* Export */,
+				28F5A0132F0654B067617126 /* Selection */,
 			);
 			path = PenSculptTests;
-			sourceTree = "<group>";
-		};
-		9C244B3F3E465F1C54A3CF30 /* Selection */ = {
-			isa = PBXGroup;
-			children = (
-				0111AD42887B664A71CE3591 /* LassoStrategyTests.swift */,
-				560B33C26DDAFF954471A72E /* GrowOriginTests.swift */,
-				680BCFC9206A24FB56F54190 /* DensityProbeTests.swift */,
-				291BCA1565ADC59F5A2A4176 /* GrowStrategyTests.swift */,
-			);
-			path = Selection;
 			sourceTree = "<group>";
 		};
 		F94B6C5FF201CF5FFC59C91B /* App */ = {
@@ -399,11 +399,6 @@
 			attributes = {
 				BuildIndependentTargetsInParallel = YES;
 				LastUpgradeCheck = 1600;
-				TargetAttributes = {
-					8A52743755A99EC7E2B610A5 = {
-						DevelopmentTeam = 926MRS7WCP;
-					};
-				};
 			};
 			buildConfigurationList = 5BF500C6125EDAA8073D93F9 /* Build configuration list for PBXProject "PenSculpt" */;
 			developmentRegion = en;
@@ -432,15 +427,13 @@
 			files = (
 				13FB513D2030412AF3F6E039 /* CanvasTests.swift in Sources */,
 				64F64704219AF451A4C00E39 /* CanvasViewTests.swift in Sources */,
+				E96A1F2836A663303B4F2B4E /* DensityProbeTests.swift in Sources */,
 				C498947EDD9EB38BD583C4DD /* DrawingViewModelTests.swift in Sources */,
+				52739BBB57A0BCE7FD825BF4 /* GrowOriginTests.swift in Sources */,
+				3C4B432BA8DD0F5F1B315B34 /* GrowStrategyTests.swift in Sources */,
 				BF8DD08CC50937BB44B37C5B /* ImageRendererTests.swift in Sources */,
 				6C115DA4E37B116CD8268A24 /* InferencePipelineTests.swift in Sources */,
-				16EC0BE7D58ED5FAFB99515C /* LassoStrategyTests.swift in Sources */,
-				7DA75C1D57C315BC254959B4 /* GrowOriginTests.swift in Sources */,
-				366B5500BE99069AA6F882E8 /* DensityProbeTests.swift in Sources */,
-				FA55848C651587047C4D7C1B /* GrowStrategyTests.swift in Sources */,
-				85E82E1CF1922545F2F23A36 /* SelectionCoordinateTests.swift in Sources */,
-				86FBDB006345F8C3872FA979 /* SelectionOverlayTests.swift in Sources */,
+				3C523DB2BCC8395528617B5D /* LassoStrategyTests.swift in Sources */,
 				4BB8E4A8B9AC000F106EAE27 /* MeshExporterTests.swift in Sources */,
 				16963C708BA78A1E8242E74F /* MeshTests.swift in Sources */,
 				DF626D4AAC989B114A0E217C /* MetalCanvasViewTests.swift in Sources */,
@@ -450,6 +443,8 @@
 				78BED971E7B366D934A0A725 /* PipelineVisualTests.swift in Sources */,
 				2D7A7148DCDE1276F3BD3E35 /* SculptRendererTests.swift in Sources */,
 				302312306BB23F6D712057DD /* SculptReopenTests.swift in Sources */,
+				1E265D3AF6AA0BBA672A8B66 /* SelectionCoordinateTests.swift in Sources */,
+				C68538B5B1FCA28F58FFDFD6 /* SelectionOverlayTests.swift in Sources */,
 				A1B13952B16B6F047B7386A0 /* StrokeConverterTests.swift in Sources */,
 				F59BCF319DA5B1EF902EAA9A /* StrokePointTests.swift in Sources */,
 				2DDF9546A258ECC39CF31061 /* StrokeTests.swift in Sources */,
@@ -468,19 +463,18 @@
 				6618C5D01545C224214A6036 /* CanvasView.swift in Sources */,
 				702EF8F9BAE5CD219566DECE /* ColorPickerPopover.swift in Sources */,
 				C9460F69F7C49576D5EE7257 /* ContourExtractor.swift in Sources */,
+				4A94E160E107EBE2F70CCDE1 /* DensityProbe.swift in Sources */,
 				3ACA72B0A900E98DAF41AFE4 /* DrawingScreen.swift in Sources */,
 				80697A0323E3AB19984EA81A /* DrawingTool.swift in Sources */,
 				E28A0DCAB9BD5704D039DCDB /* DrawingViewModel.swift in Sources */,
 				9D2AC5F87CB67F6AB01B8093 /* ExportError.swift in Sources */,
 				5BDFCB18B1EBBAE92EABD1F7 /* ExportFormat.swift in Sources */,
 				2D351352DE5D98824538DEE9 /* FloatingToolbar.swift in Sources */,
+				827C96AE97D2AFBC9B180EF9 /* GrowOrigin.swift in Sources */,
+				916DB9531CB4CE19FDCF0736 /* GrowStrategy.swift in Sources */,
+				1E37188DD595561C3B7DA145 /* GrowthVisualization.swift in Sources */,
 				46424204E8CE00AE8FC4F3A8 /* ImageRenderer.swift in Sources */,
-				13EA7E78BF44AA908208A224 /* SelectionOverlay.swift in Sources */,
-				8980148C9276EC7212B6C128 /* SelectionStrategy.swift in Sources */,
-				8784D95C2FCFA333015F395B /* LassoStrategy.swift in Sources */,
-				C0A66B869F0E763DF897936F /* GrowOrigin.swift in Sources */,
-				F7C61365FD02A1398754B5C5 /* DensityProbe.swift in Sources */,
-				42B3545E30FB00E5CAA8E0EE /* GrowStrategy.swift in Sources */,
+				7CBCADA64E15D8F982D9361F /* LassoStrategy.swift in Sources */,
 				607A73B18E0D441CD67F41AC /* Mesh.swift in Sources */,
 				698D39B7AEB6A15106067A09 /* MeshBVH.swift in Sources */,
 				9FAD0066BD0C703E5F233BC1 /* MeshExporter.swift in Sources */,
@@ -491,8 +485,9 @@
 				8365F3CC60F25456FEC92D2B /* SculptObject.swift in Sources */,
 				0347FE4C0A5E659D35D99CB3 /* SculptRenderer.swift in Sources */,
 				B928BFE7A02DD3F36544CBF3 /* SculptScreen.swift in Sources */,
-				07638515AAD8ECB8ABB85DAC /* GrowthVisualization.swift in Sources */,
 				A7CB08EBF505CA481153743E /* SelectionHighlight.swift in Sources */,
+				D50FD8A27DC8697797C9323F /* SelectionOverlay.swift in Sources */,
+				5F12958EDC831A3FC24A979E /* SelectionStrategy.swift in Sources */,
 				5015977B84755D267A17FE0A /* Shaders.metal in Sources */,
 				5BC7DE43FB96E61022768DA9 /* ShapeInflater.swift in Sources */,
 				E2311344FF0ADDA2788356A6 /* ShareSheet.swift in Sources */,
