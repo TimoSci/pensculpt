@@ -114,6 +114,85 @@ final class GrowStrategyTests: XCTestCase {
                           "Paused tick should grow noticeably less than nominal (\(nominalDeltaR)); got \(observedDeltaR)")
     }
 
+    // MARK: symmetry
+
+    func testEquidistantStrokesAdmittedOnSameTick() {
+        // Three parallel vertical lines: left at x=-100, middle at x=0,
+        // right at x=+100, each from y=0 to y=100. Anchor exactly on the
+        // middle line's midpoint, so:
+        //   - middle is admitted at t=0 (initialRadius=8 covers (0,50))
+        //   - left and right are perfectly symmetric w.r.t. the frontier
+        //     (anchor + middle), so they must reach the radius together.
+        let ys = stride(from: 0.0, through: 100.0, by: 10.0).map { CGFloat($0) }
+        let left = stroke(at: ys.map { CGPoint(x: -100, y: $0) })
+        let middle = stroke(at: ys.map { CGPoint(x: 0, y: $0) })
+        let right = stroke(at: ys.map { CGPoint(x: 100, y: $0) })
+        let session = GrowStrategy.start(
+            origin: .point(CGPoint(x: 0, y: 50)),
+            canvas: canvas([left, middle, right])
+        )
+        XCTAssertTrue(session.includedStrokeIDs.contains(middle.id),
+                      "Middle line under the anchor should be admitted at t=0")
+        XCTAssertFalse(session.includedStrokeIDs.contains(left.id))
+        XCTAssertFalse(session.includedStrokeIDs.contains(right.id))
+
+        let dt: TimeInterval = 1.0 / 60.0
+        var leftTick: Int?
+        var rightTick: Int?
+        for i in 1...600 {
+            _ = session.tick(deltaTime: dt)
+            if leftTick == nil, session.includedStrokeIDs.contains(left.id) {
+                leftTick = i
+            }
+            if rightTick == nil, session.includedStrokeIDs.contains(right.id) {
+                rightTick = i
+            }
+            if leftTick != nil && rightTick != nil { break }
+        }
+        XCTAssertNotNil(leftTick, "Left line should be admitted within 600 ticks")
+        XCTAssertNotNil(rightTick, "Right line should be admitted within 600 ticks")
+        XCTAssertEqual(leftTick, rightTick,
+                       "Equidistant strokes must be admitted on the same tick (left=\(String(describing: leftTick)), right=\(String(describing: rightTick)))")
+    }
+
+    func testAsymmetricAnchorAdmitsSidesCloseTogether() {
+        // Same three-line layout, but anchor shifted 5pt to the right of the
+        // middle line. Without co-admit, the density pause amplifies that 5pt
+        // anchor offset into ~20 ticks of lag between right and left admissions.
+        // With co-admit, the gap should collapse to a single tick.
+        let ys = stride(from: 0.0, through: 100.0, by: 10.0).map { CGFloat($0) }
+        let left = stroke(at: ys.map { CGPoint(x: -100, y: $0) })
+        let middle = stroke(at: ys.map { CGPoint(x: 0, y: $0) })
+        let right = stroke(at: ys.map { CGPoint(x: 100, y: $0) })
+        let session = GrowStrategy.start(
+            origin: .point(CGPoint(x: 5, y: 50)),
+            canvas: canvas([left, middle, right])
+        )
+        // Middle line still under the anchor → admitted at t=0.
+        XCTAssertTrue(session.includedStrokeIDs.contains(middle.id))
+
+        let dt: TimeInterval = 1.0 / 60.0
+        var leftTick: Int?
+        var rightTick: Int?
+        for i in 1...600 {
+            _ = session.tick(deltaTime: dt)
+            if leftTick == nil, session.includedStrokeIDs.contains(left.id) {
+                leftTick = i
+            }
+            if rightTick == nil, session.includedStrokeIDs.contains(right.id) {
+                rightTick = i
+            }
+            if leftTick != nil && rightTick != nil { break }
+        }
+        guard let l = leftTick, let r = rightTick else {
+            return XCTFail("Both sides should be admitted within 600 ticks (left=\(String(describing: leftTick)), right=\(String(describing: rightTick)))")
+        }
+        // Right is closer, so it admits first or on the same tick. Co-admit
+        // should bring the left side in immediately after — within 2 ticks.
+        XCTAssertLessThanOrEqual(abs(r - l), 2,
+                                 "Co-admit should keep left/right within 2 ticks despite 5pt anchor offset (left=\(l), right=\(r))")
+    }
+
     // MARK: finalize
 
     func testFinalizeReturnsCurrentlyIncludedSet() {

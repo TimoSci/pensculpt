@@ -17,6 +17,13 @@ enum GrowStrategy: SelectionStrategy {
     static let densityPauseFactor: CGFloat = 0.3
     static let densityPauseThreshold: CGFloat = 3.0
     static let initialRadius: CGFloat = 8.0
+    /// After a tick admits at least one stroke, also admit any candidate within
+    /// `coAdmitCatchUpFactor × nominalDeltaR` beyond the current radius. Kills
+    /// the asymmetric "lag" the density pause would otherwise introduce for
+    /// strokes only a few frames away from the admitted one. At 15 frames
+    /// (~250ms at 60fps) the catch-up window covers ~12pt of input
+    /// microdifference without skipping over genuinely distant clusters.
+    static let coAdmitCatchUpFactor: CGFloat = 15.0
 
     /// Starts a new grow session, immediately admitting any strokes within `initialRadius`
     /// (and the seed stroke itself, if origin is `.stroke`).
@@ -47,7 +54,7 @@ final class GrowSession {
         if let seedID = origin.initialStrokeID {
             includedStrokeIDs.insert(seedID)
         }
-        admitWithinRadius()
+        admitWithinRadius(catchUpRadius: 0)
         recomputeNextCandidate()
     }
 
@@ -71,7 +78,7 @@ final class GrowSession {
         let densityFactor = computeDensityFactor(nominalDeltaR: nominalDeltaR)
         let appliedDeltaR = nominalDeltaR * densityFactor
         currentRadius += appliedDeltaR
-        admitWithinRadius()
+        admitWithinRadius(catchUpRadius: nominalDeltaR * GrowStrategy.coAdmitCatchUpFactor)
         recomputeNextCandidate()
         // Anything below full speed is "paused" for the user — the visualization
         // halo signals the slowdown, not a specific factor.
@@ -105,7 +112,8 @@ final class GrowSession {
         allStrokes.filter { !includedStrokeIDs.contains($0.id) }
     }
 
-    private func admitWithinRadius() {
+    private func admitWithinRadius(catchUpRadius: CGFloat) {
+        let beforeCount = includedStrokeIDs.count
         let frontier = frontierPoints
         for stroke in candidateStrokes {
             var bestMinD = CGFloat.infinity
@@ -125,6 +133,28 @@ final class GrowSession {
             if !includedStrokeIDs.contains(stroke.id) {
                 let firstPt = stroke.points.first?.location ?? .zero
                 print("[GROW-DIAG] stroke=\(stroke.id.uuidString.prefix(8)) firstPt=(\(Int(firstPt.x)),\(Int(firstPt.y))) bbox=\(stroke.boundingBox) minD=\(Int(bestMinD)) radius=\(Int(currentRadius)) anchor=(\(Int(origin.anchor.x)),\(Int(origin.anchor.y))) points=\(stroke.points.count)")
+            }
+        }
+
+        // Co-admit pass: when the main pass admitted at least one stroke, sweep
+        // candidates again against the *updated* frontier with an extended radius.
+        // Pulls in anything close enough that the density pause would otherwise
+        // amplify a microdifference into perceptible lag (the right/left
+        // asymmetry the user reported).
+        guard catchUpRadius > 0, includedStrokeIDs.count > beforeCount else { return }
+        let extendedRadius = currentRadius + catchUpRadius
+        let updatedFrontier = frontierPoints
+        for stroke in candidateStrokes {
+            for sp in stroke.points {
+                var minD = CGFloat.infinity
+                for fp in updatedFrontier {
+                    let d = hypot(sp.location.x - fp.x, sp.location.y - fp.y)
+                    if d < minD { minD = d }
+                }
+                if minD <= extendedRadius {
+                    includedStrokeIDs.insert(stroke.id)
+                    break
+                }
             }
         }
     }
