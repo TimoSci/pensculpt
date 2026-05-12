@@ -14,7 +14,7 @@ enum GrowStrategy: SelectionStrategy {
 
     // MARK: Tunables (iterate during manual testing)
     static let baseGrowthSpeed: CGFloat = 50.0
-    static let densityPauseFactor: CGFloat = 0.1
+    static let densityPauseFactor: CGFloat = 0.3
     static let densityPauseThreshold: CGFloat = 3.0
     static let initialRadius: CGFloat = 8.0
 

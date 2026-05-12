@@ -10,8 +10,8 @@ struct GrowthVisualization: UIViewRepresentable {
     static let sphereStrokeColor = UIColor.systemBlue.withAlphaComponent(0.7)
     static let sphereFillColor = UIColor.systemBlue.withAlphaComponent(0.08)
     static let haloColor = UIColor.systemYellow.withAlphaComponent(0.85)
-    static let candidatePeak = UIColor.systemBlue.withAlphaComponent(0.65)
-    static let candidateBase = UIColor.systemBlue.withAlphaComponent(0.25)
+    static let candidatePeak = UIColor.systemOrange.withAlphaComponent(0.65)
+    static let candidateBase = UIColor.systemOrange.withAlphaComponent(0.25)
 
     func makeUIView(context: Context) -> GrowthVisualizationView {
         let v = GrowthVisualizationView()
