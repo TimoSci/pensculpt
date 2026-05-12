@@ -44,7 +44,7 @@ Status legend:
 - [x] MetalCanvasView (MTKView, orthographic camera) — O[ ] S[ ]
 - [x] Mesh rendering (diffuse lighting, wireframe debug mode) — O[x] S[ ]
 - [x] Stroke rendering (triangle strips, pressure-based width) — O[ ] S[ ]
-- [ ] Stroke style toggle (screen-space vs surface-space) — O[ ] S[ ]
+- [x] Stroke style toggle (screen-space vs surface-space) — O[ ] S[ ]
 - [x] Metal shaders (vertex + fragment) — O[ ] S[ ]
 
 ### Sculpt Interaction
@@ -59,12 +59,13 @@ Status legend:
 - [x] Mode switching (Draw → Select → Sculpt) — O[ ] S[x]
 - [x] Multi-object interaction (active/dimmed) — O[ ] S[ ]
 - [x] Document persistence for SculptObjects — O[ ] S[ ]
-- [ ] Sculpt mode guide — O[ ] S[ ]
+- [x] Sculpt mode guide — O[ ] S[ ]
 
 ## Future Stages
 - [x] Project surface strokes back to 2D canvas — O[ ] S[ ]
-- [ ] Color picker and color strokes — O[ ] S[ ]
+- [x] Color picker and color strokes — O[ ] S[ ]
+- [x] Color in sculpt mode (per-stroke surface color shared with 2D activeColor) — O[ ] S[ ]
 - [ ] Grow selection (tap + hold duration) — O[ ] S[ ]
-- [ ] Export (image, OBJ/USDZ, share sheet) — O[ ] S[ ]
+- [x] Export (image, OBJ, share sheet) — O[ ] S[ ]   <!-- USDZ deferred; see spec out-of-scope -->
 - [ ] Perspective camera toggle — O[ ] S[ ]
 - [ ] Advanced inference pipeline (SkeletonExtractor, Segmenter, PrimitiveFitter, MeshAssembler, StrokeMapper) — O[ ] S[ ]

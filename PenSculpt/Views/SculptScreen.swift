@@ -1,15 +1,21 @@
 import SwiftUI
+import MetalKit
 
 struct SculptScreen: View {
     var strokes: [Stroke]
     @Binding var sculptObjects: [SculptObject]
     @Binding var autoProjectStrokes: Bool
     var config: SculptConfig = .default
+    var activeColor: CodableColor
+    var recentColors: [CodableColor]
+    var onSelectPresetColor: (CodableColor) -> Void
+    var onSelectCustomColor: (CodableColor) -> Void
     @State private var activeObjectID: UUID?
     @State private var isRotateMode = false
     @State private var isDeformMode = false
     @State private var isSmoothMode = false
     @State private var isEraseStrokeMode = false
+    @State private var surfaceSpaceStrokes = false
     @State private var brushSize: CGFloat = 8
     @State private var brushOpacity: CGFloat = 1
     @State private var savedDrawOpacity: CGFloat = 1
@@ -18,6 +24,13 @@ struct SculptScreen: View {
     @State private var rendererMorphMesh: ((UUID, Mesh, [SurfaceStroke]?) -> Void)?
     @State private var rendererCacheBVH: ((UUID, MeshBVH) -> Void)?
     @State private var isReInferring = false
+    @State private var metalView: MTKView?
+    @State private var shareURL: ShareableURL?
+    @State private var exportError: ExportError?
+    @State private var showFormatDialog = false
+    @State private var pendingMeshFormat: MeshFormat?
+    @State private var showScopeDialog = false
+    @State private var showColorPopover = false
     @Environment(\.dismiss) private var dismiss
 
     var body: some View {
@@ -29,13 +42,16 @@ struct SculptScreen: View {
             isDeformMode: isDeformMode,
             isSmoothMode: isSmoothMode,
             isEraseStrokeMode: isEraseStrokeMode,
+            surfaceSpaceStrokes: surfaceSpaceStrokes,
             brushSize: Float(brushSize),
             brushOpacity: Float(brushOpacity),
+            activeColor: activeColor,
             onObjectTapped: cycleActiveObject,
             onSurfaceStrokeCompleted: handleSurfaceStroke,
             onMeshDeformed: handleMeshDeformed,
             onDeformCursor: { deformCursor = $0 },
-            onRendererReady: { replace, morph, cacheBVH in Task { @MainActor in rendererReplaceMesh = replace; rendererMorphMesh = morph; rendererCacheBVH = cacheBVH } }
+            onRendererReady: { replace, morph, cacheBVH in Task { @MainActor in rendererReplaceMesh = replace; rendererMorphMesh = morph; rendererCacheBVH = cacheBVH } },
+            onViewReady: { view in Task { @MainActor in metalView = view } }
         )
         .ignoresSafeArea()
         .overlay {
@@ -58,6 +74,7 @@ struct SculptScreen: View {
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(.secondary)
                 }
+                .tooltip(.sculptClose)
 
                 Button(action: reInfer) {
                     if isReInferring {
@@ -70,6 +87,7 @@ struct SculptScreen: View {
                     }
                 }
                 .disabled(isReInferring)
+                .tooltip(.sculptReinfer)
 
                 Button(action: reInferMorph) {
                     if isReInferring {
@@ -85,6 +103,7 @@ struct SculptScreen: View {
                     }
                 }
                 .disabled(isReInferring)
+                .tooltip(.sculptReinferMorph)
 
                 Button {
                     autoProjectStrokes.toggle()
@@ -94,6 +113,19 @@ struct SculptScreen: View {
                         .symbolRenderingMode(.hierarchical)
                         .foregroundStyle(autoProjectStrokes ? .blue : .secondary)
                 }
+                .tooltip(.sculptAutoProject)
+
+                Button {
+                    showFormatDialog = true
+                } label: {
+                    Image(systemName: "square.and.arrow.up")
+                        .font(.title)
+                        .symbolRenderingMode(.hierarchical)
+                        .foregroundStyle(.secondary)
+                }
+                .tooltip(.sculptExport)
+
+                TooltipsToggleButton()
             }
             .padding()
         }
@@ -108,11 +140,42 @@ struct SculptScreen: View {
             }
         }
         .overlay(alignment: .bottom) {
-            BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity, isDeformMode: isDeformMode)
-                .padding(.horizontal, 16)
-                .padding(.vertical, 10)
-                .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
-                .padding(.bottom, 20)
+            HStack(spacing: 12) {
+                Button { showColorPopover = true } label: {
+                    Circle()
+                        .fill(Color(activeColor))
+                        .frame(width: 28, height: 28)
+                        .overlay(Circle().stroke(Color.primary.opacity(0.4), lineWidth: 1))
+                }
+                .tooltip(.sculptColorSwatch)
+                .popover(isPresented: $showColorPopover) {
+                    ColorPickerPopover(
+                        activeColor: activeColor,
+                        recentColors: recentColors,
+                        onSelectPreset: onSelectPresetColor,
+                        onSelectCustom: onSelectCustomColor
+                    )
+                }
+
+                Divider().frame(height: 24)
+
+                BrushControls(brushSize: $brushSize, brushOpacity: $brushOpacity, isDeformMode: isDeformMode)
+
+                Divider().frame(height: 24)
+
+                Button {
+                    surfaceSpaceStrokes.toggle()
+                } label: {
+                    Image(systemName: surfaceSpaceStrokes ? "cube.fill" : "square.fill")
+                        .font(.caption)
+                        .foregroundStyle(surfaceSpaceStrokes ? .blue : .secondary)
+                }
+                .tooltip(.sculptSurfaceSpace)
+            }
+            .padding(.horizontal, 16)
+            .padding(.vertical, 10)
+            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 16))
+            .padding(.bottom, 20)
         }
         .overlay(alignment: .bottomLeading) {
             Image(systemName: isRotateMode ? "rotate.3d.fill" : "rotate.3d")
@@ -125,6 +188,7 @@ struct SculptScreen: View {
                         .onChanged { _ in isRotateMode = true }
                         .onEnded { _ in isRotateMode = false }
                 )
+                .tooltip(.sculptRotate)
                 .padding(20)
         }
         .overlay(alignment: .bottomTrailing) {
@@ -143,6 +207,7 @@ struct SculptScreen: View {
                         .frame(width: 50, height: 50)
                         .background(.ultraThinMaterial, in: Circle())
                 }
+                .tooltip(.sculptEraser)
 
                 Button {
                     if isDeformMode {
@@ -162,6 +227,7 @@ struct SculptScreen: View {
                         .frame(width: 60, height: 60)
                         .background(.ultraThinMaterial, in: Circle())
                 }
+                .tooltip(.sculptDeform)
             }
             .padding(20)
         }
@@ -186,6 +252,31 @@ struct SculptScreen: View {
                 // No match — create new
                 inferNewObject()
             }
+        }
+        .confirmationDialog("Export", isPresented: $showFormatDialog, titleVisibility: .visible) {
+            Button("Image (PNG)") { performImageExport() }
+            Button("3D Mesh (OBJ)") { startMeshExport(format: .obj) }
+            Button("Cancel", role: .cancel) {}
+        }
+        .confirmationDialog("Export which?", isPresented: $showScopeDialog, titleVisibility: .visible) {
+            Button("Active object") { performMeshExport(scope: .activeOnly) }
+            Button("Whole scene") { performMeshExport(scope: .all) }
+            Button("Cancel", role: .cancel) { pendingMeshFormat = nil }
+        }
+        .sheet(item: $shareURL) { wrapper in
+            ShareSheet(items: [wrapper.url])
+        }
+        .alert(
+            "Export failed",
+            isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            ),
+            presenting: exportError
+        ) { _ in
+            Button("OK", role: .cancel) { exportError = nil }
+        } message: { err in
+            Text(err.errorDescription ?? "")
         }
     }
 
@@ -315,5 +406,57 @@ struct SculptScreen: View {
     private static func reprojectStrokes(_ strokes: [SurfaceStroke], onto mesh: Mesh, config: SculptConfig) -> [SurfaceStroke] {
         let rayDir = SIMD3<Float>(0, 0, -1)
         return strokes.compactMap { $0.reprojected(onto: mesh, rayDir: rayDir, offset: config.surfaceStrokeOffset, maxTJump: config.surfaceStrokeMaxTJump) }
+    }
+
+    // MARK: - Export
+
+    private func performImageExport() {
+        guard let metalView = metalView else {
+            exportError = .renderFailed
+            return
+        }
+        do {
+            let url = try ImageRenderer.renderPNG(from: metalView)
+            shareURL = ShareableURL(url: url)
+        } catch let err as ExportError {
+            exportError = err
+        } catch {
+            exportError = .renderFailed
+        }
+    }
+
+    private func startMeshExport(format: MeshFormat) {
+        pendingMeshFormat = format
+        if sculptObjects.count <= 1 {
+            performMeshExport(scope: .all)
+        } else {
+            showScopeDialog = true
+        }
+    }
+
+    private func performMeshExport(scope: SculptScope) {
+        guard let format = pendingMeshFormat else { return }
+        defer { pendingMeshFormat = nil }
+
+        let objectsToExport: [SculptObject]
+        switch scope {
+        case .activeOnly:
+            if let active = sculptObjects.first(where: { $0.id == activeObjectID }) {
+                objectsToExport = [active]
+            } else {
+                objectsToExport = []
+            }
+        case .all:
+            objectsToExport = sculptObjects
+        }
+
+        do {
+            let url = try MeshExporter.export(objectsToExport, format: format)
+            shareURL = ShareableURL(url: url)
+        } catch let err as ExportError {
+            exportError = err
+        } catch {
+            exportError = .modelIOFailed(error)
+        }
     }
 }

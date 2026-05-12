@@ -6,12 +6,15 @@ struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
     var points: [SIMD3<Float>]
     var widths: [Float]
     var opacity: Float
+    var color: CodableColor
 
-    init(id: UUID = UUID(), points: [SIMD3<Float>] = [], widths: [Float] = [], opacity: Float = 1) {
+    init(id: UUID = UUID(), points: [SIMD3<Float>] = [], widths: [Float] = [],
+         opacity: Float = 1, color: CodableColor = .black) {
         self.id = id
         self.points = points
         self.widths = widths
         self.opacity = opacity
+        self.color = color
     }
 
     init(from decoder: Decoder) throws {
@@ -21,6 +24,8 @@ struct SurfaceStroke: Identifiable, Codable, Equatable, Sendable {
         widths = try container.decodeIfPresent([Float].self, forKey: .widths)
             ?? Array(repeating: 3.0, count: points.count)
         opacity = try container.decodeIfPresent(Float.self, forKey: .opacity) ?? 1
+        color = try container.decodeIfPresent(CodableColor.self, forKey: .color)
+            ?? CodableColor(red: 0.2, green: 0.2, blue: 0.8, alpha: 1)
     }
 }
 
@@ -37,8 +42,13 @@ extension SurfaceStroke {
                 timestamp: TimeInterval(i) * 0.01
             )
         }
-        let color = CodableColor(red: 0.2, green: 0.2, blue: 0.8, alpha: CGFloat(opacity))
-        return Stroke(points: strokePoints, color: color)
+        let projColor = CodableColor(
+            red: color.red,
+            green: color.green,
+            blue: color.blue,
+            alpha: color.alpha * CGFloat(opacity)
+        )
+        return Stroke(points: strokePoints, color: projColor)
     }
 
     /// Re-projects stroke points onto a new mesh by casting rays along `rayDir`.
@@ -60,7 +70,8 @@ extension SurfaceStroke {
         }
 
         guard newPoints.count > 1 else { return nil }
-        return SurfaceStroke(id: id, points: newPoints, widths: newWidths)
+        return SurfaceStroke(id: id, points: newPoints, widths: newWidths,
+                             opacity: opacity, color: color)
     }
 
     private static func castOntoMesh(from origin: SIMD3<Float>, direction: SIMD3<Float>,

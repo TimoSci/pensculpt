@@ -17,6 +17,8 @@ targets:
     settings:
       INFOPLIST_FILE: PenSculpt/Resources/Info.plist
       PRODUCT_BUNDLE_IDENTIFIER: com.pensculpt.app
+      DEVELOPMENT_TEAM: Z8B6596L6S
+      CODE_SIGN_IDENTITY: "iPhone Developer"
     scheme:
       testTargets:
         - PenSculptTests
@@ -28,5 +30,6 @@ targets:
     dependencies:
       - target: PenSculpt
     settings:
+      GENERATE_INFOPLIST_FILE: "YES"
       TEST_HOST: "$(BUILT_PRODUCTS_DIR)/PenSculpt.app/$(BUNDLE_EXECUTABLE_FOLDER_PATH)/PenSculpt"
       BUNDLE_LOADER: "$(TEST_HOST)"

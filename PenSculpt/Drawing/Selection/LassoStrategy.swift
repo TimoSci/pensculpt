@@ -1,6 +1,7 @@
 import Foundation
 
-enum LassoSelection {
+enum LassoStrategy: SelectionStrategy {
+    typealias Input = [CGPoint]  // polygon
 
     /// Ray-casting point-in-polygon test.
     static func contains(_ point: CGPoint, in polygon: [CGPoint]) -> Bool {
@@ -19,33 +20,22 @@ enum LassoSelection {
         return inside
     }
 
-    /// Returns true if at least `threshold` fraction of the stroke's points
-    /// are inside the polygon (default 50%).
-    static func isStrokeSelected(
-        _ stroke: Stroke,
-        by polygon: [CGPoint],
-        threshold: CGFloat = 0.5
-    ) -> Bool {
+    /// Returns true if any point of the stroke is inside the polygon.
+    /// Matches the inclusive behavior of Apple Notes and Procreate, where any
+    /// overlap admits the stroke (a 50% threshold previously dropped strokes
+    /// the user clearly meant to select).
+    static func isStrokeSelected(_ stroke: Stroke, by polygon: [CGPoint]) -> Bool {
         guard !stroke.points.isEmpty else { return false }
-        // Quick reject: if bounding boxes don't overlap, skip
         let lassoBounds = boundingBox(of: polygon)
         guard stroke.boundingBox.intersects(lassoBounds) else { return false }
-
-        let insideCount = stroke.points.filter { contains($0.location, in: polygon) }.count
-        return CGFloat(insideCount) / CGFloat(stroke.points.count) >= threshold
+        return stroke.points.contains { contains($0.location, in: polygon) }
     }
 
-    /// Returns IDs of all strokes where ≥ threshold of points are inside the polygon.
-    static func selectedStrokeIDs(
-        strokes: [Stroke],
-        polygon: [CGPoint],
-        threshold: CGFloat = 0.5
-    ) -> Set<UUID> {
+    /// Returns IDs of all strokes with at least one point inside the polygon.
+    static func selectedStrokeIDs(strokes: [Stroke], polygon: [CGPoint]) -> Set<UUID> {
         var ids = Set<UUID>()
-        for stroke in strokes {
-            if isStrokeSelected(stroke, by: polygon, threshold: threshold) {
-                ids.insert(stroke.id)
-            }
+        for stroke in strokes where isStrokeSelected(stroke, by: polygon) {
+            ids.insert(stroke.id)
         }
         return ids
     }

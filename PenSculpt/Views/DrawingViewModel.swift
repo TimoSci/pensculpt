@@ -1,5 +1,6 @@
 import Foundation
 import Observation
+import QuartzCore
 
 @Observable
 class DrawingViewModel {
@@ -13,6 +14,17 @@ class DrawingViewModel {
     var lassoPoints: [CGPoint] = []
     var selectedStrokeIDs: Set<UUID> = []
     var showSculptScreen = false
+
+    // Grow-selection lifecycle state. `growSession` is non-nil while the user
+    // is holding; `growthFrame` is the latest tick snapshot driving the
+    // visualization overlay. Both are reset on gesture end.
+    var growSession: GrowSession?
+    var growthFrame: GrowFrame?
+    private var displayLink: CADisplayLink?
+    private var lastTickTimestamp: CFTimeInterval = 0
+    /// Snapshot of `selectedStrokeIDs` at the moment a grow gesture started, so
+    /// a cancellation (system interruption, mode toggle) can revert exactly.
+    private var selectionBeforeGrow: Set<UUID>?
 
     /// Tracks the last eraser type for pencil double-tap toggle.
     private(set) var lastEraserType: DrawingTool = .eraser
@@ -44,6 +56,8 @@ class DrawingViewModel {
         if appMode == .draw {
             appMode = .select
         } else {
+            // Toggling out of select while a grow gesture is active discards it.
+            if growSession != nil { handleGrowGestureCancelled() }
             appMode = .draw
             lassoPoints = []
             selectedStrokeIDs = []
@@ -64,10 +78,89 @@ class DrawingViewModel {
     // MARK: - Selection
 
     func handleLassoCompleted(polygon: [CGPoint]) {
-        selectedStrokeIDs = LassoSelection.selectedStrokeIDs(
+        selectedStrokeIDs = LassoStrategy.selectedStrokeIDs(
             strokes: canvas.strokes,
             polygon: polygon
         )
+        // DIAG: log every stroke and whether it was selected.
+        let polyBounds = polygon.reduce(CGRect.null) { $0.union(CGRect(origin: $1, size: .zero)) }
+        print("[LASSO-DIAG] polygon bounds=\(polyBounds) points=\(polygon.count) totalStrokes=\(canvas.strokes.count) selected=\(selectedStrokeIDs.count)")
+        for s in canvas.strokes {
+            let inside = selectedStrokeIDs.contains(s.id) ? "IN " : "OUT"
+            print("[LASSO-DIAG] \(inside) stroke=\(s.id.uuidString.prefix(8)) bbox=\(s.boundingBox) pts=\(s.points.count)")
+        }
+    }
+
+    func handleGrowGestureStarted(origin: GrowOrigin) {
+        cancelLasso()
+        selectionBeforeGrow = selectedStrokeIDs
+        let session = GrowStrategy.start(origin: origin, canvas: canvas)
+        growSession = session
+        // Reflect the initial admission in the highlight layer so the user
+        // immediately sees what's being captured.
+        selectedStrokeIDs = session.includedStrokeIDs
+        growthFrame = GrowFrame(
+            radius: session.currentRadius,
+            center: origin.anchor,
+            includedStrokeIDs: session.includedStrokeIDs,
+            nextCandidateID: session.nextCandidateID,
+            isPaused: session.isPaused
+        )
+        startDisplayLink()
+    }
+
+    func handleGrowGestureEnded() {
+        stopDisplayLink()
+        if let session = growSession {
+            // Already mirrored in selectedStrokeIDs by ticks; finalize is just
+            // the canonical snapshot so we always commit the same set.
+            selectedStrokeIDs = session.finalize()
+        }
+        growSession = nil
+        growthFrame = nil
+        selectionBeforeGrow = nil
+    }
+
+    /// Discards the active grow gesture and reverts the selection to what it
+    /// was before the hold began (system cancellation, mode toggle, etc.).
+    func handleGrowGestureCancelled() {
+        stopDisplayLink()
+        if let prior = selectionBeforeGrow {
+            selectedStrokeIDs = prior
+        }
+        growSession = nil
+        growthFrame = nil
+        selectionBeforeGrow = nil
+    }
+
+    private func startDisplayLink() {
+        stopDisplayLink()
+        let link = CADisplayLink(target: DisplayLinkProxy(viewModel: self),
+                                 selector: #selector(DisplayLinkProxy.tick(_:)))
+        link.add(to: .main, forMode: .common)
+        displayLink = link
+        lastTickTimestamp = CACurrentMediaTime()
+    }
+
+    private func stopDisplayLink() {
+        displayLink?.invalidate()
+        displayLink = nil
+    }
+
+    fileprivate func displayLinkTick(_ link: CADisplayLink) {
+        let now = link.timestamp
+        let dt = max(0, now - lastTickTimestamp)
+        lastTickTimestamp = now
+        guard let session = growSession else { return }
+        let frame = session.tick(deltaTime: dt)
+        growthFrame = frame
+        // Mirror the running session into the published selection so the
+        // highlight layer paints captured strokes as they get admitted.
+        selectedStrokeIDs = frame.includedStrokeIDs
+    }
+
+    private func cancelLasso() {
+        lassoPoints = []
     }
 
     // MARK: - Stroke mutations
@@ -83,4 +176,21 @@ class DrawingViewModel {
     func clearStrokes() {
         canvas.clearStrokes()
     }
+
+    // MARK: - Color
+
+    func setActiveColor(_ color: CodableColor, addToRecents: Bool) {
+        canvas.activeColor = color
+        if addToRecents {
+            canvas.pushRecentColor(color)
+        }
+    }
+}
+
+/// CADisplayLink retains its target. Using a weak-ref proxy avoids a retain
+/// cycle that would keep the view model alive for the lifetime of the link.
+private final class DisplayLinkProxy {
+    weak var viewModel: DrawingViewModel?
+    init(viewModel: DrawingViewModel) { self.viewModel = viewModel }
+    @objc func tick(_ link: CADisplayLink) { viewModel?.displayLinkTick(link) }
 }

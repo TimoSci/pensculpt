@@ -62,13 +62,16 @@ struct MetalCanvasView: UIViewRepresentable {
     var isDeformMode: Bool = false
     var isSmoothMode: Bool = false
     var isEraseStrokeMode: Bool = false
+    var surfaceSpaceStrokes: Bool = false
     var brushSize: Float = 8
     var brushOpacity: Float = 1
+    var activeColor: CodableColor = .black
     var onObjectTapped: (() -> Void)?
     var onSurfaceStrokeCompleted: ((SurfaceStroke) -> Void)?
     var onMeshDeformed: ((UUID, Mesh, [SurfaceStroke]) -> Void)?
     var onDeformCursor: (((position: CGPoint, radius: CGFloat)?) -> Void)?
     var onRendererReady: ((@escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, Mesh, [SurfaceStroke]?) -> Void, @escaping (UUID, MeshBVH) -> Void) -> Void)?
+    var onViewReady: ((MTKView) -> Void)?
 
     func makeUIView(context: Context) -> ForceMTKView {
         guard let device = MTLCreateSystemDefaultDevice() else {
@@ -126,6 +129,7 @@ struct MetalCanvasView: UIViewRepresentable {
         singlePan.cancelsTouchesInView = false
         view.addGestureRecognizer(singlePan)
 
+        onViewReady?(view)
         return view
     }
 
@@ -135,6 +139,7 @@ struct MetalCanvasView: UIViewRepresentable {
         }
         context.coordinator.renderer?.activeObjectID = activeObjectID
         context.coordinator.renderer?.config = config
+        context.coordinator.renderer?.surfaceSpaceStrokes = surfaceSpaceStrokes
         context.coordinator.isRotateMode = isRotateMode
         context.coordinator.isDeformMode = isDeformMode
         context.coordinator.isSmoothMode = isSmoothMode
@@ -142,6 +147,8 @@ struct MetalCanvasView: UIViewRepresentable {
         context.coordinator.brushSize = brushSize
         context.coordinator.brushOpacity = brushOpacity
         context.coordinator.renderer?.brushOpacity = brushOpacity
+        context.coordinator.renderer?.currentStrokeColor = activeColor
+        context.coordinator.activeColor = activeColor
         context.coordinator.onObjectTapped = onObjectTapped
         context.coordinator.onSurfaceStrokeCompleted = onSurfaceStrokeCompleted
         context.coordinator.onMeshDeformed = onMeshDeformed
@@ -154,6 +161,7 @@ struct MetalCanvasView: UIViewRepresentable {
 
     class Coordinator: NSObject, UIGestureRecognizerDelegate {
         var renderer: SculptRenderer?
+        var activeColor: CodableColor = .black
         var isRotateMode = false
         var isDeformMode = false
         var isSmoothMode = false
@@ -310,7 +318,8 @@ struct MetalCanvasView: UIViewRepresentable {
                 if renderer.currentStrokePoints.count > 1 {
                     let stroke = SurfaceStroke(points: renderer.currentStrokePoints,
                                                 widths: renderer.currentStrokeWidths,
-                                                opacity: renderer.brushOpacity)
+                                                opacity: renderer.brushOpacity,
+                                                color: activeColor)
                     if let activeID = renderer.activeObjectID,
                        let idx = renderer.sculptObjects.firstIndex(where: { $0.id == activeID }) {
                         renderer.sculptObjects[idx].surfaceStrokes.append(stroke)

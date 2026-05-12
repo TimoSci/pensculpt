@@ -11,6 +11,8 @@ struct DrawingScreen: View {
     @State private var viewBridge = ViewBridge()
     @State private var projectedStrokeIDs: Set<UUID> = []
     @State private var autoProjectStrokes = true
+    @State private var shareURL: ShareableURL?
+    @State private var exportError: ExportError?
     @Environment(\.undoManager) private var undoManager
 
     init(canvas: Binding<Canvas>, drawingData: Binding<Data>, sculptObjects: Binding<[SculptObject]>) {
@@ -24,6 +26,7 @@ struct DrawingScreen: View {
         ZStack(alignment: .bottom) {
             canvasLayer
             selectionHighlightLayer
+            growthVisualizationLayer
             selectModeOverlay
             if vm.appMode == .draw { drawModeControls }
             if vm.appMode == .select && vm.hasSelection { sculptButton }
@@ -31,9 +34,28 @@ struct DrawingScreen: View {
         .overlay(alignment: .top) { savedMessageOverlay }
         .fullScreenCover(isPresented: $vm.showSculptScreen, onDismiss: projectSurfaceStrokes) {
             SculptScreen(strokes: vm.selectedStrokes, sculptObjects: $sculptObjects,
-                         autoProjectStrokes: $autoProjectStrokes)
+                         autoProjectStrokes: $autoProjectStrokes,
+                         activeColor: vm.canvas.activeColor,
+                         recentColors: vm.canvas.recentColors,
+                         onSelectPresetColor: { setActiveColorWithUndo($0, addToRecents: false) },
+                         onSelectCustomColor: { setActiveColorWithUndo($0, addToRecents: true) })
         }
         .toolbar { navBarItems }
+        .sheet(item: $shareURL) { wrapper in
+            ShareSheet(items: [wrapper.url])
+        }
+        .alert(
+            "Export failed",
+            isPresented: Binding(
+                get: { exportError != nil },
+                set: { if !$0 { exportError = nil } }
+            ),
+            presenting: exportError
+        ) { _ in
+            Button("OK", role: .cancel) { exportError = nil }
+        } message: { err in
+            Text(err.errorDescription ?? "")
+        }
         .onAppear { loadDrawingData() }
         .onChange(of: vm.canvas) { _, _ in
             guard vm.autosaveEnabled else { return }
@@ -61,12 +83,42 @@ struct DrawingScreen: View {
     }
 
     @ViewBuilder
+    private var growthVisualizationLayer: some View {
+        if vm.appMode == .select, let frame = vm.growthFrame {
+            GrowthVisualization(frame: frame, allStrokes: vm.canvas.strokes, viewBridge: viewBridge)
+                .ignoresSafeArea()
+        }
+    }
+
+    @ViewBuilder
     private var selectModeOverlay: some View {
         if vm.appMode == .select {
-            LassoOverlay(
+            SelectionOverlay(
                 lassoPoints: $vm.lassoPoints,
+                allStrokes: vm.canvas.strokes,
+                viewBridge: viewBridge,
                 onLassoCompleted: { vm.handleLassoCompleted(polygon: $0) },
-                viewBridge: viewBridge
+                onGrowGestureStarted: { origin in
+                    // DIAG: compare canvas.strokes (algorithm input) vs pkDrawing.strokes
+                    // (visual render) — any mismatch in count or content means the
+                    // grow algorithm is missing strokes the user can see, or vice versa.
+                    let canvasCount = vm.canvas.strokes.count
+                    let pkCount = pkDrawing.strokes.count
+                    print("[GROW-SYNC] canvas.strokes=\(canvasCount) pkDrawing.strokes=\(pkCount) match=\(canvasCount == pkCount)")
+                    for (i, pks) in pkDrawing.strokes.enumerated() {
+                        let renderB = pks.renderBounds
+                        let canvasB: String
+                        if i < vm.canvas.strokes.count {
+                            canvasB = "\(vm.canvas.strokes[i].boundingBox)"
+                        } else {
+                            canvasB = "MISSING"
+                        }
+                        print("[GROW-SYNC] [\(i)] pkRender=\(renderB) vs canvasBBox=\(canvasB)")
+                    }
+                    vm.handleGrowGestureStarted(origin: origin)
+                },
+                onGrowGestureEnded: { vm.handleGrowGestureEnded() },
+                onGrowGestureCancelled: { vm.handleGrowGestureCancelled() }
             )
             .ignoresSafeArea()
         }
@@ -101,6 +153,8 @@ struct DrawingScreen: View {
     private var navBarItems: some ToolbarContent {
         ToolbarItem(placement: .topBarTrailing) {
             HStack(spacing: 12) {
+                TooltipsToggleButton()
+
                 Button {
                     withAnimation(.easeInOut(duration: 0.2)) { vm.toggleMode() }
                 } label: {
@@ -108,6 +162,7 @@ struct DrawingScreen: View {
                         .font(.title3)
                         .foregroundStyle(.blue)
                 }
+                .tooltip(.modeToggle)
 
                 Button {
                     withAnimation { vm.autosaveEnabled.toggle() }
@@ -118,11 +173,13 @@ struct DrawingScreen: View {
                         .font(.body)
                         .foregroundStyle(vm.autosaveEnabled ? .primary : .secondary)
                 }
+                .tooltip(.autosaveToggle)
 
                 Button { saveToDocument() } label: {
                     Image(systemName: "square.and.arrow.down")
                         .font(.body)
                 }
+                .tooltip(.save)
             }
         }
     }
@@ -133,8 +190,9 @@ struct DrawingScreen: View {
             selectedTool: vm.selectedTool,
             strokeWidth: vm.strokeWidth,
             strokeOpacity: vm.strokeOpacity,
+            activeColor: vm.canvas.activeColor,
             onStrokeCompleted: { addStrokeWithUndo(StrokeConverter.convert($0)) },
-            onStrokeErased: { handleErase($0) },
+            onStrokeErased: { handleErase($0, $1) },
             isInteractive: vm.appMode == .draw,
             viewBridge: viewBridge
         )
@@ -151,9 +209,14 @@ struct DrawingScreen: View {
                 selectedTool: $vm.selectedTool,
                 strokeWidth: $vm.strokeWidth,
                 strokeOpacity: $vm.strokeOpacity,
+                activeColor: vm.canvas.activeColor,
+                recentColors: vm.canvas.recentColors,
+                onSelectPresetColor: { setActiveColorWithUndo($0, addToRecents: false) },
+                onSelectCustomColor: { setActiveColorWithUndo($0, addToRecents: true) },
                 onUndo: { undoManager?.undo() },
                 onRedo: { undoManager?.redo() },
-                onClear: { clearWithUndo() }
+                onClear: { clearWithUndo() },
+                onExport: { performImageExport() }
             )
             .padding(.bottom, 60)
             .transition(.move(edge: .bottom).combined(with: .opacity))
@@ -167,6 +230,7 @@ struct DrawingScreen: View {
                 .padding(12)
                 .background(.ultraThinMaterial, in: Circle())
         }
+        .tooltip(.toolbarCollapse)
         .padding(.bottom, 16)
     }
 
@@ -202,25 +266,57 @@ struct DrawingScreen: View {
         }
     }
 
+    // MARK: - Export
+
+    private func performImageExport() {
+        guard let canvasView = viewBridge.canvasView else {
+            exportError = .renderFailed
+            return
+        }
+        do {
+            let url = try ImageRenderer.renderPNG(from: canvasView)
+            shareURL = ShareableURL(url: url)
+        } catch let err as ExportError {
+            exportError = err
+        } catch {
+            exportError = .renderFailed
+        }
+    }
+
     // MARK: - Undo-aware actions
 
     private func addStrokeWithUndo(_ stroke: Stroke) {
+        print("[ADD-STROKE] id=\(stroke.id.uuidString.prefix(8)) source=onStrokeCompleted canvas.count(before)=\(vm.canvas.strokes.count)")
         vm.addStroke(stroke)
         undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+            print("[UNDO-ADD] removing id=\(stroke.id.uuidString.prefix(8))")
             vm.removeStroke(id: stroke.id)
             pkDrawing = PKDrawing(strokes: pkDrawing.strokes.dropLast())
         }
     }
 
-    private func handleErase(_ removedIndices: [Int]) {
-        for index in removedIndices.reversed() {
+    private func setActiveColorWithUndo(_ color: CodableColor, addToRecents: Bool) {
+        let previousActive = vm.canvas.activeColor
+        let previousRecents = vm.canvas.recentColors
+        vm.setActiveColor(color, addToRecents: addToRecents)
+        undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
+            vm.canvas.activeColor = previousActive
+            vm.canvas.recentColors = previousRecents
+        }
+    }
+
+    private func handleErase(_ removedIndices: [Int], _ removedPKStrokes: [PKStroke]) {
+        print("[ERASE] removing indices=\(removedIndices) canvas.count(before)=\(vm.canvas.strokes.count)")
+        for ix in (0..<removedIndices.count).reversed() {
+            let index = removedIndices[ix]
             guard index < vm.canvas.strokes.count else { continue }
             let stroke = vm.canvas.strokes[index]
             vm.removeStroke(id: stroke.id)
-            undoManager?.registerUndo(withTarget: UndoProxy.shared) { _ in
-                vm.addStroke(stroke)
-            }
         }
+        // No custom undo: PKCanvasView's own undo restores the PKDrawing
+        // (firing canvasViewDrawingDidChange → onStrokeCompleted → addStrokeWithUndo),
+        // which re-adds the stroke into canvas.strokes. Registering our own undo
+        // here would cause a double-add and a permanent fantasma.
     }
 
     private func projectSurfaceStrokes() {
