@@ -4,8 +4,8 @@ import simd
 enum ShapeInflater {
 
     /// Runs the full inference pipeline: strokes → inflated 3D mesh → SculptObject.
-    static func sculpt(from strokes: [Stroke], config: SculptConfig = .default) -> SculptObject {
-        let mesh = inflate(strokes: strokes, config: config)
+    static func sculpt(from strokes: [Stroke], config: SculptConfig = .default, inflationMode: InflationMode = .organic) -> SculptObject {
+        let mesh = inflate(strokes: strokes, config: config, inflationMode: inflationMode)
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
         let xs = allPoints.map(\.x), ys = allPoints.map(\.y)
         let originRect = CGRect(
@@ -13,11 +13,12 @@ enum ShapeInflater {
             width: (xs.max() ?? 0) - (xs.min() ?? 0),
             height: (ys.max() ?? 0) - (ys.min() ?? 0)
         )
-        return SculptObject(mesh: mesh, sourceStrokeIDs: Set(strokes.map(\.id)), originRect: originRect)
+        return SculptObject(mesh: mesh, sourceStrokeIDs: Set(strokes.map(\.id)),
+                            originRect: originRect, inflationMode: inflationMode)
     }
 
     /// Inflates a 2D contour into a closed 3D mesh by using edge distance as depth.
-    static func inflate(strokes: [Stroke], config: SculptConfig = .default) -> Mesh {
+    static func inflate(strokes: [Stroke], config: SculptConfig = .default, inflationMode: InflationMode = .organic) -> Mesh {
         let allPoints = strokes.flatMap { $0.points.map(\.location) }
         let contour = ContourExtractor.extract(from: strokes, config: config)
         guard contour.count >= 3 else { return Mesh() }
@@ -56,14 +57,20 @@ enum ShapeInflater {
         let maxDist = depthBuffer.max() ?? 0
         guard maxDist > 0 else { return Mesh() }
 
-        // Convert distance to depth using a sphere-like profile:
-        // depth = sqrt(d * (2*maxDist - d)) gives a semicircular cross-section.
+        // Convert distance to depth using the chosen profile.
+        // - organic: sqrt(d*(2*maxDist - d)) is a semicircular cross-section (dome).
+        // - straight: constant maxDist inside the contour, zero outside (cookie-cutter).
         var depths = [[Float]](repeating: [Float](repeating: 0, count: cols), count: rows)
         for row in 0..<rows {
             for col in 0..<cols {
                 let d = depthBuffer[row * cols + col]
                 if d > 0 {
-                    depths[row][col] = sqrt(d * (2 * maxDist - d))
+                    switch inflationMode {
+                    case .organic:
+                        depths[row][col] = sqrt(d * (2 * maxDist - d))
+                    case .straight:
+                        depths[row][col] = maxDist
+                    }
                 }
             }
         }

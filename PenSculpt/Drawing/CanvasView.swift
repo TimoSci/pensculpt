@@ -1,18 +1,37 @@
 import SwiftUI
 import PencilKit
 
+/// PKCanvasView subclass that suppresses the system edit menu
+/// ("Select All / Insert Space" on finger long-press) when the
+/// canvas is non-interactive (i.e., the app is in select mode).
+final class DrawingCanvasView: PKCanvasView {
+    /// When true, the canvas refuses first-responder status and
+    /// rejects all menu actions — stops the native PKCanvasView
+    /// edit menu from appearing on finger long-press in select mode.
+    var blockEditMenu: Bool = false
+
+    override var canBecomeFirstResponder: Bool {
+        blockEditMenu ? false : super.canBecomeFirstResponder
+    }
+
+    override func canPerformAction(_ action: Selector, withSender sender: Any?) -> Bool {
+        blockEditMenu ? false : super.canPerformAction(action, withSender: sender)
+    }
+}
+
 struct CanvasView: UIViewRepresentable {
     @Binding var drawing: PKDrawing
     var selectedTool: DrawingTool
     var strokeWidth: CGFloat
     var strokeOpacity: CGFloat
+    var activeColor: CodableColor
     var onStrokeCompleted: ((PKStroke) -> Void)?
-    var onStrokeErased: ((_ removedIndices: [Int]) -> Void)?
+    var onStrokeErased: ((_ removedIndices: [Int], _ removedPKStrokes: [PKStroke]) -> Void)?
     var isInteractive: Bool = true
     var viewBridge: ViewBridge?
 
     func makeUIView(context: Context) -> PKCanvasView {
-        let canvasView = PKCanvasView()
+        let canvasView = DrawingCanvasView()
         canvasView.drawing = drawing
         canvasView.tool = pkTool(for: selectedTool)
         canvasView.drawingPolicy = .pencilOnly
@@ -32,11 +51,30 @@ struct CanvasView: UIViewRepresentable {
     }
 
     func updateUIView(_ canvasView: PKCanvasView, context: Context) {
+        let wasInteractive = canvasView.isUserInteractionEnabled
         canvasView.isUserInteractionEnabled = isInteractive
-        canvasView.tool = pkTool(for: selectedTool)
+        if let drawingCanvas = canvasView as? DrawingCanvasView {
+            drawingCanvas.blockEditMenu = !isInteractive
+        }
+        let realTool = pkTool(for: selectedTool)
+        if !wasInteractive && isInteractive {
+            // Returning from select mode — PKCanvasView's input pipeline can
+            // get stuck in a state where the Pencil stops drawing (cursor
+            // hover still works, no strokes land). Manual workaround the
+            // user discovered: tap a different tool and tap back. Replicate
+            // it here with a brief dummy swap so the canvas refreshes its
+            // gesture/tool state on the transition.
+            canvasView.tool = PKEraserTool(.vector)
+        }
+        canvasView.tool = realTool
         if canvasView.drawing != drawing {
-            canvasView.drawing = drawing
+            // Reset tracking BEFORE setting drawing — the setter may fire
+            // `canvasViewDrawingDidChange` synchronously, and we need
+            // `previousStrokeCount` to already reflect the new state so
+            // it doesn't spuriously dispatch `onStrokeCompleted` /
+            // `onStrokeErased` for our own external updates.
             context.coordinator.resetTracking(to: drawing)
+            canvasView.drawing = drawing
         }
     }
 
@@ -47,8 +85,8 @@ struct CanvasView: UIViewRepresentable {
     private func pkTool(for tool: DrawingTool) -> any PKTool {
         switch tool {
         case .pen:
-            let color = UIColor.black.withAlphaComponent(strokeOpacity)
-            return PKInkingTool(.pen, color: color, width: strokeWidth)
+            let uiColor = activeColor.uiColor(opacityMultiplier: strokeOpacity)
+            return PKInkingTool(.pen, color: uiColor, width: strokeWidth)
         case .eraser:
             return PKEraserTool(.vector)
         case .pixelEraser:
@@ -87,15 +125,23 @@ struct CanvasView: UIViewRepresentable {
             let currentDrawing = canvasView.drawing
             let currentCount = currentDrawing.strokes.count
 
-            if currentCount > previousStrokeCount,
-               let lastStroke = currentDrawing.strokes.last {
-                parent.onStrokeCompleted?(lastStroke)
+            if currentCount > previousStrokeCount {
+                // Find strokes that exist in current but not in previous.
+                // PKCanvasView's auto-undo restores erased strokes to their
+                // original index, so the "new" stroke may not be at `last`.
+                let previousBounds = previousDrawing.strokes.map { $0.renderBounds }
+                for stroke in currentDrawing.strokes {
+                    if !previousBounds.contains(stroke.renderBounds) {
+                        parent.onStrokeCompleted?(stroke)
+                    }
+                }
             } else if currentCount < previousStrokeCount {
                 let removedIndices = CanvasView.removedStrokeIndices(
                     previous: previousDrawing.strokes,
                     current: currentDrawing.strokes
                 )
-                parent.onStrokeErased?(removedIndices)
+                let removedPKStrokes = removedIndices.map { previousDrawing.strokes[$0] }
+                parent.onStrokeErased?(removedIndices, removedPKStrokes)
             }
 
             parent.drawing = currentDrawing

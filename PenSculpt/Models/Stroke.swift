@@ -1,4 +1,5 @@
 import Foundation
+import simd
 
 struct CodableColor: Codable, Equatable, Sendable {
     let red: CGFloat
@@ -50,3 +51,19 @@ struct Stroke: Identifiable, Codable, Equatable, Sendable {
         return CGRect(x: minX, y: minY, width: maxX - minX, height: maxY - minY)
     }
 }
+
+extension CodableColor {
+    func simd4(opacity: Float = 1) -> SIMD4<Float> {
+        SIMD4(Float(red), Float(green), Float(blue), Float(alpha) * opacity)
+    }
+}
+
+#if canImport(UIKit)
+import UIKit
+
+extension CodableColor {
+    func uiColor(opacityMultiplier: CGFloat = 1) -> UIColor {
+        UIColor(red: red, green: green, blue: blue, alpha: alpha * opacityMultiplier)
+    }
+}
+#endif

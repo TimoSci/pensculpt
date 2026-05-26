@@ -22,6 +22,11 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     }
     private static var cachedStates: CachedStates?
 
+    enum ProjectionMode {
+        case orthographic
+        case perspective
+    }
+
     let device: MTLDevice
     let commandQueue: MTLCommandQueue
     let meshPipeline: MTLRenderPipelineState
@@ -29,11 +34,15 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     let meshDepthState: MTLDepthStencilState
     let surfaceStrokeDepthState: MTLDepthStencilState
 
+    private var lastObjectIDs: Set<UUID> = []
     var sculptObjects: [SculptObject] = [] {
         didSet {
             let currentIDs = Set(sculptObjects.map(\.id))
+            guard currentIDs != lastObjectIDs else { return }
+            lastObjectIDs = currentIDs
             bufferCache = bufferCache.filter { currentIDs.contains($0.key) }
             bvhCache = bvhCache.filter { currentIDs.contains($0.key) }
+            strokeNormalsCache.removeAll()
             prebuildBuffers()
             prebuildBVHs()
         }
@@ -49,6 +58,8 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     var currentStrokeWidths: [Float] = []
     var brushOpacity: Float = 1
     var lastHitT: Float = 0
+    var surfaceSpaceStrokes: Bool = false
+    var currentStrokeColor: CodableColor = .black
 
     private struct MeshBuffers {
         let vertex: MTLBuffer
@@ -60,6 +71,19 @@ class SculptRenderer: NSObject, MTKViewDelegate {
     private var combinedCenter = SIMD3<Float>(0, 0, 0)
     private(set) var combinedRadius: Float = 1
 
+    /// Minimum framing radius for small objects so they don't fill the viewport
+    /// and feel disproportionately large compared to how they were drawn.
+    /// In canvas coordinate space (~150pt ≈ 1.5cm on iPad).
+    private static let minCombinedRadius: Float = 150
+
+    /// Logical projection mode. Mirrors the user-facing toggle state; the
+    /// actual projection used by `combinedProjection` is driven by
+    /// `projectionTransition`, which animates between modes.
+    var projectionMode: ProjectionMode = .orthographic
+    var perspectiveFOV: Float = .pi / 180 * 50  // 50° default
+    /// 0 = pure ortho, 1 = pure perspective. Animated by updateProjectionTransition().
+    var projectionTransition: Float = 0
+
     private struct MorphState {
         let objectID: UUID
         let fromVertices: [MeshVertex]
@@ -70,6 +94,14 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         let duration: CFTimeInterval
     }
     private var activeMorph: MorphState?
+
+    private struct TransitionState {
+        let startTime: CFTimeInterval
+        let fromTransition: Float
+        let toTransition: Float
+        let duration: CFTimeInterval
+    }
+    private var activeTransition: TransitionState?
 
     init?(device: MTLDevice) {
         self.device = device
@@ -155,8 +187,25 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
     func mtkView(_ view: MTKView, drawableSizeWillChange size: CGSize) {}
 
+    func setProjectionMode(_ mode: ProjectionMode, animated: Bool) {
+        let target: Float = (mode == .perspective) ? 1.0 : 0.0
+        projectionMode = mode
+        if animated {
+            activeTransition = TransitionState(
+                startTime: CACurrentMediaTime(),
+                fromTransition: projectionTransition,
+                toTransition: target,
+                duration: 0.3
+            )
+        } else {
+            activeTransition = nil
+            projectionTransition = target
+        }
+    }
+
     func draw(in view: MTKView) {
         if activeMorph != nil { updateMorph() }
+        if activeTransition != nil { updateProjectionTransition() }
 
         guard !sculptObjects.isEmpty,
               let drawable = view.currentDrawable,
@@ -232,16 +281,53 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         rotation = (qz * rotation).normalized
     }
 
-    private func combinedProjection(viewSize: CGSize) -> simd_float4x4 {
+    func combinedProjection(viewSize: CGSize) -> simd_float4x4 {
         let r = combinedRadius
         let aspect = Float(viewSize.width) / Float(viewSize.height)
-        let proj = Self.orthographicProjection(
+
+        let mOrtho = Self.orthographicProjection(
             left: -r * aspect, right: r * aspect,
             bottom: -r, top: r,
             near: -r * 10, far: r * 10
         )
-        let view = simd_float4x4(rotation) * translationMatrix(-combinedCenter.x, -combinedCenter.y, -combinedCenter.z)
-        return proj * view
+        let viewOrtho = simd_float4x4(rotation) * translationMatrix(-combinedCenter.x, -combinedCenter.y, -combinedCenter.z)
+
+        // Default-path short-circuit: avoid recomputing perspective every frame
+        // while in ortho mode (perspective is opt-in, so this is the hot path).
+        if projectionTransition == 0 {
+            return mOrtho * viewOrtho
+        }
+
+        // For perspective, position the camera at a distance that preserves the
+        // framing: an object of radius r should fill the same vertical fraction
+        // as in ortho. Distance d satisfies r / d = tan(fov/2), so d = r / tan(fov/2).
+        let cameraDistance = r / tan(perspectiveFOV / 2)
+        let mPersp = Self.perspectiveProjection(
+            fovRadians: perspectiveFOV,
+            aspect: aspect,
+            // Camera is at d ≈ r/tan(fov/2); object spans [-r, r] around origin.
+            // Set near a bit closer than the front of the object (1.2 × r margin)
+            // to keep z-buffer precision tight on the visible mesh while leaving
+            // room for surface strokes that sit slightly above the surface.
+            near: max(cameraDistance - r * 1.2, 0.01),
+            far: cameraDistance + r * 10
+        )
+        // Perspective view matrix needs the extra camera-distance translation
+        // along -Z (camera looks down -Z), composed with rotation about origin
+        // and translation of object center to origin.
+        let viewPersp = translationMatrix(0, 0, -cameraDistance) * viewOrtho
+
+        let mvpOrtho = mOrtho * viewOrtho
+        let mvpPersp = mPersp * viewPersp
+
+        // Component-wise lerp. Linear is good enough for a 0.3s tween between
+        // visually similar framings (both use GL NDC z ∈ [-1, 1] after Task 1).
+        let t = projectionTransition
+        var result = simd_float4x4()
+        for col in 0..<4 {
+            result[col] = mvpOrtho[col] * (1 - t) + mvpPersp[col] * t
+        }
+        return result
     }
 
     private func recomputeCombinedBounds() {
@@ -257,11 +343,25 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         if minP.x < Float.infinity {
             combinedCenter = (minP + maxP) / 2
             let extent = maxP - minP
-            combinedRadius = max(extent.x, max(extent.y, extent.z)) / 2 * 1.3
+            let computed = max(extent.x, max(extent.y, extent.z)) / 2 * 1.3
+            combinedRadius = max(computed, Self.minCombinedRadius)
         }
     }
 
+    #if DEBUG
+    /// Test-only: directly set the combined bounds without running the bounds
+    /// computation. Used by SculptRendererProjectionTests to construct a
+    /// renderer with deterministic bounds.
+    func setCombinedBoundsForTesting(center: SIMD3<Float>, radius: Float) {
+        self.combinedCenter = center
+        self.combinedRadius = radius
+        self.rotation = simd_quatf(angle: 0, axis: SIMD3(0, 1, 0))
+    }
+    #endif
+
     // MARK: - Surface stroke rendering
+
+    private var strokeNormalsCache: [UUID: [SIMD3<Float>]] = [:]
 
     private func drawSurfaceStrokes(mvp: simd_float4x4, encoder: MTLRenderCommandEncoder) {
         encoder.setRenderPipelineState(surfaceStrokePipeline)
@@ -274,8 +374,20 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         for obj in sculptObjects where obj.id == activeObjectID {
             for stroke in obj.surfaceStrokes {
-                let color = SIMD4<Float>(0.2, 0.2, 0.8, stroke.opacity)
-                drawStrokeStrip(stroke.points, widths: stroke.widths, color: color, encoder: encoder)
+                let normals: [SIMD3<Float>]?
+                if surfaceSpaceStrokes {
+                    if let cached = strokeNormalsCache[stroke.id] {
+                        normals = cached
+                    } else {
+                        let computed = nearestNormals(for: stroke.points, vertices: obj.mesh.vertices)
+                        strokeNormalsCache[stroke.id] = computed
+                        normals = computed
+                    }
+                } else {
+                    normals = nil
+                }
+                let color = stroke.color.simd4(opacity: stroke.opacity)
+                drawStrokeStrip(stroke.points, widths: stroke.widths, normals: normals, color: color, encoder: encoder)
             }
         }
 
@@ -284,14 +396,29 @@ class SculptRenderer: NSObject, MTKViewDelegate {
                 ? [Float](repeating: config.surfaceStrokeWidth, count: currentStrokePoints.count)
                 : currentStrokeWidths
             drawStrokeStrip(currentStrokePoints, widths: widths,
-                            color: SIMD4<Float>(0.2, 0.2, 0.8, brushOpacity * 0.6), encoder: encoder)
+                            color: currentStrokeColor.simd4(opacity: brushOpacity * 0.6), encoder: encoder)
         }
     }
 
-    private func drawStrokeStrip(_ points: [SIMD3<Float>], widths: [Float], color: SIMD4<Float>,
-                                  encoder: MTLRenderCommandEncoder) {
+    private func nearestNormals(for points: [SIMD3<Float>], vertices: [MeshVertex]) -> [SIMD3<Float>] {
+        points.map { p in
+            var bestDist: Float = .infinity
+            var bestNormal = SIMD3<Float>(0, 0, 1)
+            for v in vertices {
+                let d = simd_length_squared(v.position - p)
+                if d < bestDist {
+                    bestDist = d
+                    bestNormal = v.normal
+                }
+            }
+            return bestNormal
+        }
+    }
+
+    private func drawStrokeStrip(_ points: [SIMD3<Float>], widths: [Float], normals: [SIMD3<Float>]? = nil,
+                                  color: SIMD4<Float>, encoder: MTLRenderCommandEncoder) {
         guard points.count > 1 else { return }
-        var stripVerts = buildTriangleStrip(points: points, widths: widths)
+        var stripVerts = buildTriangleStrip(points: points, widths: widths, normals: normals)
         var colors = [SIMD4<Float>](repeating: color, count: stripVerts.count)
 
         guard let posBuffer = makeBuffer(&stripVerts),
@@ -302,7 +429,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         encoder.drawPrimitives(type: .triangleStrip, vertexStart: 0, vertexCount: stripVerts.count)
     }
 
-    private func buildTriangleStrip(points: [SIMD3<Float>], widths: [Float]) -> [SIMD3<Float>] {
+    private func buildTriangleStrip(points: [SIMD3<Float>], widths: [Float], normals: [SIMD3<Float>]? = nil) -> [SIMD3<Float>] {
         let viewDir = simd_act(simd_inverse(rotation), SIMD3<Float>(0, 0, -1))
         var vertices: [SIMD3<Float>] = []
         vertices.reserveCapacity(points.count * 2)
@@ -329,7 +456,14 @@ class SculptRenderer: NSObject, MTKViewDelegate {
                 }
             }
 
-            let hw = (i < widths.count ? widths[i] : 3) / 2
+            var hw = (i < widths.count ? widths[i] : 3) / 2
+
+            // Surface-space: modulate width by how much the surface faces the camera
+            if surfaceSpaceStrokes, let normals, i < normals.count {
+                let facing = abs(dot(normalize(normals[i]), viewDir))
+                hw *= max(facing, 0.1) // clamp to 10% to avoid fully invisible strokes
+            }
+
             vertices.append(points[i] - lastRight * hw)
             vertices.append(points[i] + lastRight * hw)
         }
@@ -430,8 +564,9 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         guard let idx = sculptObjects.firstIndex(where: { $0.id == objectID }) else { return }
         sculptObjects[idx].mesh = mesh
         if let surfaceStrokes { sculptObjects[idx].surfaceStrokes = surfaceStrokes }
-        bufferCache.removeValue(forKey: objectID)
         bvhCache.removeValue(forKey: objectID)
+        strokeNormalsCache.removeAll()
+        rebuildBufferSync(for: sculptObjects[idx])
     }
 
     func morphMesh(objectID: UUID, mesh: Mesh, surfaceStrokes: [SurfaceStroke]? = nil) {
@@ -453,6 +588,19 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         }
     }
 
+    private func updateProjectionTransition() {
+        guard let trans = activeTransition else { return }
+        let elapsed = CACurrentMediaTime() - trans.startTime
+        let t = Float(min(elapsed / trans.duration, 1.0))
+        // Same smoothstep used by morph for visual consistency.
+        let smooth = t * t * (3 - 2 * t)
+        projectionTransition = trans.fromTransition + (trans.toTransition - trans.fromTransition) * smooth
+        if t >= 1.0 {
+            projectionTransition = trans.toTransition
+            activeTransition = nil
+        }
+    }
+
     private func updateMorph() {
         guard let morph = activeMorph,
               let idx = sculptObjects.firstIndex(where: { $0.id == morph.objectID }) else {
@@ -471,13 +619,12 @@ class SculptRenderer: NSObject, MTKViewDelegate {
             vertices[i].normal = normalize(mix(morph.fromVertices[i].normal, morph.toVertices[i].normal, t: smooth))
         }
         sculptObjects[idx].mesh.vertices = vertices
-        bufferCache.removeValue(forKey: morph.objectID)
+        rebuildBufferSync(for: sculptObjects[idx])
 
         if t >= 1.0 {
             sculptObjects[idx].mesh = morph.toMesh
             if let strokes = morph.toStrokes { sculptObjects[idx].surfaceStrokes = strokes }
-            bufferCache.removeValue(forKey: morph.objectID)
-            bvhCache.removeValue(forKey: morph.objectID)
+            rebuildBufferSync(for: sculptObjects[idx])
             activeMorph = nil
         }
     }
@@ -535,7 +682,7 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         if modified {
             sculptObjects[idx].mesh.vertices = vertices
-            bufferCache.removeValue(forKey: sculptObjects[idx].id)
+            rebuildBufferSync(for: sculptObjects[idx])
         }
 
         // Also displace surface stroke points so they move with the mesh
@@ -633,8 +780,32 @@ class SculptRenderer: NSObject, MTKViewDelegate {
 
         if modified {
             sculptObjects[idx].mesh.vertices = vertices
-            bufferCache.removeValue(forKey: activeID)
+            rebuildBufferSync(for: sculptObjects[idx])
         }
+    }
+
+    /// Rebuilds the Metal buffer for an object synchronously on the main thread.
+    /// Used during deformation to avoid the mesh disappearing between async rebuilds.
+    private func rebuildBufferSync(for obj: SculptObject) {
+        let mesh = obj.mesh
+        var vertexData: [Float] = []
+        vertexData.reserveCapacity(mesh.vertices.count * 6)
+        for v in mesh.vertices {
+            vertexData.append(contentsOf: [v.position.x, v.position.y, v.position.z])
+            vertexData.append(contentsOf: [v.normal.x, v.normal.y, v.normal.z])
+        }
+        var indexData: [UInt32] = []
+        indexData.reserveCapacity(mesh.faces.count * 3)
+        for f in mesh.faces {
+            indexData.append(contentsOf: [f.indices.x, f.indices.y, f.indices.z])
+        }
+        guard let vb = device.makeBuffer(bytes: vertexData,
+                                          length: vertexData.count * MemoryLayout<Float>.stride,
+                                          options: .storageModeShared),
+              let ib = device.makeBuffer(bytes: indexData,
+                                          length: indexData.count * MemoryLayout<UInt32>.stride,
+                                          options: .storageModeShared) else { return }
+        bufferCache[obj.id] = MeshBuffers(vertex: vb, index: ib, indexCount: indexData.count)
     }
 
     // MARK: - Helpers
@@ -649,6 +820,21 @@ class SculptRenderer: NSObject, MTKViewDelegate {
         device.makeBuffer(bytes: &data,
                           length: data.count * MemoryLayout<T>.stride,
                           options: .storageModeShared)
+    }
+
+    static func perspectiveProjection(fovRadians: Float, aspect: Float, near: Float, far: Float) -> simd_float4x4 {
+        let f = 1 / tan(fovRadians / 2)
+        let zRange = far - near
+        // Vertical FOV. NDC z in [-1, 1] to match orthographicProjection's
+        // convention so the two matrices can be interpolated component-wise
+        // without producing non-monotonic depth during the projection-mode
+        // transition animation.
+        return simd_float4x4(columns: (
+            SIMD4<Float>(f / aspect, 0, 0, 0),
+            SIMD4<Float>(0, f, 0, 0),
+            SIMD4<Float>(0, 0, -(far + near) / zRange, -1),
+            SIMD4<Float>(0, 0, -2 * far * near / zRange, 0)
+        ))
     }
 
     static func orthographicProjection(left: Float, right: Float, bottom: Float, top: Float, near: Float, far: Float) -> simd_float4x4 {
