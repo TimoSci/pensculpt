@@ -28,23 +28,49 @@ enum StrokeLifter {
     /// instead of deleting them.
     ///
     /// A miss is retried within `missTolerance` points of the ink position
-    /// before splitting: the inflation contour is a simplified polygon that
-    /// dips inside the ink centerline on curves, so border ink grazes just
-    /// outside the silhouette and a strict cast shreds it into dropped
-    /// sub-2-point segments (dashed lift). The default is half the
-    /// rasterized contour ink width (`contourStrokeWidth` 8 / 2). Rescued
-    /// points keep their canvas XY — only depth comes from the nearby
-    /// surface — so lift registration stays exact.
+    /// before splitting: inflation contours are simplified polygons that dip
+    /// inside the ink centerline — Vision raster contours by a hair on
+    /// curves, and multi-part contours (smoothed + simplified stroke
+    /// centerlines) by 5–8pt over long stretches, which shredded even a
+    /// clean accepted circle to 54% ink coverage at the old 4pt default.
+    /// The default is the rasterized contour ink width
+    /// (`contourStrokeWidth`, 8). Rescued points keep their canvas XY —
+    /// only depth comes from the nearby surface — so lift registration
+    /// stays exact.
+    ///
+    /// When the ring also fails, the point marches toward the STROKE'S OWN
+    /// centroid, up to `inwardRescue` (default 16pt): part contours can
+    /// shrink 8-16pt inside the drawn rim where smoothing bites hardest,
+    /// and without this the part's own source ink stays behind as flat
+    /// ghost ink while its volume rotates. The direction is derived from
+    /// the ink alone, so open decoration (a "Λ" ear whose centroid sits in
+    /// empty space) finds nothing and correctly stays flat.
+    ///
+    /// No-ink-loss guarantee: commit DELETES lifted source strokes and
+    /// replaces them with the bake of their surface segments — any point
+    /// dropped here is user ink destroyed forever. A stroke only lifts when
+    /// at least `minCoverage` of its points landed on the mesh; below that
+    /// its partial segments are discarded and the stroke is reported
+    /// unlifted, so it stays visible flat ink and survives commit untouched
+    /// (multi-part meshes routinely leave rejected-part ink half-covering a
+    /// neighboring part).
     static func lift(_ strokes: [Stroke], bvh: MeshBVH,
                      offset: Float, maxTJump: Float = 50,
-                     missTolerance: Float = 4)
+                     missTolerance: Float = 8,
+                     minCoverage: Float = 0.95,
+                     inwardRescue: Float = 16)
         -> (lifted: [SurfaceStroke], unliftedStrokeIDs: Set<UUID>) {
         let direction = SIMD3<Float>(0, 0, -1)
         var lifted: [SurfaceStroke] = []
         var unliftedStrokeIDs: Set<UUID> = []
 
         for stroke in strokes {
-            var producedSegment = false
+            let count = Float(stroke.points.count)
+            let centroid = stroke.points.reduce(SIMD2<Float>.zero) {
+                $0 + SIMD2(Float($1.location.x), Float(-$1.location.y))
+            } / max(count, 1)
+            let segmentsBefore = lifted.count
+            var liftedPointCount = 0
             var points: [SIMD3<Float>] = []
             var widths: [Float] = []
             var lastT: Float = 0
@@ -55,8 +81,9 @@ enum StrokeLifter {
                     // and bake folds session opacity into it (never double-count).
                     lifted.append(SurfaceStroke(points: smoothedDepths(points),
                                                 widths: widths,
-                                                opacity: 1, color: stroke.color))
-                    producedSegment = true
+                                                opacity: 1, color: stroke.color,
+                                                sourceStrokeID: stroke.id))
+                    liftedPointCount += points.count
                 }
                 points = []
                 widths = []
@@ -66,7 +93,9 @@ enum StrokeLifter {
                 let x = Float(sp.location.x)
                 let y = Float(-sp.location.y)
                 guard let t = raycastWithTolerance(x: x, y: y, bvh: bvh,
-                                                   tolerance: missTolerance) else {
+                                                   tolerance: missTolerance)
+                    ?? inwardMarchHit(x: x, y: y, toward: centroid, bvh: bvh,
+                                      maxDistance: inwardRescue) else {
                     flushSegment()
                     continue
                 }
@@ -79,7 +108,12 @@ enum StrokeLifter {
             }
             flushSegment()
 
-            if !producedSegment { unliftedStrokeIDs.insert(stroke.id) }
+            let coverage = stroke.points.isEmpty
+                ? 0 : Float(liftedPointCount) / Float(stroke.points.count)
+            if lifted.count == segmentsBefore || coverage < minCoverage {
+                lifted.removeSubrange(segmentsBefore...)
+                unliftedStrokeIDs.insert(stroke.id)
+            }
         }
         return (lifted, unliftedStrokeIDs)
     }
@@ -106,6 +140,31 @@ enum StrokeLifter {
         zs = filtered(zs, window: 5) { $0.sorted()[$0.count / 2] }
         zs = filtered(zs, window: 3) { $0.reduce(0, +) / Float($0.count) }
         return zip(points, zs).map { SIMD3($0.x, $0.y, $1) }
+    }
+
+    /// Last-resort rescue after the ring fails: march from the ink position
+    /// toward the stroke's own centroid in 3pt steps, up to `maxDistance`,
+    /// and return the first hit distance. The hit only supplies DEPTH — the
+    /// lifted point keeps its canvas XY. Deterministic; direction comes from
+    /// the ink alone, so strokes whose interior holds no mesh (open
+    /// decoration) find nothing.
+    private static func inwardMarchHit(x: Float, y: Float, toward c: SIMD2<Float>,
+                                       bvh: MeshBVH, maxDistance: Float) -> Float? {
+        let toCentroid = c - SIMD2(x, y)
+        let length = simd_length(toCentroid)
+        guard length > 0.001, maxDistance > 0 else { return nil }
+        let step = toCentroid / length * 3
+        var p = SIMD2(x, y)
+        var traveled: Float = 3
+        while traveled <= maxDistance {
+            p += step
+            if let (t, _) = bvh.raycast(origin: SIMD3(p.x, p.y, 4096),
+                                        direction: SIMD3(0, 0, -1)) {
+                return t
+            }
+            traveled += 3
+        }
+        return nil
     }
 
     /// −z raycast at canvas-world (x, y); on a miss, retries in rings of
@@ -136,30 +195,69 @@ enum StrokeLifter {
         return nil
     }
 
+    /// Maximum 2D distance (points) between the end of one segment and the
+    /// start of the next for bake to weld same-source segments back into one
+    /// stroke. Generous enough for split-and-dropped spans (the ink WAS one
+    /// drawn line), small enough not to bridge spans the user erased
+    /// mid-session with the surface eraser.
+    static let bakeWeldGap: CGFloat = 24
+
     static func bake(_ surfaceStrokes: [SurfaceStroke], orientation: simd_quatf,
                      scale: Float, pivot: SIMD3<Float>) -> [Stroke] {
         let model = CameraTransform.modelMatrix(center: pivot, orientation: orientation,
                                                 scale: scale)
-        return surfaceStrokes.compactMap { ss in
-            guard !ss.points.isEmpty else { return nil }
-            let strokePoints = ss.points.enumerated().map { i, p -> StrokePoint in
+
+        // Project each segment; weld consecutive segments lifted from the
+        // same 2D stroke (lift splits at mesh gaps and depth jumps) whose
+        // ends land near each other — without this the seams persist as
+        // invisible "perforations" in the baked ink and a single vector-
+        // eraser touch removes only a fragment of the drawn line.
+        var result: [Stroke] = []
+        var pending: [(location: CGPoint, pressure: CGFloat)] = []
+        var pendingColor = CodableColor.black
+        var pendingLineage: UUID?
+
+        func flush() {
+            guard !pending.isEmpty else { return }
+            let strokePoints = pending.enumerated().map { i, p in
+                StrokePoint(location: p.location, pressure: p.pressure,
+                            tilt: .pi / 2, azimuth: 0,
+                            timestamp: TimeInterval(i) * 0.01)
+            }
+            result.append(Stroke(points: strokePoints, color: pendingColor))
+            pending = []
+            pendingLineage = nil
+        }
+
+        for ss in surfaceStrokes {
+            guard !ss.points.isEmpty else { continue }
+            let projected = ss.points.enumerated().map { i, p -> (CGPoint, CGFloat) in
                 let v = model * SIMD4<Float>(p.x, p.y, p.z, 1)
                 let width = i < ss.widths.count ? ss.widths[i] : widthPerPressure
-                return StrokePoint(
-                    location: CGPoint(x: CGFloat(v.x), y: CGFloat(-v.y)),
-                    // WYSIWYG: on screen the strip is scaled by the model
-                    // matrix, so the baked ink width is width × scale.
-                    pressure: CGFloat(width * scale / widthPerPressure),
-                    tilt: .pi / 2,
-                    azimuth: 0,
-                    timestamp: TimeInterval(i) * 0.01
-                )
+                // WYSIWYG: on screen the strip is scaled by the model
+                // matrix, so the baked ink width is width × scale.
+                return (CGPoint(x: CGFloat(v.x), y: CGFloat(-v.y)),
+                        CGFloat(width * scale / widthPerPressure))
             }
             // Fold session opacity into the color's alpha.
             let color = CodableColor(red: ss.color.red, green: ss.color.green,
                                      blue: ss.color.blue,
                                      alpha: ss.color.alpha * CGFloat(ss.opacity))
-            return Stroke(points: strokePoints, color: color)
+
+            let gap = pending.last.map {
+                hypot(projected[0].0.x - $0.location.x,
+                      projected[0].0.y - $0.location.y)
+            }
+            let welds = ss.sourceStrokeID != nil
+                && ss.sourceStrokeID == pendingLineage
+                && color == pendingColor
+                && (gap ?? .infinity) <= bakeWeldGap
+            if !welds { flush() }
+            pending.append(contentsOf: projected.map { (location: $0.0, pressure: $0.1) })
+            pendingColor = color
+            pendingLineage = ss.sourceStrokeID
         }
+        flush()
+        return result
     }
 }
